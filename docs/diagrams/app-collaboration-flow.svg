@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="930" viewBox="0 0 1800 930" role="img" aria-labelledby="title desc">
+  <title id="title">APP 协作流程与产物流转</title>
+  <desc id="desc">简化展示 PM、UX、RD 在项目 Git、知识库、UI 资产、功能能力和产物之间的流转关系。</desc>
+  <defs>
+    <style>
+      .page { fill: #ffffff; }
+      .band-role { fill: #eef3f6; stroke: #242d36; stroke-width: 2; }
+      .band-knowledge { fill: #e9ecff; stroke: #242d36; stroke-width: 2; }
+      .band-feature { fill: #fffaf0; stroke: #242d36; stroke-width: 2; }
+      .band-output { fill: #ffffff; stroke: #242d36; stroke-width: 2; }
+      .label { fill: #e8edf0; stroke: #242d36; stroke-width: 2; rx: 2; }
+      .box { fill: #ffffff; stroke: #242d36; stroke-width: 2; rx: 5; }
+      .box-soft { fill: #fbfcff; stroke: #242d36; stroke-width: 2; rx: 5; }
+      .txt { font: 500 18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2933; }
+      .small { font: 500 15px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #4b5563; }
+      .labeltxt { font: 600 18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2933; }
+      .arrow { stroke: #242d36; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #3f4858; stroke-width: 2; fill: none; stroke-dasharray: 8 7; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#242d36" />
+    </marker>
+  </defs>
+
+  <rect class="page" width="1800" height="930" />
+
+  <!-- 角色 -->
+  <rect class="band-role" x="8" y="8" width="1784" height="165" />
+  <rect class="label" x="42" y="48" width="122" height="84" />
+  <text class="labeltxt" x="85" y="96">角色</text>
+
+  <rect class="box" x="352" y="48" width="266" height="84" />
+  <text class="txt" x="472" y="96">PM</text>
+  <rect class="box" x="868" y="48" width="286" height="84" />
+  <text class="txt" x="995" y="96">UX</text>
+  <rect class="box" x="1418" y="48" width="288" height="84" />
+  <text class="txt" x="1548" y="96">RD</text>
+
+  <!-- 知识依赖 -->
+  <rect class="band-knowledge" x="8" y="220" width="1784" height="205" />
+  <rect class="label" x="42" y="276" width="122" height="84" />
+  <text class="labeltxt" x="68" y="325">知识依赖</text>
+
+  <rect class="box" x="320" y="275" width="300" height="72" />
+  <text class="txt" x="390" y="305">项目 Git 仓库</text>
+  <text class="small" x="370" y="330">需求分支 / docs / ui</text>
+
+  <rect class="box" x="760" y="275" width="300" height="72" />
+  <text class="txt" x="820" y="305">知识库</text>
+  <text class="small" x="815" y="330">剪页库 / Git / 本地</text>
+
+  <rect class="box" x="1200" y="275" width="300" height="72" />
+  <text class="txt" x="1260" y="305">UI 资产库</text>
+  <text class="small" x="1245" y="330">主题 / 组件 / 图片</text>
+
+  <rect class="box" x="1510" y="325" width="220" height="72" />
+  <text class="txt" x="1568" y="355">代码仓库</text>
+  <text class="small" x="1560" y="380">RD 实现</text>
+
+  <path class="dash" d="M620 311 H760" />
+  <path class="dash" d="M1060 311 H1200" />
+  <path class="arrow" d="M1500 311 H1595 V325" />
+  <path class="arrow" d="M470 347 V392 H1350 V347" />
+
+  <!-- 功能 -->
+  <rect class="band-feature" x="18" y="455" width="1764" height="290" />
+  <rect class="label" x="42" y="558" width="122" height="132" />
+  <text class="labeltxt" x="86" y="630">功能</text>
+
+  <rect class="box-soft" x="310" y="485" width="180" height="76" />
+  <text class="txt" x="342" y="515">需求管理</text>
+  <text class="small" x="336" y="540">分支 / 版本</text>
+
+  <rect class="box-soft" x="520" y="485" width="180" height="76" />
+  <text class="txt" x="548" y="515">AI 生成 PRD</text>
+  <text class="small" x="554" y="540">编辑 / Review</text>
+
+  <rect class="box-soft" x="310" y="595" width="180" height="76" />
+  <text class="txt" x="348" y="625">文档发布</text>
+  <text class="small" x="336" y="650">Markdown 预览</text>
+
+  <rect class="box-soft" x="760" y="485" width="190" height="76" />
+  <text class="txt" x="790" y="515">AI 生成原型</text>
+  <text class="small" x="802" y="540">低保真 / 高保真</text>
+
+  <rect class="box-soft" x="980" y="485" width="190" height="76" />
+  <text class="txt" x="1018" y="515">预览微调</text>
+  <text class="small" x="1010" y="540">Inspector / 组件</text>
+
+  <rect class="box-soft" x="760" y="595" width="190" height="76" />
+  <text class="txt" x="794" y="625">资产沉淀</text>
+  <text class="small" x="798" y="650">主题 / 图片 / 组件</text>
+
+  <rect class="box-soft" x="1215" y="485" width="190" height="76" />
+  <text class="txt" x="1242" y="515">知识联合检索</text>
+  <text class="small" x="1250" y="540">项目 + 外部库</text>
+
+  <rect class="box-soft" x="1215" y="595" width="190" height="76" />
+  <text class="txt" x="1242" y="625">Git 工作流</text>
+  <text class="small" x="1240" y="650">保存 / 同步 / 合流</text>
+
+  <rect class="box-soft" x="1455" y="485" width="200" height="76" />
+  <text class="txt" x="1490" y="515">读取产物</text>
+  <text class="small" x="1485" y="540">PRD / UI 链接</text>
+
+  <rect class="box-soft" x="1455" y="595" width="200" height="76" />
+  <text class="txt" x="1490" y="625">实现与反馈</text>
+  <text class="small" x="1482" y="650">代码 / 验收问题</text>
+
+  <path class="dash" d="M470 347 C470 430 400 425 400 485" />
+  <path class="dash" d="M910 347 C910 430 855 425 855 485" />
+  <path class="dash" d="M1350 347 C1350 425 1075 420 1075 485" />
+  <path class="arrow" d="M700 523 H760" />
+  <path class="arrow" d="M1170 523 H1215" />
+  <path class="arrow" d="M1405 523 H1455" />
+  <path class="arrow" d="M1555 561 V595" />
+
+  <!-- 产物 -->
+  <rect class="band-output" x="18" y="778" width="1764" height="125" />
+  <rect class="label" x="42" y="800" width="122" height="80" />
+  <text class="labeltxt" x="86" y="848">产物</text>
+
+  <rect class="box" x="320" y="800" width="160" height="80" />
+  <text class="txt" x="365" y="836">prd.md</text>
+  <text class="small" x="355" y="860">需求文档</text>
+
+  <rect class="box" x="560" y="800" width="190" height="80" />
+  <text class="txt" x="610" y="836">view.html</text>
+  <text class="small" x="598" y="860">UI 产物</text>
+
+  <rect class="box" x="845" y="800" width="210" height="80" />
+  <text class="txt" x="890" y="836">组件 / 资产</text>
+  <text class="small" x="880" y="860">可复用沉淀</text>
+
+  <rect class="box" x="1170" y="800" width="210" height="80" />
+  <text class="txt" x="1218" y="836">发布链接</text>
+  <text class="small" x="1210" y="860">文档 + UI 预览</text>
+
+  <rect class="box" x="1490" y="800" width="180" height="80" />
+  <text class="txt" x="1538" y="836">code</text>
+  <text class="small" x="1520" y="860">实现交付</text>
+
+  <path class="arrow" d="M400 671 V800" />
+  <path class="arrow" d="M855 671 C855 740 655 740 655 800" />
+  <path class="arrow" d="M855 671 C855 735 950 735 950 800" />
+  <path class="arrow" d="M1310 671 C1310 730 1275 730 1275 800" />
+  <path class="arrow" d="M1555 671 V800" />
+</svg>

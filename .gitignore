@@ -1,0 +1,43 @@
+node_modules/
+dist/
+out/
+release/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+.vscode/
+.idea/
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# 开发工具产物
+.npm-cache/
+.DS_Store
+
+# electron-builder 产物
+release/
+build/output/
+
+# dugite 便携 git 下载缓存（用 setup:bundled-git 脚本管理）
+.dugite-cache/
+.codewiki/cache/
+.codewiki/site/
+.codewiki/workflow/
+.codewiki/evaluation-runs/
+.codewiki/knowledge-health/
+.codewiki/quality-report/
+.codewiki/eval-log/
+.codewiki/knowledge-overlay/
+.codewiki/codewiki-migration/
+.codewiki/transactions/
+.codewiki/retrieval.jsonl
+.codewiki/feedback.jsonl
+.codewiki/gaps.jsonl
+.codewiki/modules/*/_intermediate/
+.codewiki/modules/*/.archive/
+.codewiki/modules/*.v36-stage/
+**/.claude/settings.local.json

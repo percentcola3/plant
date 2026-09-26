@@ -1,0 +1,137 @@
+/* chat 专用样式：动画 + 共享视觉原语。
+   非 scoped 全局样式，所有 chat 组件复用。
+   命名统一 .chat- 前缀避免污染。 */
+
+/* ===== 流式光标 ===== */
+/* 流式输出时挂在最后一个 text block 末尾的闪烁竖线。
+   不模拟逐字，依赖响应式 re-render 本身逐 token；光标只提供"正在打字"锚点。 */
+.stream-cursor::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--color-accent);
+  border-radius: 1px;
+  animation: chat-cursor-blink 1s step-end infinite;
+}
+@keyframes chat-cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ===== Spinner ===== */
+/* 工具执行中的旋转环。替代 emoji ⏳，更专业。 */
+.chat-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  animation: chat-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes chat-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 状态圆点（done/error 用实心圆，比 emoji ✓❌ 精致）*/
+.chat-status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.chat-status-dot--ok {
+  background: var(--color-success);
+  color: #fff;
+}
+.chat-status-dot--error {
+  background: var(--color-error);
+  color: #fff;
+}
+.chat-status-dot--ok::before { content: '✓'; }
+.chat-status-dot--error::before { content: '✕'; }
+
+/* ===== Shimmer（thinking / preparing 占位）===== */
+.chat-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-text-muted) 0%,
+    var(--color-text-tertiary) 50%,
+    var(--color-text-muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: chat-shimmer 1.5s ease-in-out infinite;
+}
+@keyframes chat-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===== 工具卡片呼吸光效（pending 时）===== */
+.chat-tool-pending {
+  animation: chat-tool-breathe 2s ease-in-out infinite;
+}
+@keyframes chat-tool-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-accent-subtle); }
+  50% { box-shadow: 0 0 0 3px var(--color-accent-subtle); }
+}
+
+/* ===== hex 色块（inline code #aabbcc）===== */
+.chat-color-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-color-swatch-chip {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.15);
+  vertical-align: middle;
+}
+
+/* ===== 代码块 header（复制按钮 / 语言标签）===== */
+.chat-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  color: rgba(255,255,255,0.5);
+}
+.chat-code-lang {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.chat-code-copy {
+  border: 0;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.chat-code-block:hover .chat-code-copy { opacity: 1; }
+.chat-code-copy:hover { background: rgba(255,255,255,0.16); color: #fff; }
+.chat-code-copy--done { color: var(--color-success); opacity: 1; }

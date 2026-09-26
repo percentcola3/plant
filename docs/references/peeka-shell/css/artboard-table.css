@@ -1,0 +1,311 @@
+/* Table demo — lives inside design artboard (1440×900) */
+
+.artboard-table-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+  color: #171717;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.artboard-table-page__header {
+  flex: 0 0 auto;
+  padding: 28px 40px 8px;
+  background: #fff;
+}
+
+.artboard-table-page__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.artboard-table-page__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #171717;
+}
+
+.artboard-table-page__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #737373;
+}
+
+.artboard-table-page__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.artboard-table-page__btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.artboard-table-page__btn--primary {
+  background: #ff6000;
+  color: #fff;
+  border-color: #ff6000;
+}
+
+.artboard-table-page__btn--primary:hover {
+  background: #e55500;
+  border-color: #e55500;
+}
+
+.artboard-table-page__btn--ghost {
+  background: #fff;
+  color: #525252;
+  border-color: #d4d4d4;
+}
+
+.artboard-table-page__btn--ghost:hover {
+  background: #f5f5f5;
+  border-color: #a3a3a3;
+  color: #171717;
+}
+
+.artboard-table-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.artboard-table-page__field {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.artboard-table-page__input,
+.artboard-table-page__select {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  color: #171717;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.artboard-table-page__input {
+  width: 200px;
+}
+
+.artboard-table-page__input:focus,
+.artboard-table-page__select:focus {
+  border-color: #a3a3a3;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.artboard-table-page__select {
+  min-width: 112px;
+  cursor: pointer;
+}
+
+.artboard-table-page__filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.artboard-table-page__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 40px;
+  background: #fff;
+}
+
+.artboard-table-page__table-wrap {
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+  background: transparent;
+  overflow: auto;
+}
+
+.artboard-table-page__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.artboard-table-page__table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f5f5f5;
+}
+
+.artboard-table-page__table th {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: #525252;
+  white-space: nowrap;
+}
+
+.artboard-table-page__table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+  color: #525252;
+}
+
+.artboard-table-page__table tbody tr:hover {
+  background: #fafafa;
+}
+
+.artboard-table-page__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.artboard-table-page__id {
+  font-variant-numeric: tabular-nums;
+  color: #737373;
+}
+
+.artboard-table-page__name {
+  font-weight: 500;
+  color: #171717;
+}
+
+.artboard-table-page__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.artboard-table-page__badge--active {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.artboard-table-page__badge--done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.artboard-table-page__badge--pending {
+  background: #f5f5f5;
+  color: #737373;
+}
+
+.artboard-table-page__amount {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #171717;
+}
+
+.artboard-table-page__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 24px;
+}
+
+.artboard-table-page__summary {
+  font-size: 13px;
+  color: #737373;
+}
+
+.artboard-table-page__pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.artboard-table-page__page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #525252;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.artboard-table-page__page-btn:hover:not(:disabled):not(.artboard-table-page__page-btn--active) {
+  background: #f0f0f0;
+  color: #171717;
+}
+
+.artboard-table-page__page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.artboard-table-page__page-btn--active {
+  background: #e5e5e5;
+  color: #171717;
+}
+
+.artboard-table-page__page-btn--active:hover {
+  background: #d4d4d4;
+  color: #171717;
+}
+
+.artboard-table-page__page-ellipsis {
+  min-width: 24px;
+  text-align: center;
+  color: #a3a3a3;
+  font-size: 13px;
+}
+
+.artboard-table-page__page-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  font-size: 13px;
+  color: #737373;
+}
+
+.artboard-table-page__page-size select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  color: #525252;
+  cursor: pointer;
+}

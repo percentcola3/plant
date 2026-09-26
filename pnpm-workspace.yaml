@@ -1,0 +1,8 @@
+allowBuilds:
+  dugite: set this to true or false
+  electron: set this to true or false
+  electron-winstaller: set this to true or false
+  esbuild: set this to true or false
+  fast-xml-parser: set this to true or false
+  node-pty: set this to true or false
+  vue-demi: set this to true or false

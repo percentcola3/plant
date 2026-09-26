@@ -1,0 +1,21 @@
+#__capture-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2147483646;
+  background: rgba(0, 0, 0, 0.12);
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#__capture-selection {
+  position: absolute;
+  border: 2px dashed #1976D2;
+  background: rgba(25, 118, 210, 0.08);
+  display: none;
+  pointer-events: none;
+  border-radius: 2px;
+}
