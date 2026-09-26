@@ -81,7 +81,7 @@ describe('SettingsStore cliKind migration', () => {
 
  it('persists a closed notch and custom Peeka connection across restarts', async () => {
    const store = new SettingsStore()
-   const peekaConnection = { baseUrl: 'http://llm-proxy.example.internal', protocol: 'responses' as const, model: 'gpt-5.6-sol', visionModel: '' }
+   const peekaConnection = { baseUrl: 'http://llm-proxy.example.com', protocol: 'responses' as const, model: 'gpt-5.6-sol', visionModel: '' }
    await store.update({ aiTaskNotchEnabled: false, peekaConnection })
    await expect(new SettingsStore().get()).resolves.toMatchObject({ aiTaskNotchEnabled: false, peekaConnection })
  })

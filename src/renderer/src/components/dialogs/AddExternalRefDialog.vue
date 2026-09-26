@@ -123,7 +123,7 @@ function errorMessageForExternalAdd(code: string, message: string): string {
     return [
       'Git 认证失败。',
       '如果是自建 GitLab HTTPS 地址，请在弹出的凭据窗口输入用户名，并把 Personal Access Token 填到令牌/密码框；普通登录密码通常不可用。',
-      '更推荐改用 SSH 地址，例如 git@git.example.internal:example-team/pm-knowledge.git。',
+      '更推荐改用 SSH 地址，例如 git@gitlab.example.com:team/knowledge.git。',
       '',
       message,
     ].join('\n')

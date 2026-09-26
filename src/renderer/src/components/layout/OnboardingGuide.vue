@@ -31,7 +31,7 @@ const cliSteps: GuideStep[] = [
 ]
 
 const resourceSteps: GuideStep[] = [
-  { title: '先配置 Git SSH', detail: '在设置里生成或复制 App 专用 SSH Key，并添加到 GitLab SSH Keys。' },
+  { title: '先配置 Git SSH', detail: '在设置里生成或复制 App 专用 SSH Key，并添加到 Git 服务的 SSH Keys。' },
   { title: '添加资源包', detail: '资源包页可以添加本地目录、Git 知识库、UI 资产和剪页内容。Git 地址优先使用 SSH URL。' },
   { title: '构建或重建索引', detail: '导入后检查“检索索引”状态；内容有较大变化时点“重新构建”，让 AI 能检索到新内容。' },
 ]

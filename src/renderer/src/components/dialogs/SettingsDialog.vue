@@ -19,7 +19,6 @@ import PATEditDialog from './PATEditDialog.vue'
 const ui = useUiStore()
 const themeStore = useThemeStore()
 const tab = ref<SettingsTab>('appearance')
-const GITLAB_SSH_KEYS_URL = 'https://git.example.internal/profile/keys'
 
 const open = computed({
   get: () => ui.settingsOpen,
@@ -101,7 +100,7 @@ async function rotateSshKey(): Promise<void> {
   }
 
   const confirmed = window.confirm(
-    '将替换本机 App 所有 Git 项目共用的 SSH Key。新公钥重新添加到 GitLab 前，SSH 拉取和推送会失败；旧公钥之后还需从 GitLab 删除。旧私钥会备份到本机，确定轮换吗？',
+    '将替换本机 App 所有 Git 项目共用的 SSH Key。新公钥重新添加到 Git 服务前，SSH 拉取和推送会失败；旧公钥之后还需从 Git 服务删除。旧私钥会备份到本机，确定轮换吗？',
   )
   if (!confirmed) return
 
@@ -116,12 +115,12 @@ async function rotateSshKey(): Promise<void> {
         ui.showToast(
           copied.ok ? 'success' : 'error',
           copied.ok
-            ? 'SSH Key 已轮换并复制，请重新添加到 GitLab'
+            ? 'SSH Key 已轮换并复制，请重新添加到 Git 服务'
             : `SSH Key 已轮换，但复制失败：${copied.message}`,
           6000,
         )
       } else {
-        ui.showToast('success', 'SSH Key 已轮换，请重新添加到 GitLab', 6000)
+        ui.showToast('success', 'SSH Key 已轮换，请重新添加到 Git 服务', 6000)
       }
     } else {
       const errorMessage = `${r.code}: ${r.message}`
@@ -138,11 +137,6 @@ async function copySshPublicKey(): Promise<void> {
   const r = await call('system.copyToClipboard', { text: sshState.value.publicKey })
   if (r.ok) ui.showToast('success', '已复制公钥')
   else ui.showToast('error', `复制失败：${r.message}`, 5000)
-}
-
-async function openGitLabSshKeys(): Promise<void> {
-  const r = await call('system.openExternal', { url: GITLAB_SSH_KEYS_URL })
-  if (!r.ok) ui.showToast('error', `打开 GitLab 失败：${r.message}`, 5000)
 }
 
 type CredEntry = { host: string; username: string | null; hasPassword: boolean }
@@ -639,10 +633,9 @@ function close(): void {
               </div>
               <div class="flex items-center justify-between gap-4 pb-5">
                 <div>
-                  <div class="text-sm font-medium">添加到 GitLab</div>
-                  <p class="mt-1 text-xs text-muted-foreground">打开 SSH Keys 页面并粘贴公钥。</p>
+                  <div class="text-sm font-medium">添加到 Git 服务</div>
+                  <p class="mt-1 text-xs text-muted-foreground">复制公钥，粘贴到 Git 服务的 SSH Keys 设置页。</p>
                 </div>
-                <Button variant="outline" size="sm" @click="openGitLabSshKeys">打开 GitLab</Button>
               </div>
             </li>
             <li class="grid grid-cols-[28px_minmax(0,1fr)] gap-3">

@@ -9,10 +9,10 @@ import { askpassServer, cacheKeyForPrompt } from './askpass-server'
 
 describe('cacheKeyForPrompt', () => {
   it('区分同一 host 的 username 和 password prompt', () => {
-    expect(cacheKeyForPrompt("Username for 'https://git.example.internal': "))
-      .toBe('git.example.internal:username')
-    expect(cacheKeyForPrompt("Password for 'https://user@git.example.internal': "))
-      .toBe('git.example.internal:password')
+    expect(cacheKeyForPrompt("Username for 'https://gitlab.example.com': "))
+      .toBe('gitlab.example.com:username')
+    expect(cacheKeyForPrompt("Password for 'https://user@gitlab.example.com': "))
+      .toBe('gitlab.example.com:password')
   })
 })
 

@@ -45,9 +45,9 @@ describe('git client ssh isolation', () => {
   it('injects the app-managed ssh command when cloning', async () => {
     const { clone } = await loadClient()
 
-    await clone({ url: 'git@git.example.internal:example-team/repo.git', dest: '/tmp/repo' })
+    await clone({ url: 'git@gitlab.example.com:team/repo.git', dest: '/tmp/repo' })
 
-    expect(requireSshKeyForRemoteMock).toHaveBeenCalledWith('git@git.example.internal:example-team/repo.git')
+    expect(requireSshKeyForRemoteMock).toHaveBeenCalledWith('git@gitlab.example.com:team/repo.git')
     expect(envMock).toHaveBeenCalledWith(expect.objectContaining({
       GIT_SSH_COMMAND: 'ssh -F /dev/null -i /app/ssh/id_ed25519'
     }))

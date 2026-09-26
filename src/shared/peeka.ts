@@ -8,7 +8,7 @@ export type PeekaConnection = {
 
 export const PEEKA_PRESETS = {
   official: { baseUrl: 'https://api.deepseek.com', protocol: 'chat-completions', model: 'deepseek-flash', visionModel: 'deepseek-flash' },
-  llm: { baseUrl: 'http://llm-proxy.example.internal', protocol: 'messages', model: 'deepseek-v4-flash', visionModel: 'claude-opus-4-8' }
+  llm: { baseUrl: 'http://llm-proxy.example.com', protocol: 'messages', model: 'deepseek-v4-flash', visionModel: 'claude-opus-4-8' }
 } satisfies Record<string, PeekaConnection>
 
 // 官方 V4.1 Flash 同时支持文本和图片；内网代理的模型 ID 由网关独立维护。

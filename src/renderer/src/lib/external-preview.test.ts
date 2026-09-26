@@ -26,7 +26,7 @@ describe('external preview helpers', () => {
       alias: 'pos',
       kind: 'git',
       category: 'knowledge',
-      source: 'git@git.example.internal:example-team/pm-knowledge.git',
+      source: 'git@gitlab.example.com:team/pm-knowledge.git',
       poolPath: '/Users/me/.ui-client/external-pool/ref-1',
       addedAt: '2026-06-10T00:00:00.000Z'
     } satisfies ExternalRef
@@ -38,7 +38,7 @@ describe('external preview helpers', () => {
       poolPath: '/Users/me/docs'
     } satisfies ExternalRef
 
-    expect(externalRefSourceText(gitRef)).toBe('git@git.example.internal:example-team/pm-knowledge.git')
+    expect(externalRefSourceText(gitRef)).toBe('git@gitlab.example.com:team/pm-knowledge.git')
     expect(externalRefSourceText(localRef)).toBe('/Users/me/docs')
     expect(externalRefSourceText(null)).toBe('')
   })

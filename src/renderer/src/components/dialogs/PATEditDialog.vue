@@ -119,7 +119,7 @@ function cancel(): void {
             ref="hostRef"
             v-model="hostInput"
             type="text"
-            placeholder="github.com / git.example.internal"
+            placeholder="github.com / gitlab.example.com"
             class="font-mono"
             :disabled="isEdit"
             @keydown.enter="submit"

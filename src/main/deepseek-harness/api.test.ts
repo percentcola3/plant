@@ -74,7 +74,7 @@ it.each(['messages', 'responses'] as const)('adapts %s tool calls and images for
   let url: unknown
   let body: any
   const result = await createDeepSeekCompletion({
-    apiKey: 'proxy-key', connection: { baseUrl: 'http://llm-proxy.example.internal', protocol, model: 'deepseek-v4-pro', visionModel: 'gpt-5.6-sol' },
+    apiKey: 'proxy-key', connection: { baseUrl: 'http://llm-proxy.example.com', protocol, model: 'deepseek-v4-pro', visionModel: 'gpt-5.6-sol' },
     messages: [
       { role: 'system', content: 'instructions' },
       { role: 'user', content: [{ type: 'text', text: 'look' }, { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } }] },
@@ -90,7 +90,7 @@ it.each(['messages', 'responses'] as const)('adapts %s tool calls and images for
         : { status: 'completed', output: [{ type: 'function_call', call_id: 'call2', name: 'read_file', arguments: '{"path":"b"}' }] }))
     }
   })
-  expect(url).toBe(`http://llm-proxy.example.internal${protocol === 'messages' ? '/v1/messages' : '/responses'}`)
+  expect(url).toBe(`http://llm-proxy.example.com${protocol === 'messages' ? '/v1/messages' : '/responses'}`)
   expect(body.model).toBe('gpt-5.6-sol')
   expect(body.thinking).toBeUndefined()
   expect(result.tool_calls?.[0].function.arguments).toBe('{"path":"b"}')

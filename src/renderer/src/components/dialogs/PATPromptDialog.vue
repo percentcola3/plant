@@ -38,7 +38,6 @@ function extractHost(prompt: string): string {
 
 const tokenHelpUrl = computed(() => {
   const host = current.value?.host ?? ''
-  if (host.includes('git.example.internal')) return '请在 git.example.internal 生成 Personal Access Token，权限至少包含仓库读取。'
   if (host.includes('github.com')) return '访问 https://github.com/settings/tokens 生成 Personal Access Token。'
   return '请使用该 Git 服务的 Personal Access Token，不要使用登录密码。'
 })
