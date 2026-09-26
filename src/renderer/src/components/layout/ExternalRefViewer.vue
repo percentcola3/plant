@@ -88,8 +88,7 @@ async function loadTree(): Promise<void> {
     kind: 'folder',
     name: root.label ?? root.relDir,
     relPath: root.relDir,
-    children: results[index]?.ok ? results[index].data : [],
-    uiProductPublish: null
+    children: results[index]?.ok ? results[index].data : []
   }))
 }
 

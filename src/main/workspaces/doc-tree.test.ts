@@ -16,33 +16,6 @@ afterEach(async () => {
 })
 
 describe('readFileTree', () => {
-  it('attaches UI product publish metadata from meta.json to product folders', async () => {
-    await fs.mkdir(join(workspacePath, 'outputs/login'), { recursive: true })
-    await fs.writeFile(join(workspacePath, 'outputs/login/index.html'), '<!doctype html>', 'utf-8')
-    await fs.writeFile(join(workspacePath, 'outputs/login/meta.json'), JSON.stringify({
-      publish: {
-        productRelPath: 'outputs/login',
-        publishedAt: '2026-06-11T10:00:00.000Z',
-        url: 'https://cdn.example.com/outputs/login/index.html',
-        prefix: 'demo-tenant/saas/ui/login/20260611-180000',
-        fileCount: 2,
-        bucket: 'demo-bucket',
-        region: 'demo-region'
-      }
-    }), 'utf-8')
-
-    const tree = await readFileTree(workspacePath, 'outputs')
-    const login = tree.find((node) => node.kind === 'folder' && node.name === 'login')
-
-    expect(login).toMatchObject({
-      kind: 'folder',
-      uiProductPublish: {
-        url: 'https://cdn.example.com/outputs/login/index.html',
-        productRelPath: 'outputs/login'
-      }
-    })
-  })
-
   it('attaches UI product card metadata from meta.json to product folders', async () => {
     await fs.mkdir(join(workspacePath, 'outputs/checkout'), { recursive: true })
     await fs.writeFile(join(workspacePath, 'outputs/checkout/index.html'), '<!doctype html>', 'utf-8')
@@ -50,8 +23,8 @@ describe('readFileTree', () => {
       card: {
         title: '移动端支持直接点餐',
         coverTag: 'SAAS',
-        uxName: '张裴',
-        pmName: '张代辉',
+        uxName: '李明',
+        pmName: '王芳',
       },
     }), 'utf-8')
 
@@ -63,8 +36,8 @@ describe('readFileTree', () => {
       uiProductCard: {
         title: '移动端支持直接点餐',
         coverTag: 'SAAS',
-        uxName: '张裴',
-        pmName: '张代辉',
+        uxName: '李明',
+        pmName: '王芳',
       },
     })
   })

@@ -23,7 +23,6 @@ const themeStore = useThemeStore()
 const session = editor.tabSession(props.tabId)
 const isDirty = editor.tabIsDirty(props.tabId)
 const isSaving = editor.tabIsSaving(props.tabId)
-const isPublishing = editor.tabIsPublishing(props.tabId)
 
 const markdownSurfaceRef = ref<InstanceType<typeof CodeMirrorSurface> | null>(null)
 const previewSrcdoc = ref('')
@@ -32,15 +31,6 @@ let renderSeq = 0
 
 const currentMode = computed(() => session.value?.mode ?? 'preview')
 const isReadonly = computed(() => session.value?.readonly === true)
-const publishStatus = computed<{ label: string; tone: string } | null>(() => {
-  if (isPublishing.value) return { label: '发布中', tone: 'loading' }
-  const publish = session.value?.publish
-  if (!publish) return null
-  return publish.isPublished
-    ? { label: '已发布', tone: 'ok' }
-    : { label: '发布后有更新', tone: 'stale' }
-})
-const canOpenPublishedUrl = computed(() => !!session.value?.publish?.url)
 
 async function refreshPreview(): Promise<void> {
   const cur = session.value
@@ -80,9 +70,6 @@ onBeforeUnmount(() => {
 function setMode(mode: 'edit' | 'preview'): void { editor.setModeByKey(props.tabId, mode) }
 function onContentUpdate(content: string): void { editor.updateContentByKey(props.tabId, content) }
 function onSave(): void { void editor.saveByKey(props.tabId) }
-function onPublish(): void { void editor.publishByKey(props.tabId) }
-function onCopyUrl(): void { void editor.copyPublishUrlByKey(props.tabId) }
-function onOpenUrl(): void { void editor.openPublishUrlByKey(props.tabId) }
 function onReload(): void { void editor.reloadByKey(props.tabId) }
 async function handleImage(files: File[]): Promise<string | null> {
   return await editor.saveImageAssetByKey(props.tabId, files)
@@ -107,23 +94,11 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
             <span class="text-[14px] font-semibold truncate">{{ session.title }}</span>
             <span v-if="isReadonly" class="md-tab-pane__pill md-tab-pane__pill--readonly">只读</span>
             <span v-if="isDirty && !isReadonly" class="md-tab-pane__pill md-tab-pane__pill--dirty">未保存</span>
-            <span
-              v-if="publishStatus"
-              class="md-tab-pane__pill"
-              :class="`md-tab-pane__pill--${publishStatus.tone}`"
-            >{{ publishStatus.label }}</span>
           </div>
           <div class="text-xs text-muted-foreground/70 font-mono truncate">{{ session.relPath }}</div>
         </div>
 
         <div class="flex items-center gap-1.5">
-          <template v-if="!isReadonly">
-            <Button variant="outline" size="sm" class="text-xxs" :disabled="isSaving || isPublishing" @click="onPublish">
-              {{ isPublishing ? '发布中…' : '发布' }}
-            </Button>
-            <Button variant="outline" size="sm" class="text-xxs" :disabled="!canOpenPublishedUrl" @click="onCopyUrl">复制链接</Button>
-            <Button variant="outline" size="sm" class="text-xxs" :disabled="!canOpenPublishedUrl" @click="onOpenUrl">打开链接</Button>
-          </template>
           <Button variant="outline" size="sm" class="text-xxs" @click="ui.openBranchHistory({ workspaceId: props.workspaceId, relPath: props.relPath, initialView: 'pushes' })">变更记录</Button>
           <Button variant="outline" size="sm" class="text-xxs" :disabled="isSaving" @click="onReload">重载</Button>
           <Button

@@ -32,8 +32,8 @@ describe('ConversationView message hierarchy', () => {
 
   it('uses the configured engine identity for assistant message cards', () => {
     expect(source).toContain("if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }")
-    expect(source).toContain("if (settings.cliKind === 'claude') return { name: 'Claude', avatar: 'C' }")
-    expect(source).toContain("return { name: 'DCC', avatar: 'D' }")
+    expect(source).toContain("if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }")
+    expect(source).toContain("return { name: 'Claude', avatar: 'C' }")
     expect(source).toContain('{{ assistantIdentity.name }}')
     expect(source).toContain('{{ assistantIdentity.avatar }}')
   })

@@ -19,7 +19,6 @@ function file(relPath: string, modifiedAt = '2026-07-03T00:00:00.000Z'): DocTree
     relPath,
     size: 1,
     modifiedAt,
-    publish: null
   }
 }
 
@@ -29,7 +28,6 @@ function folder(relPath: string, children: DocTreeNode[]): DocTreeNode {
     name: relPath.split('/').pop() ?? relPath,
     relPath,
     children,
-    uiProductPublish: null
   }
 }
 

@@ -19,7 +19,7 @@ const editor = useEditorStore()
 const ui = useUiStore()
 const themeStore = useThemeStore()
 const workspaces = useWorkspacesStore()
-const { session, sessions, activeSessionKey, isDirty, isLoading, isSaving, isPublishing, error } = storeToRefs(editor)
+const { session, sessions, activeSessionKey, isDirty, isLoading, isSaving, error } = storeToRefs(editor)
 
 const previewSrcdoc = ref('')
 const isRenderingPreview = ref(false)
@@ -35,15 +35,6 @@ const language = computed<Extension>(() => {
   return []
 })
 const extraExtensions = computed(() => session.value?.kind === 'css' ? [cssColorSwatches()] : [])
-const publishStatus = computed<{ label: string; tone: string } | null>(() => {
-  if (isPublishing.value) return { label: '发布中', tone: 'loading' }
-  const publish = session.value?.publish
-  if (!publish) return null
-  return publish.isPublished
-    ? { label: '已发布', tone: 'ok' }
-    : { label: '发布后有更新', tone: 'stale' }
-})
-const canOpenPublishedUrl = computed(() => !!session.value?.publish?.url)
 const skillFolderRoot = computed(() => {
   const relPath = session.value?.relPath ?? ''
   const match = /^(\.(?:claude|agents)\/skills\/(?:\.disabled\/)?[^/]+)(?:\/|$)/.exec(relPath)
@@ -126,17 +117,8 @@ async function insertMarkdownShortcut(id: MarkdownShortcutId): Promise<void> {
   markdownSurfaceRef.value?.insertMarkdownShortcut(id)
 }
 
-async function publishDocument(): Promise<void> {
-  await editor.publishCurrentDocument()
-}
 
-async function copyPublishedUrl(): Promise<void> {
-  await editor.copyPublishUrl()
-}
 
-async function openPublishedUrl(): Promise<void> {
-  await editor.openPublishUrl()
-}
 </script>
 
 <template>
@@ -183,40 +165,11 @@ async function openPublishedUrl(): Promise<void> {
             v-if="isDirty && !isReadonly"
             class="rounded-full bg-amber-100 px-2 py-0.5 text-xxs text-amber-700"
           >未保存</span>
-          <span
-            v-if="publishStatus"
-            class="rounded-full px-2 py-0.5 text-xxs"
-            :class="publishStatus.tone === 'ok'
-              ? 'bg-emerald-50 text-emerald-700'
-              : publishStatus.tone === 'loading'
-                ? 'bg-sky-50 text-sky-700'
-                : 'bg-orange-50 text-orange-700'"
-          >{{ publishStatus.label }}</span>
         </div>
           <div class="workspace-editor__path">{{ session.relPath }}</div>
         </div>
 
         <div class="flex items-center gap-2">
-          <template v-if="isMarkdown && !isReadonly && !skillFolderRoot">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="isLoading || isSaving || isPublishing"
-              @click="publishDocument"
-            >{{ isPublishing ? '发布中…' : '发布' }}</Button>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="!canOpenPublishedUrl"
-              @click="copyPublishedUrl"
-            >复制链接</Button>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="!canOpenPublishedUrl"
-              @click="openPublishedUrl"
-            >打开链接</Button>
-          </template>
           <Button variant="outline" size="sm" :disabled="isLoading || isSaving" @click="editor.reload">重载</Button>
           <Button v-if="!isReadonly" size="sm" :disabled="isSaving || !isDirty" @click="editor.save">
             {{ isSaving ? '保存中…' : '保存' }}

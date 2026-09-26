@@ -205,7 +205,7 @@ async function clearAllCreds(): Promise<void> {
 
 type AiEngine = CliKind | 'deepseek-harness'
 
-// AI 面板引擎：DCC / Claude Code / 内置 DeepSeek Harness。
+// AI 面板引擎：Claude Code / 内置 DeepSeek Harness。
 // 切换本机命令时会清空 capability cache，下一次开 AI 面板时重探新二进制。
 const cliKind = ref<CliKind>(DEFAULT_CLI_KIND)
 const aiEngine = ref<AiEngine>(DEFAULT_CLI_KIND)
@@ -257,7 +257,6 @@ function applyAiSettings(settings: { cliKind: CliKind; aiProvider: AiProvider; d
 }
 
 function aiEngineLabel(value: AiEngine): string {
-  if (value === 'dcc') return 'DCC'
   if (value === 'claude') return 'Claude Code'
   return '内置 DeepSeek Harness'
 }
@@ -669,25 +668,6 @@ function close(): void {
           <div class="flex flex-col gap-2">
             <label
               class="flex items-start gap-3 p-3 border border-border/60 rounded-md cursor-pointer hover:bg-muted/40 transition-colors"
-              :class="aiEngine === 'dcc' ? 'border-foreground/40 bg-muted/30' : ''"
-            >
-              <input
-                type="radio"
-                name="ai-engine"
-                value="dcc"
-                :disabled="aiSaving"
-                :checked="aiEngine === 'dcc'"
-                class="mt-1"
-                @change="chooseAiEngine('dcc')"
-              />
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium">DCC</div>
-                <div class="text-xs text-muted-foreground/70 mt-1">默认。使用内部封装命令：<code class="font-mono">dcc -- --resume &lt;uuid&gt;</code>。</div>
-              </div>
-            </label>
-
-            <label
-              class="flex items-start gap-3 p-3 border border-border/60 rounded-md cursor-pointer hover:bg-muted/40 transition-colors"
               :class="aiEngine === 'claude' ? 'border-foreground/40 bg-muted/30' : ''"
             >
               <input
@@ -701,7 +681,7 @@ function close(): void {
               />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium">Claude Code</div>
-                <div class="text-xs text-muted-foreground/70 mt-1">直接使用本机安装的 Claude Code，以 headless 方式执行。</div>
+                <div class="text-xs text-muted-foreground/70 mt-1">默认。直接使用本机安装的 Claude Code，以 headless 方式执行。</div>
               </div>
             </label>
 

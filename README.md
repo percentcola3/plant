@@ -22,8 +22,6 @@ npm run typecheck    # 类型检查
 npm run pack:dir     # 本地打包（不签名）
 ```
 
-S3 发布能力为可选：需通过 `UI_CLIENT_S3_*` 环境变量提供集群地址与凭证，未配置时其余功能不受影响。
-
 ## License
 
 MIT

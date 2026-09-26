@@ -63,7 +63,7 @@ export type ContentBlock =
 // 注：UI 业务约束（方法论 / token / 组件）已交还用户，事实源在用户的 CLAUDE.md
 // （Claude Code 启动即读，经 feature 目录符号链接生效）/ AGENTS.md（Codex/Cursor）。
 // App 仅保留一条「运行时绑定」基线——.external/ 资源复制约束（按挂载状态条件注入，
-// 连着 publish.ts 硬拦截），见下方 resourceLines。文案单一事实源见 @shared/ai-rule-text。
+//），见下方 resourceLines。文案单一事实源见 @shared/ai-rule-text。
 
 export function composeUserMessage(input: ComposeInput): ContentBlock[] {
   if (input.toolResult) {
@@ -94,7 +94,7 @@ function renderTextBlock(input: ComposeInput): string {
   const editableAreaLines = renderEditableAreaLines(input.editableArea)
   const targetLines = renderTargetDocumentLines(input.targetDocument)
   const workspaceLines = renderTargetWorkspaceLines(input.targetWorkspace)
-  // App 运行时基线：挂了 .external/ 资料才注入「资源复制」约束（连着 publish 硬拦截）。
+  // App 运行时基线：挂了 .external/ 资料才注入「资源复制」约束。
   const resourceLines = (input.externalRefs ?? []).length > 0 ? renderExternalResourceLines() : []
   const resourceInstructionLines = renderResourceInstructionLines(input.externalRefs)
   const knowledgeLines = renderExternalRefsLines(input.externalRefs)

@@ -52,7 +52,6 @@ export async function probeClaudeCapabilities(): Promise<ClaudeCapabilities> {
     return cached
   }
 
-  // dcc 时所有探测参数也得透传：dcc -- -p --help / dcc -- auth status / dcc -- --version
   const wrap = cli.wrapArgs
 
   // help + auth 并行（version 串行在后面，因为不重要且可能慢）
@@ -109,7 +108,7 @@ function classifyAuthStatus(text: string): ClaudeAuthStatus {
   return 'unknown'
 }
 
-// 清空缓存。生产路径：用户在设置里切了 cliKind（claude ↔ dcc），需要重探一次新二进制的能力。
+// 清空缓存。生产路径：CLI 二进制变化后需要重探一次能力。
 export function resetClaudeCapabilitiesCache(): void {
   cached = null
 }

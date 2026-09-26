@@ -16,8 +16,7 @@
 
 import { promises as fs } from 'node:fs'
 import { join, relative } from 'node:path'
-import type { FeatureCard, FeatureUiArtifact, FeaturePublishRecord } from '@shared/types'
-import { gitFor } from '../git/client'
+import type { FeatureCard, FeatureUiArtifact } from '@shared/types'
 
 const FEATURES_DIR = 'features'
 const PRD_FILE_CANDIDATES = ['doc/prd.md', 'prd.md', 'README.md', 'readme.md'] as const
@@ -132,44 +131,6 @@ async function looksLikeFeature(
   return false
 }
 
-async function readPublishRecord(workspacePath: string, featureRelPath: string): Promise<FeaturePublishRecord | null> {
-  const p = join(workspacePath, featureRelPath, '.publish.json')
-  try {
-    const raw = await fs.readFile(p, 'utf-8')
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    if (typeof parsed !== 'object' || !parsed) return null
-    if (typeof parsed.url !== 'string' || typeof parsed.publishedAt !== 'string') return null
-    return parsed as unknown as FeaturePublishRecord
-  } catch {
-    return null
-  }
-}
-
-function isFeaturePublishMetaPath(path: string, featureRelPath: string): boolean {
-  return path.replace(/\\/g, '/') === `${featureRelPath}/.publish.json`
-}
-
-async function readPublishStale(
-  workspacePath: string,
-  featureRelPath: string,
-  publish: FeaturePublishRecord | null
-): Promise<boolean> {
-  const publishedHead = publish?.headSha?.trim()
-  if (!publishedHead) return false
-  const sg = gitFor(workspacePath)
-  const currentHead = await sg.revparse(['HEAD']).then((s) => s.trim()).catch(() => '')
-  if (!currentHead || currentHead === publishedHead) return false
-
-  const changed = await sg
-    .raw(['diff', '--name-only', `${publishedHead}..HEAD`, '--', featureRelPath])
-    .catch(() => '')
-  return changed
-    .split(/\r?\n/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .some((p) => !isFeaturePublishMetaPath(p, featureRelPath))
-}
-
 async function buildFeatureCard(
   workspacePath: string,
   featureRelPath: string,
@@ -177,14 +138,12 @@ async function buildFeatureCard(
 ): Promise<FeatureCard> {
   const name = featureRelPath.split('/').pop() ?? featureRelPath
   const featureAbs = join(workspacePath, featureRelPath)
-  const [prdRelPath, uiArtifacts, modifiedAt, publish] = await Promise.all([
+  const [prdRelPath, uiArtifacts, modifiedAt] = await Promise.all([
     findPrdFile(workspacePath, featureRelPath),
     collectUiArtifacts(workspacePath, featureRelPath),
     readModifiedAtRecursive(featureAbs),
-    readPublishRecord(workspacePath, featureRelPath),
   ])
-  const publishStale = await readPublishStale(workspacePath, featureRelPath, publish)
-  return { name, relPath: featureRelPath, group, prdRelPath, uiArtifacts, modifiedAt, publish, publishStale }
+  return { name, relPath: featureRelPath, group, prdRelPath, uiArtifacts, modifiedAt }
 }
 
 // 主入口：扫描 <workspace>/features/ 返回所有 feature card。

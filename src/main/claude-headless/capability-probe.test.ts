@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 // mock cli-resolver：绕开 settings store → electron 的导入链（测试环境无 electron），
-// 并固定 bin 路径与 wrapArgs（claude 直连，不加 dcc 的 '--'）
+// 并固定 bin 路径与 wrapArgs
 vi.mock('../system/cli-resolver', () => ({
   resolveCli: async () => ({ kind: 'claude', bin: '/usr/local/bin/claude', found: true, wrapArgs: (a: string[]) => a }),
   resolveCliSync: () => ({ kind: 'claude', bin: '/usr/local/bin/claude', found: true, wrapArgs: (a: string[]) => a })

@@ -18,7 +18,7 @@ const toolUse = (id: string) => ({ type: 'tool_use' as const, toolUseId: id, nam
 
 describe('findConclusionUuids', () => {
   it('marks only the last text-bearing assistant message of a group as conclusion', () => {
-    // 真实 dcc 链路形态：思考以普通 text 到达，thinking block 为空（已被 normalizer 过滤）
+    // 链路形态：思考以普通 text 到达，thinking block 为空（已被 normalizer 过滤）
     const narration1 = msg('assistant', [text("I'll start by understanding the project context.")])
     const tool1 = msg('assistant', [toolUse('t1')])
     const narration2 = msg('assistant', [text('Let me check the UI asset library refs.')])

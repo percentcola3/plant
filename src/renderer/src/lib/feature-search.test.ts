@@ -9,7 +9,6 @@ const sampleCard: FeatureCard = {
   prdRelPath: 'features/POS/0725-pdv-coupon/prd.md',
   uiArtifacts: [{ name: '首页', htmlRelPath: 'features/POS/0725-pdv-coupon/ui/index.html' }],
   modifiedAt: null,
-  publish: null,
 }
 
 const displayDocPath = () => 'prd.md'

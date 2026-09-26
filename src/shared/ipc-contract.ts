@@ -22,7 +22,6 @@ import type {
   GitStatus,
   FeatureCard,
   FeatureResourceSelection,
-  FeaturePublishRecord,
   PersonalSpace,
   PersonalSpaceList,
   RepairContext,
@@ -33,8 +32,6 @@ import type {
   WorkspaceScanResult,
   WorkspaceSearchTrace,
   WorkspaceTextSearchResultItem,
-  DocPublishStatus,
-  UiProductPublishRecord,
   UiProductCardMeta,
   SourceProjectInfo,
   UikitAssetSummary
@@ -68,11 +65,11 @@ export interface IpcContract {
   // ──── App 全局设置 ────
   'settings.get': {
     input: void
-    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude' | 'dcc'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
+    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
   }
   'settings.update': {
-    input: { workspaceRoot?: string; pmDocsDir?: string; preferredTool?: string; cliKind?: 'claude' | 'dcc'; aiProvider?: 'claude-code' | 'deepseek-harness'; deepseekApiKey?: string | null; peekaConnection?: PeekaConnection; aiTaskNotchEnabled?: boolean; defaultExternalRefIds?: string[]; theme?: 'dark' | 'light' }
-    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude' | 'dcc'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
+    input: { workspaceRoot?: string; pmDocsDir?: string; preferredTool?: string; cliKind?: 'claude'; aiProvider?: 'claude-code' | 'deepseek-harness'; deepseekApiKey?: string | null; peekaConnection?: PeekaConnection; aiTaskNotchEnabled?: boolean; defaultExternalRefIds?: string[]; theme?: 'dark' | 'light' }
+    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
   }
 
   // ──── 本地诊断日志 ────
@@ -101,7 +98,7 @@ export interface IpcContract {
   // 编辑器（按工作区路径读写文本与资产）
   'editor.readTextFile': {
     input: { workspaceId: string; relPath: string; scope?: 'docs' | 'project' }
-    output: { relPath: string; content: string; mtime: string; publish?: DocPublishStatus | null }
+    output: { relPath: string; content: string; mtime: string }
   }
   'editor.entryExists': {
     input: { workspaceId: string; relPath: string; scope?: 'docs' | 'project' }
@@ -154,14 +151,6 @@ export interface IpcContract {
       originalName?: string
     }
     output: { relPath: string }
-  }
-  'editor.publishMarkdown': {
-    input: { workspaceId: string; relPath: string }
-    output: DocPublishStatus
-  }
-  'uiProduct.publish': {
-    input: { workspaceId: string; productRelPath: string }
-    output: UiProductPublishRecord
   }
   // 新建或打开 UX/PM 产物时，把工作区根的 agent 配置复制进产物子目录，
   // 让产物在不同 IDE / cwd 下打开都能本地拿到 skill / AGENTS / CLAUDE 配置。
@@ -255,11 +244,6 @@ export interface IpcContract {
   'feature.copyToSpace': {
     input: { workspaceId: string; relPath: string; targetSlug: string; targetWorkspaceId?: string; targetName?: string }
     output: { relPath: string; targetSlug: string; targetBranch: string; targetWorkspaceId: string }
-  }
-  // 把 feature 的 PRD + UI 产物合并发布到 S3 一个 prefix，index.html 是 tab 导航
-  'feature.publish': {
-    input: { workspaceId: string; featureRelPath: string }
-    output: FeaturePublishRecord
   }
 
   // ──── 系统集成 ────
@@ -886,8 +870,6 @@ export const IPC_CHANNELS = [
   'editor.createEntry',
   'editor.saveAsset',
   'editor.saveBinaryFile',
-  'editor.publishMarkdown',
-  'uiProduct.publish',
   'uiProduct.seedAgentFiles',
   'uiProduct.import',
   'uiProduct.copyToSpace',
@@ -907,7 +889,6 @@ export const IPC_CHANNELS = [
   'feature.rename',
   'feature.move',
   'feature.copyToSpace',
-  'feature.publish',
   'system.openInBrowser',
   'system.revealInFinder',
   'system.openExternal',
@@ -1052,8 +1033,6 @@ export const EVENT_PREFIXES = [
   'sync.progress:',
   'team-push.progress:',
   'conflict.aiResolve.done:',
-  'ui-product.publish-progress:',
-  'feature.publish-progress:',
   'saga.fs-change-pushed:',
   'git.remote-updated:',
   'raw.captured'

@@ -7,7 +7,7 @@ import { resolveCli } from './cli-resolver'
 
 const execFileAsync = promisify(execFile)
 
-export const CLAUDE_CODE_GUIDE_URL = 'https://docs.example.com/setup/cli'
+export const CLAUDE_CODE_GUIDE_URL = 'https://code.claude.com/docs/en/overview'
 
 // 启动检查：极简策略——只查 git binary 是否存在 + git user 是否配。
 // node / npm 是 Electron 自带，不需要检测；claude-code / cursor / vscode 改成 lazy + 后台。
@@ -91,8 +91,7 @@ async function getVersion(cmd: string, args: string[] = ['--version']): Promise<
   }
 }
 
-// 当前选中的 CLI 检测（claude 或 dcc）：打开 AI 面板时调，没装就 toast + guideUrl。
-// dcc 时探测命令也得透传：dcc -- --version。
+// 当前选中的 CLI 检测（claude）：打开 AI 面板时调，没装就 toast + guideUrl。
 export async function checkClaude(): Promise<OptionalDepStatus> {
   const cli = await resolveCli()
   if (!cli.found) {

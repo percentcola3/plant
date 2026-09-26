@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const findCommandSyncMock = vi.hoisted(() => vi.fn())
 const settingsState = vi.hoisted(() => ({
-  cached: null as { cliKind: 'claude' | 'dcc' } | null
+  cached: null as { cliKind: 'claude' } | null
 }))
 
 vi.mock('./find-command', () => ({
@@ -26,14 +26,14 @@ beforeEach(() => {
 })
 
 describe('resolveCliSync', () => {
-  it('defaults to DCC before settings are loaded', () => {
-    findCommandSyncMock.mockReturnValue('/usr/local/bin/dcc')
+  it('defaults to claude before settings are loaded', () => {
+    findCommandSyncMock.mockReturnValue('/usr/local/bin/claude')
 
     const cli = resolveCliSync()
 
-    expect(findCommandSyncMock).toHaveBeenCalledWith('dcc')
-    expect(cli).toMatchObject({ kind: 'dcc', bin: '/usr/local/bin/dcc', found: true })
-    expect(cli.wrapArgs(['--resume', 'session-id'])).toEqual(['--', '--resume', 'session-id'])
+    expect(findCommandSyncMock).toHaveBeenCalledWith('claude')
+    expect(cli).toMatchObject({ kind: 'claude', bin: '/usr/local/bin/claude', found: true })
+    expect(cli.wrapArgs(['--resume', 'session-id'])).toEqual(['--resume', 'session-id'])
   })
 
   it('keeps an explicit Claude selection', () => {

@@ -160,7 +160,6 @@ function spawnTurnInternal(input: TurnInput): TurnHandle {
     // 老版本 claude 无 --mcp-config 时由 caps.mcpConfig 门控跳过。
     ...(input.mcpConfigPath && caps.mcpConfig ? ['--mcp-config', input.mcpConfigPath] : [])
   ]
-  // dcc 时所有参数前面追加 '--' 透传给底层 claude；claude 时不动
   const cli = resolveCliSync()
   const args = cli.wrapArgs(claudeArgs)
 

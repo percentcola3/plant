@@ -30,8 +30,8 @@ describe('thinking block presentation', () => {
     )
   })
 
-  it('renders dcc narration text blocks through the collapsed ThinkingBlock', () => {
-    // dcc 链路思考以普通 text 到达：processText 时走折叠块而不是正文 markdown
+  it('renders narration text blocks through the collapsed ThinkingBlock', () => {
+    // 部分链路思考以普通 text 到达：processText 时走折叠块而不是正文 markdown
     expect(messageContentSource).toContain('processText?: boolean')
     expect(messageContentSource).toContain(
       `<ThinkingBlock

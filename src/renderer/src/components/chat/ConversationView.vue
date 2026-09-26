@@ -32,7 +32,7 @@ type TargetDocument = {
 }
 type TargetWorkspace = { kind: 'workspace-home'; scopeKey?: string; intent?: 'design-prd' }
 type AiPanelSettings = { cliKind?: CliKind; aiProvider?: AiProvider }
-type AssistantIdentity = { name: 'DCC' | 'Claude' | 'Peeka'; avatar: 'D' | 'C' | 'P' }
+type AssistantIdentity = { name: 'Claude' | 'Peeka'; avatar: 'C' | 'P' }
 
 const props = withDefaults(defineProps<{
   claudeStatus?: ClaudeStatus
@@ -64,12 +64,11 @@ const composerRef = ref<InstanceType<typeof ChatComposer>>()
 const shouldStickToBottom = ref(true)
 const diagnosticsExporting = ref(false)
 const SCROLL_BOTTOM_THRESHOLD = 96
-const assistantIdentity = ref<AssistantIdentity>({ name: 'DCC', avatar: 'D' })
+const assistantIdentity = ref<AssistantIdentity>({ name: 'Claude', avatar: 'C' })
 
 function assistantIdentityFromSettings(settings: AiPanelSettings): AssistantIdentity {
   if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }
-  if (settings.cliKind === 'claude') return { name: 'Claude', avatar: 'C' }
-  return { name: 'DCC', avatar: 'D' }
+  return { name: 'Claude', avatar: 'C' }
 }
 
 async function loadAssistantIdentity(): Promise<void> {
@@ -142,7 +141,7 @@ const messageGroups = computed<MessageGroup[]>(() => {
 })
 const sessionId = computed(() => conversationStore.activeSessionId)
 
-// dcc 链路下模型推理常以普通 text block 输出（thinking block 反而是空的）。
+// 部分链路下模型推理常以普通 text block 输出（thinking block 反而是空的）。
 // 规则：每个 assistant 组内最后一条带非空 text 的消息是「结论」，正常渲染；
 // 其余消息里的 text 都是过程旁白，按折叠块展示，任务结束后只突出最终结论。
 const conclusionUuids = computed(() => findConclusionUuids(messageGroups.value))
@@ -151,7 +150,7 @@ function isProcessNarration(message: AgentMessage): boolean {
   return message.role === 'assistant' && !conclusionUuids.value.has(message.uuid)
 }
 
-// dcc 流式 assistant 会拆出多条 message，其中大部分内容都被 ProcessTimeline 收纳。
+// 流式 assistant 会拆出多条 message，其中大部分内容都被 ProcessTimeline 收纳。
 // 判断这条 assistant 消息在 msg-segment 里是否有可渲染内容——纯过程旁白 + 无工具
 // 交互卡 = 空壳。suppress-process=true / hide-tool-calls=true 会让 MessageContent
 // 内所有 block 都跳过；对应 msg-loading（要求 !isProcessNarration）也被跳过，剩下就是

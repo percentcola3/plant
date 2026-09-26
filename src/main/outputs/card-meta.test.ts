@@ -22,8 +22,8 @@ describe('updateUiProductCardMeta', () => {
     await updateUiProductCardMeta(workspacePath, productRelPath, {
       title: '移动端支持直接点餐',
       coverTag: 'SAAS',
-      uxName: '张裴',
-      pmName: '张代辉',
+      uxName: '李明',
+      pmName: '王芳',
     })
 
     const raw = JSON.parse(await readFile(join(workspacePath, productRelPath, 'meta.json'), 'utf-8')) as {
@@ -32,8 +32,8 @@ describe('updateUiProductCardMeta', () => {
     expect(raw.card).toEqual({
       title: '移动端支持直接点餐',
       coverTag: 'SAAS',
-      uxName: '张裴',
-      pmName: '张代辉',
+      uxName: '李明',
+      pmName: '王芳',
     })
 
     const tree = await readFileTree(workspacePath, 'outputs')

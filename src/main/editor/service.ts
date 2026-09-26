@@ -264,9 +264,7 @@ export async function copyEditorEntry(
   return { relPath: targetRelPath }
 }
 
-// 移动/重命名：复制到目标（同 copy 的路径安全校验），删源，再重写产物 meta 里的
-// publish.productRelPath（doc-tree 用 productRelPath===relDir 校验角标归属，不改会丢角标）。
-// meta 不存在/损坏时静默跳过（重命名非产物目录也能用本函数）。
+// 移动/重命名：复制到目标（同 copy 的路径安全校验），删源。
 export async function moveEditorEntry(
   projectPath: string,
   rootRelOrAbs: string,
@@ -277,43 +275,9 @@ export async function moveEditorEntry(
   // 删源
   const sourceAbs = resolveEditablePath(projectPath, rootRelOrAbs, sourceRelPath, 'PATH_OUTSIDE_SCOPE')
   await fs.rm(sourceAbs, { recursive: true, force: true })
-  // 重写目标产物 meta 的发布路径（若有）
-  const targetAbs = resolveEditablePath(projectPath, rootRelOrAbs, targetRelPath, 'PATH_OUTSIDE_SCOPE')
-  await rewritePublishProductRelPath(targetAbs, targetRelPath).catch(() => {
-    // meta 缺失/损坏不影响移动本身
-  })
   return result
 }
 
-// 产物目录移动后，meta.json 里的 publish / publishHistory[].productRelPath 仍是旧路径，
-// doc-tree.ts 的 readUiProductPublish 会因 productRelPath !== relDir 丢弃角标。这里改写为新路径。
-async function rewritePublishProductRelPath(productAbs: string, newProductRelPath: string): Promise<void> {
-  const metaPath = join(productAbs, 'meta.json')
-  let meta: { publish?: { productRelPath?: string } & Record<string, unknown>; publishHistory?: Array<{ productRelPath?: string } & Record<string, unknown>>; [k: string]: unknown }
-  try {
-    const parsed = JSON.parse(await fs.readFile(metaPath, 'utf-8')) as unknown
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return
-    meta = parsed as typeof meta
-  } catch {
-    return // meta 不存在或非法 → 非产物目录，跳过
-  }
-  let changed = false
-  if (meta.publish && meta.publish.productRelPath !== newProductRelPath) {
-    meta.publish.productRelPath = newProductRelPath
-    changed = true
-  }
-  if (Array.isArray(meta.publishHistory)) {
-    for (const rec of meta.publishHistory) {
-      if (rec && rec.productRelPath !== newProductRelPath) {
-        rec.productRelPath = newProductRelPath
-        changed = true
-      }
-    }
-  }
-  if (changed) {
-    await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8')
-  }
-}
 
 // 新建空目录（分组）。已存在则抛 FILE_EXISTS。recursive 建中间层。
 export async function createEditorEntry(

@@ -1,7 +1,7 @@
 // AI 约束文案。明确两类边界：
 //
 // 1) App 运行时基线（EXTERNAL_RESOURCE_RULE）：跟 App 运行时强绑定——.external/ 是
-//    App 的只读挂载概念，且 publish.ts 已硬拦截指向它的引用。是否触发取决于运行时
+//    App 的只读挂载概念。是否触发取决于运行时
 //    挂载状态，用户没法静态写。→ 由 App 自动注入（in-app Claude 走 compose-prompt，
 //    按 externalRefs 是否存在条件注入），用户永远不碰。
 //
@@ -12,7 +12,7 @@
 
 // ── App 运行时基线（App 注入，用户不写） ──
 export const EXTERNAL_RESOURCE_RULE =
-  '复用资产库/知识库里的资源（图片/字体/样式/组件等）时，一律复制一份到当前产物目录（如 assets/），引用指向项目内相对路径。禁止产物里出现指向 .external/ 的 src/href/url()/@import——.external/ 是只读且 gitignore，不随项目发布，引用它会导致产物无法独立运行/发布（发布时会被硬拦截）。'
+  '复用资产库/知识库里的资源（图片/字体/样式/组件等）时，一律复制一份到当前产物目录（如 assets/），引用指向项目内相对路径。禁止产物里出现指向 .external/ 的 src/href/url()/@import——.external/ 是只读且 gitignore，不随项目发布，引用它会导致产物无法独立运行。'
 
 // compose-prompt 用：externalRefs 非空时注入的段落（含段头）。
 export function renderExternalResourceLines(): string[] {

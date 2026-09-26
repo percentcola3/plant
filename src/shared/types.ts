@@ -320,36 +320,6 @@ export type SkillInstallResult = {
   skipped: string[]
 }
 
-export type DocPublishRecord = {
-  relPath: string
-  contentHash: string
-  publishedAt: string
-  url: string
-  prefix: string
-  fileCount: number
-  imageCount: number
-  assetCount: number
-  bucket: string
-  region: string
-}
-
-export type DocPublishStatus = DocPublishRecord & {
-  isPublished: boolean
-}
-
-export type UiProductPublishRecord = {
-  productRelPath: string
-  publishedAt: string
-  url: string
-  prefix: string
-  fileCount: number
-  bucket: string
-  region: string
-  // 发布时工作区的 HEAD commit SHA，用于「可更新」检测：与当前 HEAD 不同则有新改动。
-  // 旧记录无此字段，降级为「已发布」（不显示可更新）。
-  headSha?: string
-}
-
 /** UX outputs 项目卡片封面展示信息，存于 outputs/<project>/meta.json 的 card 字段。 */
 export type UiProductCardMeta = {
   /** 封面与列表展示用标题，可与目录名不同。 */
@@ -394,15 +364,6 @@ export type SourceProjectLaunchInfo = {
   message?: string
 }
 
-export type UiProductPublishProgressEvent = {
-  workspaceId: string
-  productRelPath: string
-  phase: 'preparing' | 'comparing' | 'zipping' | 'uploading' | 'acl' | 'finalizing' | 'completed'
-  uploaded: number
-  total: number
-  currentFile?: string
-}
-
 // =====================================================================
 // === Features（PM 项目 2026-06-24 重构后取代 requirements 模型） ===
 // =====================================================================
@@ -439,38 +400,12 @@ export type FeatureCard = {
   uiArtifacts: FeatureUiArtifact[]
   /** 整个 feature 目录的最近修改时间（取下层任意文件最大值） */
   modifiedAt: string | null
-  /** 发布记录（Phase C 落地，本 Phase 先占位） */
-  publish: FeaturePublishRecord | null
-  /** 发布后是否有需要重新发布的业务内容变更；忽略 .publish.json 自身的元数据提交 */
-  publishStale: boolean
 }
 
 export type FeatureResourceSelection = {
   version: 1
   externalRefIds: string[]
   updatedAt: string
-}
-
-export type FeaturePublishRecord = {
-  featureRelPath: string
-  publishedAt: string
-  url: string
-  prefix: string
-  fileCount: number
-  prdFileCount: number       // 文档子页数
-  uiArtifactCount: number    // UI 子页数
-  bucket: string
-  region: string
-  headSha?: string           // 发布时 HEAD，用于「可更新」检测
-}
-
-export type FeaturePublishProgressEvent = {
-  workspaceId: string
-  featureRelPath: string
-  phase: 'preparing' | 'rendering-md' | 'collecting-ui' | 'zipping' | 'uploading' | 'finalizing' | 'completed'
-  uploaded: number
-  total: number
-  currentFile?: string
 }
 
 // =====================================================================
@@ -484,14 +419,12 @@ export type DocTreeNode =
       relPath: string
       size: number
       modifiedAt: string
-      publish?: DocPublishStatus | null
     }
   | {
       kind: 'folder'
       name: string
       relPath: string
       children: DocTreeNode[]
-      uiProductPublish?: UiProductPublishRecord | null
       uiProductCard?: UiProductCardMeta | null
     }
 

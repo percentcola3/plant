@@ -10,7 +10,7 @@ import { deepSeekCredentialStore } from '../../deepseek-harness/credentials'
 import { isAiProvider } from '../../../shared/ai-provider'
 
 const VALID_TOOLS = new Set<string>(['finder', 'terminal', 'codex', 'cursor', 'code'])
-const VALID_CLI_KINDS = new Set<string>(['claude', 'dcc'])
+const VALID_CLI_KINDS = new Set<string>(['claude'])
 
 export function registerSettingsHandlers(): void {
   registerIpcHandler('settings.get', async () => settingsView(await settingsStore.get()))
@@ -38,7 +38,7 @@ export function registerSettingsHandlers(): void {
         keyConfigured = false
         if (current.aiProvider === 'deepseek-harness' && aiProvider === undefined) {
           patch.aiProvider = 'claude-code'
-          patch.cliKind = 'dcc'
+          patch.cliKind = 'claude'
         }
       } else {
         const cleaned = deepseekApiKey.trim()

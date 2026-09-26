@@ -4,7 +4,6 @@ import { call } from '@/lib/api'
 import { useWorkspacesStore } from './workspaces'
 import { useUiStore } from './ui'
 import { dispatchEditorDocumentOpened } from '@/lib/editor/editor-document-events'
-import type { DocPublishStatus } from '@shared/types'
 
 export type EditorKind = 'markdown' | 'css' | 'html' | 'text'
 export type EditorMode = 'edit' | 'preview'
@@ -20,7 +19,6 @@ type Session = {
   mtime: string
   mode: EditorMode
   previewBaseUrl: string | null
-  publish?: DocPublishStatus | null
   readonly?: boolean
 }
 
@@ -52,14 +50,12 @@ export const useEditorStore = defineStore('editor', () => {
   const visible = ref(false)
   const isLoading = ref(false)
   const isSaving = ref(false)
-  const isPublishing = ref(false)
   const error = ref<string | null>(null)
 
   // 多 tab 共享同一个 store：key（通常是 PreviewTab.id）→ 独立 session。
   // 全局 WorkspaceEditorPane 走单 session；PreviewPanel 内嵌 md tab 走 keyed session。
   const tabSessions = ref<Map<string, Session>>(new Map())
   const tabSavingKeys = ref<Set<string>>(new Set())
-  const tabPublishingKeys = ref<Set<string>>(new Set())
 
   const isOpen = computed(() => visible.value && sessions.value.length > 0)
   const isDirty = computed(() => !!session.value && session.value.content !== session.value.savedContent)
@@ -168,7 +164,6 @@ export const useEditorStore = defineStore('editor', () => {
         mtime: r.data.mtime,
         mode: kind === 'markdown' ? 'preview' : 'edit',
         previewBaseUrl,
-        publish: r.data.publish ?? null,
         readonly: false
       })
       emitDocumentOpened({
@@ -215,7 +210,7 @@ export const useEditorStore = defineStore('editor', () => {
   function updateContent(content: string): void {
     if (!session.value) return
     if (session.value.readonly) return
-    setActiveSession({ ...session.value, content, publish: null })
+    setActiveSession({ ...session.value, content })
   }
 
   function emitDocumentOpened(detail: {
@@ -258,8 +253,7 @@ export const useEditorStore = defineStore('editor', () => {
         content: r.data.content,
         savedContent: r.data.content,
         mtime: r.data.mtime,
-        previewBaseUrl,
-        publish: r.data.publish ?? null
+        previewBaseUrl
       })
     } finally {
       isLoading.value = false
@@ -291,44 +285,6 @@ export const useEditorStore = defineStore('editor', () => {
       savedContent: current.content
     })
     ui.showToast('success', `已保存 ${current.title}`, 1800)
-  }
-
-  async function publishCurrentDocument(): Promise<void> {
-    const current = session.value
-    if (!current || current.kind !== 'markdown') return
-    if (current.readonly) return
-    if (isDirty.value) {
-      ui.showToast('info', '请先保存当前文档，再发布', 2200)
-      return
-    }
-    isPublishing.value = true
-    error.value = null
-    const r = await call('editor.publishMarkdown', {
-      workspaceId: current.projectId,
-      relPath: current.relPath
-    })
-    isPublishing.value = false
-    if (!r.ok) {
-      error.value = `${r.code}: ${r.message}`
-      ui.showToast('error', `发布失败：${r.message}`, 3600)
-      return
-    }
-    setActiveSession({ ...current, publish: r.data })
-    await call('system.copyToClipboard', { text: r.data.url })
-    ui.showToast('success', '文档已发布，链接已复制', 2400)
-  }
-
-  async function copyPublishUrl(): Promise<void> {
-    const url = session.value?.publish?.url
-    if (!url) return
-    await call('system.copyToClipboard', { text: url })
-    ui.showToast('success', '链接已复制', 1600)
-  }
-
-  async function openPublishUrl(): Promise<void> {
-    const url = session.value?.publish?.url
-    if (!url) return
-    await call('system.openExternal', { url })
   }
 
   async function saveImageAsset(files: File[]): Promise<string | null> {
@@ -369,9 +325,6 @@ export const useEditorStore = defineStore('editor', () => {
   function tabIsSaving(key: string): import('vue').ComputedRef<boolean> {
     return computed(() => tabSavingKeys.value.has(key))
   }
-  function tabIsPublishing(key: string): import('vue').ComputedRef<boolean> {
-    return computed(() => tabPublishingKeys.value.has(key))
-  }
 
   function setTabSession(key: string, next: Session | null): void {
     const m = new Map(tabSessions.value)
@@ -402,7 +355,6 @@ export const useEditorStore = defineStore('editor', () => {
       mtime: r.data.mtime,
       mode: kind === 'markdown' ? 'preview' : 'edit',
       previewBaseUrl,
-      publish: r.data.publish ?? null,
       readonly: false
     })
     emitDocumentOpened({ projectId: workspaceId, kind, relPath, readonly: false })
@@ -411,7 +363,7 @@ export const useEditorStore = defineStore('editor', () => {
   function updateContentByKey(key: string, content: string): void {
     const cur = tabSessions.value.get(key)
     if (!cur || cur.readonly) return
-    setTabSession(key, { ...cur, content, publish: null })
+    setTabSession(key, { ...cur, content })
   }
 
   function setModeByKey(key: string, mode: EditorMode): void {
@@ -450,38 +402,6 @@ export const useEditorStore = defineStore('editor', () => {
     await openInKey(key, cur.kind, cur.relPath, cur.projectId)
   }
 
-  async function publishByKey(key: string): Promise<void> {
-    const cur = tabSessions.value.get(key)
-    if (!cur || cur.kind !== 'markdown' || cur.readonly) return
-    if (cur.content !== cur.savedContent) {
-      ui.showToast('info', '请先保存当前文档，再发布', 2200)
-      return
-    }
-    const next = new Set(tabPublishingKeys.value); next.add(key); tabPublishingKeys.value = next
-    const r = await call('editor.publishMarkdown', { workspaceId: cur.projectId, relPath: cur.relPath })
-    const after = new Set(tabPublishingKeys.value); after.delete(key); tabPublishingKeys.value = after
-    if (!r.ok) {
-      ui.showToast('error', `发布失败：${r.message}`, 3600)
-      return
-    }
-    setTabSession(key, { ...cur, publish: r.data })
-    await call('system.copyToClipboard', { text: r.data.url })
-    ui.showToast('success', '文档已发布，链接已复制', 2400)
-  }
-
-  async function copyPublishUrlByKey(key: string): Promise<void> {
-    const url = tabSessions.value.get(key)?.publish?.url
-    if (!url) return
-    await call('system.copyToClipboard', { text: url })
-    ui.showToast('success', '链接已复制', 1600)
-  }
-
-  async function openPublishUrlByKey(key: string): Promise<void> {
-    const url = tabSessions.value.get(key)?.publish?.url
-    if (!url) return
-    await call('system.openExternal', { url })
-  }
-
   async function saveImageAssetByKey(key: string, files: File[]): Promise<string | null> {
     const cur = tabSessions.value.get(key)
     if (!cur || cur.kind !== 'markdown' || cur.readonly) return null
@@ -509,7 +429,6 @@ export const useEditorStore = defineStore('editor', () => {
   function closeKey(key: string): void {
     setTabSession(key, null)
     const s = new Set(tabSavingKeys.value); s.delete(key); tabSavingKeys.value = s
-    const p = new Set(tabPublishingKeys.value); p.delete(key); tabPublishingKeys.value = p
   }
 
   watch(
@@ -519,7 +438,6 @@ export const useEditorStore = defineStore('editor', () => {
         clearSession()
         tabSessions.value = new Map()
         tabSavingKeys.value = new Set()
-        tabPublishingKeys.value = new Set()
       }
     }
   )
@@ -532,7 +450,6 @@ export const useEditorStore = defineStore('editor', () => {
     isDirty,
     isLoading,
     isSaving,
-    isPublishing,
     error,
     currentKind,
     openMarkdown,
@@ -550,23 +467,16 @@ export const useEditorStore = defineStore('editor', () => {
     setMode,
     reload,
     save,
-    publishCurrentDocument,
-    copyPublishUrl,
-    openPublishUrl,
     saveImageAsset,
     // keyed (per-tab) session API
     tabSession,
     tabIsDirty,
     tabIsSaving,
-    tabIsPublishing,
     openInKey,
     updateContentByKey,
     setModeByKey,
     saveByKey,
     reloadByKey,
-    publishByKey,
-    copyPublishUrlByKey,
-    openPublishUrlByKey,
     saveImageAssetByKey,
     closeKey
   }

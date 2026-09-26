@@ -8,7 +8,7 @@ import { DEFAULT_APP_THEME, isAppTheme, type AppTheme } from '../../shared/app-t
 import { DEFAULT_AI_PROVIDER, isAiProvider, type AiProvider } from '../../shared/ai-provider'
 
 export type ProjectToolKind = 'finder' | 'terminal' | 'codex' | 'cursor' | 'code'
-// 'claude' = 直接调 claude CLI；'dcc' = 调 dcc 封装命令（dcc -- <claude flags>）。
+// 'claude' = 直接调 claude CLI。
 export type { CliKind } from '../../shared/cli'
 export type { AppTheme } from '../../shared/app-theme'
 
@@ -16,7 +16,7 @@ export type AppSettings = {
   workspaceRoot: string             // 本地工作台父目录；实际工作根为 <workspaceRoot>/.mywork
   pmDocsDir: string
   preferredTool?: ProjectToolKind   // 用户上次选择的工具，undefined = 用检测到的 IDE
-  cliKind: CliKind                  // 跑 AI 面板用哪个 CLI；默认 'dcc'
+  cliKind: CliKind                  // 跑 AI 面板用哪个 CLI；默认 'claude'
   aiProvider: AiProvider            // AI 面板底层：本地 Claude Code 或内置 DeepSeek Harness
   defaultExternalRefIds: string[]   // 新建项目时默认关联的知识库和 UX 资产
   theme: AppTheme                   // 全局界面主题
@@ -56,16 +56,8 @@ export class SettingsStore {
     try {
       const text = await fs.readFile(path, 'utf-8')
       const parsed = JSON.parse(text) as Record<string, unknown>
-      // v1 → v2：系统默认 CLI 从 claude 切到 dcc。老版本 update() 会把整个 settings
-      // 落盘，用户改主题等无关设置时当时的默认值 'claude' 也被一起写进去，无法与
-      // 显式选择区分。这里把 v1 文件里的 'claude' 一次性翻成 'dcc'；迁移后用户再
-      // 显式选 claude 会以 v2 保存，下次启动不会被重复改写。
       const fileVersion = typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1
-      // CLI 的迁移只发生在 v1 → v2。schemaVersion 之后还会继续演进，不能
-      // 因为新增设置字段而覆盖用户已经在 v2 明确选择的 claude。
-      const migratedCliKind = fileVersion < 2 && parsed.cliKind === 'claude'
-        ? 'dcc'
-        : parsed.cliKind
+      void fileVersion
       // 旧字段如 pmDocsDir 直接忽略；只取 AppSettings 已定义字段
       const merged: AppSettings = {
         workspaceRoot: typeof parsed.workspaceRoot === 'string' && parsed.workspaceRoot
@@ -77,8 +69,8 @@ export class SettingsStore {
         preferredTool: typeof parsed.preferredTool === 'string' && VALID_TOOLS.has(parsed.preferredTool)
           ? parsed.preferredTool as ProjectToolKind
           : undefined,
-        cliKind: typeof migratedCliKind === 'string' && VALID_CLI_KINDS.has(migratedCliKind)
-          ? migratedCliKind as CliKind
+        cliKind: typeof parsed.cliKind === 'string' && VALID_CLI_KINDS.has(parsed.cliKind)
+          ? parsed.cliKind as CliKind
           : DEFAULTS.cliKind,
         aiProvider: isAiProvider(parsed.aiProvider) ? parsed.aiProvider : DEFAULTS.aiProvider,
         defaultExternalRefIds: Array.isArray(parsed.defaultExternalRefIds)
@@ -112,7 +104,7 @@ export class SettingsStore {
 
   // 同步读已加载的设置。App 启动时 main/index.ts 会先 await load()，之后所有同步链路
   // （spawn-turn、pty defaultPtyCommand）都能 0 成本读到。未加载时返回 null，调用方按
-  // 默认行为兜底（cli-resolver 默认 'dcc'）。
+  // 默认行为兜底（cli-resolver 默认 'claude'）。
   getCached(): AppSettings | null {
     return this.cache
   }

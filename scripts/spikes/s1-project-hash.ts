@@ -29,7 +29,7 @@ if (existsSync(CLAUDE_DIR)) {
 }
 
 // 读取当前项目的 JSONL 文件来确定 hash
-const currentProject = '/Users/didi/Code/ui-client'
+const currentProject = '/Users/dev/Code/flower'
 console.log(`\n=== 当前项目: ${currentProject} ===`)
 
 // 尝试不同的 hash 方法
@@ -77,8 +77,8 @@ if (existsSync(CLAUDE_DIR)) {
   const dirs = readdirSync(CLAUDE_DIR)
   // 尝试反推：已知项目路径，看哪个目录匹配
   const knownProjects = [
-    '/Users/didi/Code/ui-client',
-    '/Users/didi/Code/ui-2-code',
+    '/Users/dev/Code/flower',
+    '/Users/dev/Code/ui-2-code',
   ]
   for (const proj of knownProjects) {
     const projHashes = tryHashes(proj)

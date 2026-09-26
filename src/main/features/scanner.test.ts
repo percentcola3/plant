@@ -139,64 +139,6 @@ describe('listFeatures', () => {
     expect(feature.uiArtifacts).toHaveLength(0)
   })
 
-  it('读取 .publish.json 写入 publish 字段', async () => {
-    await writeFile('features/order/prd.md', '# 订单')
-    await writeFile(
-      'features/order/.publish.json',
-      JSON.stringify({ url: 'https://x', publishedAt: '2026-06-24T00:00:00.000Z', headSha: 'abc' })
-    )
-    const [feature] = await listFeatures(dir)
-    expect(feature.publish).toMatchObject({ url: 'https://x' })
-  })
-
-  it('发布记录之后只提交 .publish.json 时，不标记可更新', async () => {
-    await initGitRepo()
-    await writeFile('features/order/prd.md', '# 订单')
-    await writeFile('features/order/index.html', '<html>v1</html>')
-    await git(['add', '.'])
-    await git(['commit', '-m', 'content'])
-    const publishedHead = await git(['rev-parse', 'HEAD'])
-
-    await writeFile(
-      'features/order/.publish.json',
-      JSON.stringify({
-        featureRelPath: 'features/order',
-        url: 'https://x',
-        publishedAt: '2026-06-24T00:00:00.000Z',
-        headSha: publishedHead
-      })
-    )
-    await git(['add', '.'])
-    await git(['commit', '-m', 'publish metadata'])
-
-    const [feature] = await listFeatures(dir)
-    expect(feature.publishStale).toBe(false)
-  })
-
-  it('发布记录之后业务文件有提交时，标记可更新', async () => {
-    await initGitRepo()
-    await writeFile('features/order/prd.md', '# 订单')
-    await writeFile('features/order/index.html', '<html>v1</html>')
-    await git(['add', '.'])
-    await git(['commit', '-m', 'content'])
-    const publishedHead = await git(['rev-parse', 'HEAD'])
-
-    await writeFile(
-      'features/order/.publish.json',
-      JSON.stringify({
-        featureRelPath: 'features/order',
-        url: 'https://x',
-        publishedAt: '2026-06-24T00:00:00.000Z',
-        headSha: publishedHead
-      })
-    )
-    await writeFile('features/order/index.html', '<html>v2</html>')
-    await git(['add', '.'])
-    await git(['commit', '-m', 'content changed'])
-
-    const [feature] = await listFeatures(dir)
-    expect(feature.publishStale).toBe(true)
-  })
 })
 
 describe('listFeatureGroups', () => {

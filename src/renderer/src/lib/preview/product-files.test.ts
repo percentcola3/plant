@@ -25,7 +25,6 @@ describe('product file helpers', () => {
       relPath: 'ui/order/index.html',
       size: 120,
       modifiedAt: '2026-06-18T01:00:00.000Z',
-      publish: null
     },
     {
       kind: 'folder',
@@ -38,7 +37,6 @@ describe('product file helpers', () => {
           relPath: 'ui/order/assets/hero.png',
           size: 12,
           modifiedAt: '2026-06-18T01:02:00.000Z',
-          publish: null
         },
         {
           kind: 'file',
@@ -46,7 +44,6 @@ describe('product file helpers', () => {
           relPath: 'ui/order/assets/map.svg',
           size: 42,
           modifiedAt: '2026-06-18T01:03:00.000Z',
-          publish: null
         },
         {
           kind: 'folder',
@@ -59,13 +56,10 @@ describe('product file helpers', () => {
               relPath: 'ui/order/assets/page-order-card/delivery.svg',
               size: 52,
               modifiedAt: '2026-06-18T01:06:00.000Z',
-              publish: null
             }
           ],
-          uiProductPublish: null
         }
       ],
-      uiProductPublish: null
     },
     {
       kind: 'file',
@@ -73,7 +67,6 @@ describe('product file helpers', () => {
       relPath: 'ui/order/sketch-2026-06-18.sketch.json',
       size: 80,
       modifiedAt: '2026-06-18T01:01:00.000Z',
-      publish: null
     }
   ]
 

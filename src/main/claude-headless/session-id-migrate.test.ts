@@ -81,9 +81,9 @@ describe('findSessionJsonlAnywhere', () => {
 describe('sessionJsonlPathForReplay', () => {
   it('优先使用当前 cwd 下的会话历史', () => {
     const sid = 'sid-replay-current'
-    const currentCwd = '/Users/didi/proj/current'
+    const currentCwd = '/Users/dev/proj/current'
     const current = writeJsonlAt(currentCwd, sid, '{"current":true}\n')
-    writeJsonlAt('/Users/didi/proj/old', sid, '{"old":true}\n')
+    writeJsonlAt('/Users/dev/proj/old', sid, '{"old":true}\n')
 
     expect(sessionJsonlPathForReplay(currentCwd, sid)).toBe(current)
   })
@@ -95,13 +95,13 @@ describe('sessionJsonlPathForReplay', () => {
     const archived = join(privateDir, `${sid}.jsonl`)
     writeFileSync(archived, '{"history":true}\n', 'utf-8')
 
-    expect(sessionJsonlPathForReplay('/Users/didi/proj/current', sid)).toBe(archived)
+    expect(sessionJsonlPathForReplay('/Users/dev/proj/current', sid)).toBe(archived)
     expect(existsSync(archived)).toBe(true)
   })
 
   it('首轮尚无历史时返回当前 cwd 的预期路径', () => {
     const sid = 'sid-replay-new'
-    const currentCwd = '/Users/didi/proj/current'
+    const currentCwd = '/Users/dev/proj/current'
 
     expect(sessionJsonlPathForReplay(currentCwd, sid)).toBe(sessionJsonlPath(currentCwd, sid))
   })

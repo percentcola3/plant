@@ -29,7 +29,6 @@ export function registerTerminalHandlers(): void {
           cwd = launch.workDir
           const caps = getClaudeCapabilitiesSync()
           if (caps.addDir && launch.addDirs.length > 0) {
-            // dcc 时自动加 '--' 透传给底层 claude
             defaultArgs = wrapClaudeArgs(['--add-dir', ...launch.addDirs])
           }
           // TUI 模式同样挂 zg 检索 MCP（等价 `zg install --target claude` 的效果，

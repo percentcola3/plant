@@ -3,20 +3,19 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 describe('SettingsDialog', () => {
-  it('uses DCC as the default AI engine', () => {
+  it('uses Claude Code as the default AI engine', () => {
     const source = readFileSync(resolve(__dirname, 'SettingsDialog.vue'), 'utf8')
 
     expect(source).toContain("import { DEFAULT_CLI_KIND, type CliKind } from '@shared/cli'")
     expect(source).toContain("type AiEngine = CliKind | 'deepseek-harness'")
     expect(source).toContain('const aiEngine = ref<AiEngine>(DEFAULT_CLI_KIND)')
-    expect(source).toContain("chooseAiEngine('dcc')")
+    expect(source).toContain("chooseAiEngine('claude')")
   })
 
-  it('offers DCC, Claude Code and Peeka as one selection group', () => {
+  it('offers Claude Code and Peeka as one selection group', () => {
     const source = readFileSync(resolve(__dirname, 'SettingsDialog.vue'), 'utf8')
 
     expect(source).toContain("import { DEFAULT_AI_PROVIDER, type AiProvider } from '@shared/ai-provider'")
-    expect(source).toContain("chooseAiEngine('dcc')")
     expect(source).toContain("chooseAiEngine('claude')")
     expect(source).toContain("chooseAiEngine('deepseek-harness')")
     expect(source).toContain('name="ai-engine"')

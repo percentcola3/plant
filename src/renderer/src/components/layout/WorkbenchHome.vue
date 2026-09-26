@@ -274,11 +274,6 @@ async function copyProject(card: FeatureCard): Promise<void> {
     ui.showToast('error', `复制失败：${result.message}`)
     return
   }
-  await call('editor.deleteTextFile', {
-    workspaceId: active.value.id,
-    relPath: `${targetRelPath}/.publish.json`,
-    scope: 'project'
-  }).catch(() => undefined)
   await loadProjects()
   const copied = projects.value.find((item) => item.relPath === targetRelPath)
   if (copied) await openProject(copied)

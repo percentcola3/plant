@@ -30,7 +30,6 @@ describe('editor store', () => {
             data: {
               content: `${input.workspaceId}:${input.relPath}`,
               mtime: `${input.workspaceId}-mtime`,
-              publish: null
             }
           })),
           'preview.docUrl': vi.fn(async (input: { workspaceId: string }) => ({

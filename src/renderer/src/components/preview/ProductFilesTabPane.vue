@@ -49,7 +49,6 @@ import ProjectBrowserTabs from './ProjectBrowserTabs.vue'
 import { useProjectBrowserStore } from '@/stores/project-browser'
 import type { WebPageDesign } from '@shared/project-browser'
 import { WORKBENCH_CUSTOM_DEVICE_PRESET } from '@/lib/preview/product-preview'
-import ProductShareButton from './ProductShareButton.vue'
 import FeatureGitSubmitButton from './FeatureGitSubmitButton.vue'
 import SketchEditor from './SketchEditor.vue'
 import { Button } from '@/components/ui/button'
@@ -1447,11 +1446,6 @@ onMounted(async () => {
             :prepare="saveIfDirty"
             @done="refreshGitChangeMarks"
           />
-          <ProductShareButton
-            :workspace-id="props.workspaceId"
-            :product-rel-path="props.rootRelPath"
-            :file-count="files.length"
-          />
         </div>
       </div>
 
@@ -1515,11 +1509,6 @@ onMounted(async () => {
             :rel-dir="props.rootRelPath"
             :prepare="saveIfDirty"
             @done="refreshGitChangeMarks"
-          />
-          <ProductShareButton
-            :workspace-id="props.workspaceId"
-            :product-rel-path="props.rootRelPath"
-            :file-count="files.length"
           />
         </div>
       </div>

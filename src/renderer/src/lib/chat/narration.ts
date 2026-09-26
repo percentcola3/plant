@@ -1,6 +1,6 @@
 import type { AgentMessage } from './agent-events'
 
-// dcc 链路下模型的推理内容常以普通 text block 输出（stream-json 里 thinking block
+// 部分链路下模型的推理内容常以普通 text block 输出（stream-json 里 thinking block
 // 反而是空的，只剩 signature）。为了做到「任务结束只看结论」：
 // 每个 assistant 组（连续 assistant 消息）内，最后一条带非空 text 的消息视为
 // 「结论」，正常渲染 markdown；其余消息里的 text 都是过程旁白，按折叠块展示。

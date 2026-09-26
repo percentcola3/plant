@@ -4,7 +4,7 @@ import { normalizeClaudeEvent } from './claude-event-normalizer'
 import { applyAgentEvent, createInitialAgentState } from './agent-event-reducer'
 import { findConclusionUuids, collectProcessTexts } from './narration'
 
-const SESSION_DIR = '/Users/didi/.claude/projects/-Users-didi-Documents-WorkSpace--mywork-features--------'
+const SESSION_DIR = '/Users/dev/.claude/projects/-Users-didi-Documents-WorkSpace--mywork-features--------'
 
 describe('history replay pipeline on real session jsonl', () => {
   it('materializes historical messages and classifies conclusion/narration', () => {

@@ -19,12 +19,12 @@ describe('ui-product-card-meta', () => {
     expect(buildUiProductCardMeta({
       title: ' 移动端支持直接点餐 ',
       coverTag: ' saas ',
-      uxName: '张裴',
+      uxName: '李明',
       pmName: '  ',
     })).toEqual({
       title: '移动端支持直接点餐',
       coverTag: 'saas',
-      uxName: '张裴',
+      uxName: '李明',
     })
     expect(buildUiProductCardMeta({ coverTag: '  ' })).toBeNull()
   })
@@ -75,11 +75,11 @@ describe('ui-product-card-meta', () => {
   })
 
   it('builds preview people lines for UX and PM names', () => {
-    expect(productPreviewPeople({ uxName: '张裴', pmName: '张代辉' })).toEqual([
-      'UX: 张裴',
-      'PM: 张代辉',
+    expect(productPreviewPeople({ uxName: '李明', pmName: '王芳' })).toEqual([
+      'UX: 李明',
+      'PM: 王芳',
     ])
-    expect(productPreviewPeople({ uxName: '张裴' })).toEqual(['UX: 张裴'])
+    expect(productPreviewPeople({ uxName: '李明' })).toEqual(['UX: 李明'])
   })
 
   it('patches card metadata onto a matching outputs tree node', () => {
@@ -92,13 +92,13 @@ describe('ui-product-card-meta', () => {
         uiProductCard: null,
       }],
       'outputs/demo',
-      { title: '移动端支持直接点餐', coverTag: 'SAAS', uxName: '张裴', pmName: '张代辉' }
+      { title: '移动端支持直接点餐', coverTag: 'SAAS', uxName: '李明', pmName: '王芳' }
     )
     expect(tree[0]?.kind === 'folder' ? tree[0].uiProductCard : null).toEqual({
       title: '移动端支持直接点餐',
       coverTag: 'SAAS',
-      uxName: '张裴',
-      pmName: '张代辉',
+      uxName: '李明',
+      pmName: '王芳',
     })
   })
 })

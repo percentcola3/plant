@@ -5,10 +5,10 @@ const source = readFileSync(new URL('./OnboardingGuide.vue', import.meta.url), '
 const sidebarSource = readFileSync(new URL('./WorkspaceSidebar.vue', import.meta.url), 'utf-8')
 
 describe('OnboardingGuide', () => {
-  it('covers DCC, CLI switching, resources, Git SSH, indexing, and skills', () => {
-    expect(source).toContain('https://docs.example.com/setup/cli')
-    expect(source).toContain('DCC 配置')
-    expect(source).toContain('CLI 切换')
+  it('covers CLI setup, engine switching, resources, Git SSH, indexing, and skills', () => {
+    expect(source).toContain('https://code.claude.com/docs/en/overview')
+    expect(source).toContain('Claude Code CLI 配置')
+    expect(source).toContain('AI 引擎切换')
     expect(source).toContain('配置 Git SSH')
     expect(source).toContain('构建或重建索引')
     expect(source).toContain('Skill 使用与定制')

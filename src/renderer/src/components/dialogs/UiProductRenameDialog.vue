@@ -102,7 +102,7 @@ function cancel(): void {
             <Input
               v-model="uxName"
               type="text"
-              placeholder="例如：张裴"
+              placeholder="例如：李明"
             />
           </div>
           <div class="space-y-2">
@@ -110,7 +110,7 @@ function cancel(): void {
             <Input
               v-model="pmName"
               type="text"
-              placeholder="例如：张代辉"
+              placeholder="例如：王芳"
             />
           </div>
         </div>

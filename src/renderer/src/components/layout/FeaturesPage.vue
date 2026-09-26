@@ -718,12 +718,6 @@ async function copyFeature(card: FeatureCard): Promise<void> {
     ui.showToast('error', `复制失败：${r.message}`)
     return
   }
-  // 新副本不继承原 feature 的发布状态，避免卡片误显示旧链接。
-  await call('editor.deleteTextFile', {
-    workspaceId: active.value.id,
-    relPath: `${targetRelPath}/.publish.json`,
-    scope: 'project'
-  }).catch(() => undefined)
   await loadFeatures()
   const copied = features.value.find((f) => f.relPath === targetRelPath)
   if (copied) await openFeatureProject(copied)

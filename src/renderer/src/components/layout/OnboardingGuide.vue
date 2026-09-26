@@ -17,17 +17,17 @@ import { useUiStore } from '@/stores/ui'
 import { Button } from '@/components/ui/button'
 
 const ui = useUiStore()
-const DCC_GUIDE_URL = 'https://docs.example.com/setup/cli'
+const CLI_GUIDE_URL = 'https://code.claude.com/docs/en/overview'
 
 type GuideStep = {
   title: string
   detail: string
 }
 
-const dccSteps: GuideStep[] = [
-  { title: '打开 CLI 配置文档', detail: '按文档完成 dcc 安装、账号认证和本机命令验证。' },
-  { title: '回到 WorkSpace 设置', detail: '在“CLI”里选择 dcc，后续 AI 面板会通过 dcc 启动。' },
-  { title: '失败时先看命令可用性', detail: '确认终端能执行 dcc，再重启 App 或重新打开 AI 面板。' },
+const cliSteps: GuideStep[] = [
+  { title: '安装 Claude Code', detail: '按官方文档完成安装与账号认证，确认终端能执行 claude 命令。' },
+  { title: '回到 WorkSpace 设置', detail: '在「CLI」里确认引擎为 Claude Code，AI 面板会通过 claude 启动。' },
+  { title: '失败时先看命令可用性', detail: '确认终端能执行 claude，再重启 App 或重新打开 AI 面板。' },
 ]
 
 const resourceSteps: GuideStep[] = [
@@ -42,9 +42,9 @@ const skillSteps: GuideStep[] = [
   { title: '把触发条件写清楚', detail: '描述 skill 适用场景、输入、输出和约束，避免让 AI 猜。' },
 ]
 
-async function openDccGuide(): Promise<void> {
-  const result = await call('system.openExternal', { url: DCC_GUIDE_URL })
-  if (!result.ok) ui.showToast('error', `打开 DCC 配置失败：${result.message}`, 5000)
+async function openCliGuide(): Promise<void> {
+  const result = await call('system.openExternal', { url: CLI_GUIDE_URL })
+  if (!result.ok) ui.showToast('error', `打开 CLI 文档失败：${result.message}`, 5000)
 }
 </script>
 
@@ -57,7 +57,7 @@ async function openDccGuide(): Promise<void> {
           新手引导
         </span>
         <h1 id="onboarding-title">把 AI 工作台先配顺</h1>
-        <p>按顺序完成 DCC、CLI、资源包和 skill 配置。这里保留常用入口，后续也可以随时回来检查。</p>
+        <p>按顺序完成 CLI、资源包和 skill 配置。这里保留常用入口，后续也可以随时回来检查。</p>
       </section>
 
       <section class="guide-grid" aria-label="配置入口">
@@ -67,21 +67,21 @@ async function openDccGuide(): Promise<void> {
               <TerminalSquare :size="18" />
             </span>
             <div>
-              <h2>DCC 配置</h2>
-              <p>先按内部文档完成 dcc 的安装与认证，再在 App 里切换 CLI。</p>
+              <h2>Claude Code CLI 配置</h2>
+              <p>先按官方文档完成 Claude Code 的安装与认证，再在 App 里确认引擎。</p>
             </div>
           </div>
 
           <ol class="guide-steps">
-            <li v-for="step in dccSteps" :key="step.title">
+            <li v-for="step in cliSteps" :key="step.title">
               <strong>{{ step.title }}</strong>
               <span>{{ step.detail }}</span>
             </li>
           </ol>
 
           <div class="guide-actions">
-            <Button @click="openDccGuide">
-              打开 DCC 配置
+            <Button @click="openCliGuide">
+              打开 CLI 文档
               <ExternalLink class="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button variant="outline" @click="ui.openSettings('cli')">
@@ -97,19 +97,19 @@ async function openDccGuide(): Promise<void> {
               <Settings2 :size="18" />
             </span>
             <div>
-              <h2>CLI 切换</h2>
-              <p>设置页的 CLI 选项支持 dcc 和 Claude Code 原生 CLI。</p>
+              <h2>AI 引擎切换</h2>
+              <p>AI 面板支持 Claude Code 原生 CLI 与内置 DeepSeek Harness 两种引擎。</p>
             </div>
           </div>
 
           <div class="cli-compare">
             <div>
-              <strong>dcc</strong>
-              <span>内部封装命令，执行形态类似 <code>dcc -- --resume &lt;uuid&gt;</code>。</span>
-            </div>
-            <div>
               <strong>claude</strong>
               <span>Claude Code 原生命令，执行形态类似 <code>claude --resume &lt;uuid&gt;</code>。</span>
+            </div>
+            <div>
+              <strong>DeepSeek Harness</strong>
+              <span>内置引擎，基于 DeepSeek API，无需本机安装 Claude Code。</span>
             </div>
           </div>
 
@@ -176,7 +176,7 @@ async function openDccGuide(): Promise<void> {
 
       <section class="guide-note" aria-label="建议顺序">
         <GitBranch :size="18" aria-hidden="true" />
-        <p>建议顺序：先完成 DCC 和 CLI，再配置 Git SSH，随后导入资源包并构建索引，最后按根项目工作流定制 skill。</p>
+        <p>建议顺序：先完成 CLI 配置，再配置 Git SSH，随后导入资源包并构建索引，最后按根项目工作流定制 skill。</p>
       </section>
     </div>
   </main>

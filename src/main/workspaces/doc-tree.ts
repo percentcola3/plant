@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
-import type { DocTreeNode, UiProductCardMeta, UiProductPublishRecord } from '@shared/types'
+import type { DocTreeNode, UiProductCardMeta } from '@shared/types'
 import { parseUiProductCardMeta } from '../outputs/card-meta'
 
 const DOC_EXT_RE = /\.(md|mdx|markdown|txt)$/i
@@ -32,7 +32,6 @@ export async function readFileTree(
         name: entry.name,
         relPath: childRel,
         children: recursive ? await readFileTree(rootPath, childRel, opts) : [],
-        uiProductPublish: await readUiProductPublish(rootPath, childRel),
         uiProductCard: await readUiProductCard(rootPath, childRel)
       })
       continue
@@ -46,8 +45,7 @@ export async function readFileTree(
       name: entry.name,
       relPath: childRel,
       size: stat.size,
-      modifiedAt: stat.mtime.toISOString(),
-      publish: null
+      modifiedAt: stat.mtime.toISOString()
     })
   }
 
@@ -55,15 +53,6 @@ export async function readFileTree(
     if (a.kind !== b.kind) return a.kind === 'folder' ? -1 : 1
     return a.name.localeCompare(b.name)
   })
-}
-
-async function readUiProductPublish(rootPath: string, relDir: string): Promise<UiProductPublishRecord | null> {
-  const parsed = await readMetaJson(rootPath, relDir)
-  if (!parsed) return null
-  const publish = parsed.publish
-  if (!isUiProductPublishRecord(publish)) return null
-  if (normalizeRelPath(publish.productRelPath) !== normalizeRelPath(relDir)) return null
-  return publish
 }
 
 async function readUiProductCard(rootPath: string, relDir: string): Promise<UiProductCardMeta | null> {
@@ -82,23 +71,4 @@ async function readMetaJson(rootPath: string, relDir: string): Promise<Record<st
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
   return parsed as Record<string, unknown>
-}
-
-function isUiProductPublishRecord(value: unknown): value is UiProductPublishRecord {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-  const record = value as Record<string, unknown>
-  return (
-    typeof record.productRelPath === 'string' &&
-    typeof record.publishedAt === 'string' &&
-    typeof record.url === 'string' &&
-    record.url.length > 0 &&
-    typeof record.prefix === 'string' &&
-    typeof record.fileCount === 'number' &&
-    typeof record.bucket === 'string' &&
-    typeof record.region === 'string'
-  )
-}
-
-function normalizeRelPath(relPath: string): string {
-  return relPath.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
 }

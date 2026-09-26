@@ -28,15 +28,15 @@ afterAll(() => {
 
 describe('session-id', () => {
   it('projectHashFor: Claude 2.1.x 会替换全部非 ASCII 字母数字字符', () => {
-    expect(projectHashFor('/Users/didi/Code/ui-client')).toBe('-Users-didi-Code-ui-client')
+    expect(projectHashFor('/Users/dev/Code/flower')).toBe('-Users-didi-Code-ui-client')
     expect(projectHashFor('/tmp/test')).toBe('-tmp-test')
     expect(projectHashFor('/')).toBe('-')
-    expect(projectHashFor('/Users/didi/Documents/WorkSpace/.mywork/features/无名'))
+    expect(projectHashFor('/Users/dev/Documents/WorkSpace/.mywork/features/无名'))
       .toBe('-Users-didi-Documents-WorkSpace--mywork-features---')
   })
 
   it('sessionJsonlPath: 拼接正确', () => {
-    const result = sessionJsonlPath('/Users/didi/Code/ui-client', 'abc-123')
+    const result = sessionJsonlPath('/Users/dev/Code/flower', 'abc-123')
     expect(result).toBe(join(homedir(), '.claude', 'projects', '-Users-didi-Code-ui-client', 'abc-123.jsonl'))
   })
 

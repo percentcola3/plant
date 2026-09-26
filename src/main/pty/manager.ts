@@ -73,9 +73,8 @@ export function defaultPtyCommand(): { shell: string; args: string[]; banner: st
   }
 }
 
-// dcc 时把参数包成 ['--', ...args]，让底层 claude 拿到原始 flag；claude 直接返回原参数。
-// terminal.ts 在拼 --add-dir 类默认参数时调用这个，否则会被 createTty 的 opts.defaultArgs ?? fallback.args
-// 分支吃掉 fallback 里的 '--' 前缀。
+// 统一的 claude 参数包装入口。terminal.ts 在拼 --add-dir 类默认参数时调用这个，
+// 经由 cli-resolver 保持与 spawn 链路一致的包装规则。
 export function wrapClaudeArgs(claudeArgs: string[]): string[] {
   return resolveCliSync().wrapArgs(claudeArgs)
 }

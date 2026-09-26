@@ -16,9 +16,7 @@ const tree: DocTreeNode[] = [{
     relPath: '.external/订单知识库/业务规则/退款规则.md',
     size: 12,
     modifiedAt: '2026-07-23T00:00:00.000Z',
-    publish: null
   }],
-  uiProductPublish: null
 }]
 
 describe('mention resources', () => {

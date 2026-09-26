@@ -1,5 +1,3 @@
-import { BrowserWindow } from 'electron'
-import type { FeaturePublishProgressEvent, UiProductPublishProgressEvent } from '@shared/types'
 import { registerIpcHandler } from '../registry'
 import { UIClientError } from '../errors'
 import { WorkspacesStore } from '../../workspaces/store'
@@ -16,29 +14,12 @@ import {
   saveProjectBinaryFile,
   writeEditorFileWithSkillMirror
 } from '../../editor/service'
-import { publishMarkdownDocument, readDocPublishStatus } from '../../docs/publish'
 import { importUiProduct } from '../../outputs/import-product'
 import { copyUiProductToSpace } from '../../outputs/copy-to-space'
 import { updateUiProductCardMeta } from '../../outputs/card-meta'
-import { publishUiProduct } from '../../outputs/publish'
 import { seedProductAgentFiles } from '../../outputs/seed-agent-files'
-import { publishFeature } from '../../features/publish'
 
 const store = new WorkspacesStore()
-
-function broadcastUiProductPublishProgress(event: UiProductPublishProgressEvent): void {
-  const channel = `ui-product.publish-progress:${event.workspaceId}`
-  for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send(channel, event)
-  }
-}
-
-function broadcastFeaturePublishProgress(event: FeaturePublishProgressEvent): void {
-  const channel = `feature.publish-progress:${event.workspaceId}`
-  for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send(channel, event)
-  }
-}
 
 async function resolveWorkspacePath(workspaceId: string): Promise<string> {
   const ws = await store.findById(workspaceId)
@@ -56,11 +37,7 @@ export function registerEditorHandlers(): void {
   registerIpcHandler('editor.readTextFile', async ({ workspaceId, relPath }) => {
     if (!workspaceId || !relPath) throw new UIClientError('VALIDATION', '缺少参数')
     const root = await resolveWorkspacePath(workspaceId)
-    const result = await readEditorFile(root, root, relPath)
-    const publish = /\.(md|mdx|markdown)$/i.test(result.relPath)
-      ? await readDocPublishStatus(root, result.relPath, result.content)
-      : null
-    return { ...result, publish }
+    return readEditorFile(root, root, relPath)
   })
 
   registerIpcHandler('editor.entryExists', async ({ workspaceId, relPath }) => {
@@ -127,30 +104,6 @@ export function registerEditorHandlers(): void {
     return saveProjectBinaryFile(root, root, rest)
   })
 
-  registerIpcHandler('editor.publishMarkdown', async ({ workspaceId, relPath }) => {
-    if (!workspaceId || !relPath) throw new UIClientError('VALIDATION', '缺少参数')
-    const ws = await resolveWorkspace(workspaceId)
-    const record = await publishMarkdownDocument({
-      workspacePath: ws.path,
-      workspaceName: ws.name,
-      relPath
-    })
-    return { ...record, isPublished: true }
-  })
-
-  registerIpcHandler('uiProduct.publish', async ({ workspaceId, productRelPath }) => {
-    if (!workspaceId || !productRelPath) throw new UIClientError('VALIDATION', '缺少参数')
-    const ws = await resolveWorkspace(workspaceId)
-    return publishUiProduct({
-      workspacePath: ws.path,
-      workspaceName: ws.name,
-      productRelPath,
-      onProgress: (event) => {
-        broadcastUiProductPublishProgress({ workspaceId, ...event })
-      }
-    })
-  })
-
   registerIpcHandler('uiProduct.seedAgentFiles', async ({ workspaceId, productRelPath }) => {
     if (!workspaceId || !productRelPath) throw new UIClientError('VALIDATION', '缺少参数')
     const ws = await resolveWorkspace(workspaceId)
@@ -174,18 +127,5 @@ export function registerEditorHandlers(): void {
     if (!workspaceId || !productRelPath) throw new UIClientError('VALIDATION', '缺少参数')
     const ws = await resolveWorkspace(workspaceId)
     return updateUiProductCardMeta(ws.path, productRelPath, { title, coverTag, uxName, pmName })
-  })
-
-  registerIpcHandler('feature.publish', async ({ workspaceId, featureRelPath }) => {
-    if (!workspaceId || !featureRelPath) throw new UIClientError('VALIDATION', '缺少参数')
-    const ws = await resolveWorkspace(workspaceId)
-    return publishFeature({
-      workspacePath: ws.path,
-      workspaceName: ws.name,
-      featureRelPath,
-      onProgress: (event) => {
-        broadcastFeaturePublishProgress({ workspaceId, ...event })
-      }
-    })
   })
 }

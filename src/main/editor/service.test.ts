@@ -230,22 +230,6 @@ describe('editor service', () => {
     await expect(fs.stat(join(dir, 'ui/login'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
-  it('rewrites meta.json publish.productRelPath after move so the badge survives', async () => {
-    await fs.mkdir(join(dir, 'ui/login'), { recursive: true })
-    await fs.writeFile(join(dir, 'ui/login/index.html'), '<h1>Login</h1>', 'utf-8')
-    const meta = {
-      publish: { productRelPath: 'ui/login', publishedAt: '2026-01-01T00:00:00.000Z', url: 'https://x', prefix: 'p', fileCount: 1, bucket: 'b', region: 'r' },
-      publishHistory: [{ productRelPath: 'ui/login', publishedAt: '2026-01-01T00:00:00.000Z', url: 'https://x', prefix: 'p', fileCount: 1, bucket: 'b', region: 'r' }]
-    }
-    await fs.writeFile(join(dir, 'ui/login/meta.json'), JSON.stringify(meta), 'utf-8')
-
-    await moveEditorEntry(dir, dir, 'ui/login', 'ui/signin')
-
-    const moved = JSON.parse(await fs.readFile(join(dir, 'ui/signin/meta.json'), 'utf-8')) as typeof meta
-    expect(moved.publish.productRelPath).toBe('ui/signin')
-    expect(moved.publishHistory[0].productRelPath).toBe('ui/signin')
-  })
-
   it('moves a product without meta.json without error (non-product dir)', async () => {
     await fs.mkdir(join(dir, 'ui/login'), { recursive: true })
     await fs.writeFile(join(dir, 'ui/login/notes.md'), 'hi', 'utf-8')

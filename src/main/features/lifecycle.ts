@@ -138,7 +138,6 @@ export async function importFeature(input: ImportFeatureInput): Promise<{ featur
     force: false,
     filter: (sourcePath) => shouldCopyImportedEntry(sourceAbs, sourcePath)
   })
-  await fs.rm(join(featureAbs, '.publish.json'), { force: true }).catch(() => undefined)
   await ensureFeatureAiLinks(input.workspacePath, featureRel).catch(() => undefined)
   return { featureRelPath: featureRel }
 }

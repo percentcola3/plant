@@ -18,9 +18,9 @@ afterAll(() => {
 })
 
 describe('SettingsStore defaults', () => {
-  it('uses DCC when no settings file exists', async () => {
+  it('uses claude when no settings file exists', async () => {
     await expect(settingsStore.get()).resolves.toMatchObject({
-      cliKind: 'dcc',
+      cliKind: 'claude',
       aiProvider: 'claude-code',
       defaultExternalRefIds: [],
       theme: 'light'
@@ -47,17 +47,17 @@ describe('SettingsStore cliKind migration', () => {
     writeFileSync(settingsJsonPath(), JSON.stringify(content), 'utf-8')
   }
 
-  it('migrates a legacy v1 cliKind=claude to dcc', async () => {
+  it('keeps a legacy v1 cliKind=claude as claude', async () => {
     writeSettingsFile({ cliKind: 'claude', schemaVersion: 1 })
     await expect(new SettingsStore().get()).resolves.toMatchObject({
-      cliKind: 'dcc',
+      cliKind: 'claude',
       schemaVersion: 3
     })
   })
 
   it('treats a v1 file without schemaVersion the same way', async () => {
     writeSettingsFile({ cliKind: 'claude' })
-    await expect(new SettingsStore().get()).resolves.toMatchObject({ cliKind: 'dcc' })
+    await expect(new SettingsStore().get()).resolves.toMatchObject({ cliKind: 'claude' })
   })
 
   it('keeps an explicit claude choice that was saved under v2', async () => {
@@ -66,16 +66,16 @@ describe('SettingsStore cliKind migration', () => {
   })
 
   it('keeps an explicit DeepSeek provider and migrates the schema', async () => {
-    writeSettingsFile({ aiProvider: 'deepseek-harness', cliKind: 'dcc', schemaVersion: 2 })
+    writeSettingsFile({ aiProvider: 'deepseek-harness', cliKind: 'claude', schemaVersion: 2 })
     await expect(new SettingsStore().get()).resolves.toMatchObject({
       aiProvider: 'deepseek-harness',
       schemaVersion: 3
     })
   })
 
-  it('leaves a v1 dcc value untouched', async () => {
-    writeSettingsFile({ cliKind: 'dcc', schemaVersion: 1 })
-    await expect(new SettingsStore().get()).resolves.toMatchObject({ cliKind: 'dcc' })
+  it('falls back to claude for an unknown cliKind value', async () => {
+    writeSettingsFile({ cliKind: 'something-else', schemaVersion: 2 })
+    await expect(new SettingsStore().get()).resolves.toMatchObject({ cliKind: 'claude' })
   })
 })
 
