@@ -24,7 +24,7 @@ import {
 import OpenWithMenu from '@/components/layout/OpenWithMenu.vue'
 import TopBarSettingsButton from '@/components/layout/TopBarSettingsButton.vue'
 import OpenProjectDialog from '@/components/preview/OpenProjectDialog.vue'
-import { House, ListTodo, PenTool, Plus, X } from 'lucide-vue-next'
+import { FolderKanban, ListTodo, PenTool, Plus, X } from 'lucide-vue-next'
 
 const ws = useWorkspacesStore()
 const ui = useUiStore()
@@ -202,7 +202,6 @@ function closeCurrentTab(): void {
     || currentView.value === 'features-page'
     || currentView.value === 'ai-config'
     || currentView.value === 'skills-config'
-    || currentView.value === 'onboarding-guide'
   ) {
     ui.openHome()
     return
@@ -222,7 +221,9 @@ function onAdd(): void {
     ui.requestCreateProduct()
     return
   }
-  ui.newWorkspaceOpen = true
+  previewStore.hideCanvas()
+  editorStore.hide()
+  if (active.value) ui.requestCreateFeatureProject(active.value.id)
 }
 
 watch(() => active.value?.id, () => { void refreshGitStatus() }, { immediate: true })
@@ -256,10 +257,10 @@ watch(
         type="button"
         class="app-tabbar__home"
         :class="{ 'app-tabbar__home--active': homeActive }"
-        aria-label="Home"
+        aria-label="工作台"
         @click="goHome"
       >
-        <House class="app-tabbar__glyph app-tabbar__glyph--md" aria-hidden="true" />
+        <FolderKanban class="app-tabbar__glyph app-tabbar__glyph--md" aria-hidden="true" />
       </button>
 
       <div class="app-tabbar__tabs" role="tablist" aria-label="Open files">
@@ -411,7 +412,7 @@ watch(
   min-height: 36px;
   height: 36px;
   width: 100%;
-  border-bottom: 1px solid var(--color-chrome-border, var(--color-popover-border));
+  border-bottom: 1px solid var(--color-chrome-border);
   color: var(--color-text-primary);
   font-size: 12px;
   user-select: none;
@@ -445,10 +446,8 @@ watch(
     color var(--duration-fast, 120ms) var(--ease-out, ease);
 }
 .app-tabbar__home {
-  border-right: 1px solid var(--color-chrome-border, var(--color-popover-border));
 }
 .app-tabbar__add {
-  border-left: 1px solid var(--color-chrome-border, var(--color-popover-border));
 }
 .app-tabbar__home:hover,
 .app-tabbar__add:hover {
@@ -456,7 +455,7 @@ watch(
   color: var(--color-text-primary);
 }
 .app-tabbar__home--active {
-  background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  background: var(--color-tab-selected);
   color: var(--color-text-primary);
 }
 .app-tabbar__glyph {
@@ -497,15 +496,15 @@ watch(
   flex: 0 0 auto;
   padding: 0 8px 0 12px;
   border: none;
-  border-right: 1px solid var(--color-chrome-border, var(--color-popover-border));
   background: transparent;
   color: var(--color-text-secondary);
   white-space: nowrap;
   cursor: pointer;
   font: inherit;
 }
+.app-tab { margin: 4px 2px; border-radius: 8px; }
 .app-tab--active {
-  background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  background: var(--color-tab-selected);
   color: var(--color-text-primary);
 }
 .app-tab__icon {

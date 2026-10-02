@@ -4,10 +4,10 @@ import { UIClientError } from '../errors'
 import {
   cloneWorkspace,
   createWorkspace,
-  ensureDefaultKnowledgeWorkspace,
   importWorkspace,
   removeWorkspace,
-  renameWorkspace
+  renameWorkspace,
+  setWorkspaceEntry
 } from '../../workspaces/lifecycle'
 import { checkoutProjectHome } from '../../requirements/lifecycle'
 import { saveWorkspace, syncWorkspace, type SyncProgressEvent } from '../../workspaces/sync'
@@ -86,10 +86,6 @@ export function registerWorkspaceWriteHandlers(): void {
     return createWorkspace(input)
   })
 
-  registerIpcHandler('workspace.ensureDefaultKnowledge', async () => {
-    return ensureDefaultKnowledgeWorkspace()
-  })
-
   registerIpcHandler('workspace.import', async (input) => {
     if (!input?.path) throw new UIClientError('VALIDATION', '缺少 path')
     return importWorkspace(input)
@@ -105,6 +101,11 @@ export function registerWorkspaceWriteHandlers(): void {
   registerIpcHandler('workspace.remove', async ({ id, deleteFiles }) => {
     if (!id) throw new UIClientError('VALIDATION', '缺少 id')
     await removeWorkspace(id, { deleteFiles })
+  })
+
+  registerIpcHandler('workspace.setEntry', async ({ id, entryPath }) => {
+    if (!id || typeof entryPath !== 'string') throw new UIClientError('VALIDATION', '目录入口配置无效')
+    return setWorkspaceEntry(id, entryPath)
   })
 
   registerIpcHandler('workspace.rename', async ({ id, name }) => {

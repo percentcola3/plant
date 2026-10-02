@@ -41,3 +41,10 @@ build/output/
 .codewiki/modules/*/.archive/
 .codewiki/modules/*.v36-stage/
 **/.claude/settings.local.json
+
+# Local design and assistant scratch files
+.mimosa/
+.v2c/
+.video_agent/
+**/.mimosa/
+build/icon-options/

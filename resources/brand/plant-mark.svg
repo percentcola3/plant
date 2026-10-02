@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1254 1254" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Plant</title>
+  <desc id="desc">A green leaf-shaped P with a gently curved stem and an upturned tail on a transparent background.</desc>
+  <path transform="translate(-8 21)" fill="#20764F" fill-rule="evenodd" d="
+    M 891 192
+    C 895 188 900 190 900 197
+    V 413
+    C 900 529 805 622 688 622
+    H 562
+    C 544 622 520 636 520 655
+    C 520 745 503 870 476 951
+    C 460 996 442 1029 397 1029
+    C 365 1029 337 1010 330 982
+    C 329 978 332 977 336 981
+    C 354 1003 372 981 380 951
+    C 407 870 424 745 424 655
+    C 424 598 415 533 415 466
+    C 415 340 516 238 642 238
+    H 756
+    C 811 238 858 220 891 192
+    Z
+    M 515 559
+    H 642
+    C 741 559 823 486 823 399
+    V 304
+    H 680
+    C 589 304 515 377 515 468
+    Z
+  "/>
+</svg>

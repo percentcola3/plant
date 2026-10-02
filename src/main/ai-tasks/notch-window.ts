@@ -153,7 +153,7 @@ export function setAiTaskNotchPanelHeight(height: number): void {
 }
 
 export function presentAiTaskNotch(): void {
-  if (settingsStore.getCached()?.aiTaskNotchEnabled === false) return
+  if (settingsStore.getCached()?.aiTaskNotchEnabled !== true) return
   const win = findAiTaskNotchWindow()
   if (!win || win.isDestroyed()) return
   win.showInactive()

@@ -15,7 +15,7 @@ type RuntimeInfo = {
   chrome: string
 }
 
-export type SettingsTab = 'appearance' | 'credentials' | 'ssh' | 'cli' | 'extension' | 'diagnostics' | 'about'
+export type SettingsTab = 'appearance' | 'credentials' | 'ssh' | 'cli' | 'diagnostics' | 'about'
 
 type ConfirmRequest = {
   title: string
@@ -89,25 +89,23 @@ export type Toast = {
 // UI 状态：弹窗、栏宽、toast 等。集中放，避免子组件彼此通信。
 export const useUiStore = defineStore('ui', () => {
   const settingsOpen = ref(false)
-  const settingsInitialTab = ref<SettingsTab>('credentials')
+  const settingsInitialTab = ref<SettingsTab>('appearance')
 
-  function openSettings(tab: SettingsTab = 'credentials'): void {
+  function openSettings(tab: SettingsTab = 'appearance'): void {
     settingsInitialTab.value = tab
     settingsOpen.value = true
   }
 
   // 中央区域显示模式：
-  // - home: 工作台首页（输入需求创建项目 + 最近项目）
   // - project-management / features-page: 内部项目管理
-  // - ai-config: 资源包
+  // - ai-config: 知识库
   // - skills-config: 技能
   // - external-view: 外部库（知识库 / UI 资产）查看页
-  // - onboarding-guide: 新手引导
   //
   // 历史：老 'requirement-work' view 在 Phase E 已废弃；
   // viewingRequirementIdSlug 保留为 null 兜底（sidebar 老高亮逻辑仍在引用）。
-  type ProjectView = 'home' | 'project-management' | 'project-home' | 'features-page' | 'ai-config' | 'skills-config' | 'external-view' | 'onboarding-guide'
-  const currentView = ref<ProjectView>('home')
+  type ProjectView = 'project-management' | 'project-home' | 'features-page' | 'ai-config' | 'skills-config' | 'external-view'
+  const currentView = ref<ProjectView>('project-management')
   // 从 AI 配置点 打开/编辑 跳走时，记一下返回锚点，让 ExternalRefViewer / editor
   // 关闭后回到 AI 配置而不是项目首页。
   const externalViewReturnTo = ref<ProjectView>('project-home')
@@ -127,7 +125,7 @@ export const useUiStore = defineStore('ui', () => {
     viewingRequirementIdSlug.value = null
     viewingExternalAlias.value = null
     viewingExternalRelPath.value = null
-    currentView.value = 'home'
+    currentView.value = 'project-management'
   }
   function openProjectManagement(): void {
     closeTerminalPanel()
@@ -146,13 +144,6 @@ export const useUiStore = defineStore('ui', () => {
     viewingExternalAlias.value = null
     viewingExternalRelPath.value = null
     currentView.value = 'skills-config'
-  }
-  function openGuide(): void {
-    closeTerminalPanel()
-    viewingRequirementIdSlug.value = null
-    viewingExternalAlias.value = null
-    viewingExternalRelPath.value = null
-    currentView.value = 'onboarding-guide'
   }
   function openAiConfig(): void {
     viewingRequirementIdSlug.value = null
@@ -194,6 +185,11 @@ export const useUiStore = defineStore('ui', () => {
 
   // Workspace v2 新对话框开关
   const newWorkspaceOpen = ref(false)
+  const createFeatureDirectoryId = ref<string | null>(null)
+  function requestCreateFeatureProject(workspaceId: string): void {
+    openProjectManagement()
+    createFeatureDirectoryId.value = workspaceId
+  }
   // UX 个人空间对话框：导入 UX 项目后引导创建；isFirstTime 只影响文案，允许跳过。
   const personalSpaceOpen = ref<{ workspaceId: string; isFirstTime?: boolean } | null>(null)
   function openPersonalSpace(workspaceId: string, isFirstTime?: boolean): void {
@@ -412,7 +408,7 @@ export const useUiStore = defineStore('ui', () => {
   // - cursor / vscode 在 App 启动后台异步调，结果给 project-tool-menu 用
   // 不阻塞 splash。结果缓存在 store 里，重复调直接返回。
   type OptionalDepName = 'claude-code' | 'cursor' | 'vscode'
-  type OptionalDepInfo = { found: boolean; version?: string; guideUrl?: string; checkedAt: number }
+  type OptionalDepInfo = { found: boolean; version?: string; checkedAt: number }
   const optionalDeps = ref<Partial<Record<OptionalDepName, OptionalDepInfo>>>({})
   const optionalDepInflight = new Map<OptionalDepName, Promise<OptionalDepInfo>>()
 
@@ -425,7 +421,7 @@ export const useUiStore = defineStore('ui', () => {
     const p = (async () => {
       const r = await call('setup.checkOptionalDep', { name })
       const info: OptionalDepInfo = r.ok
-        ? { found: r.data.found, version: r.data.version, guideUrl: r.data.guideUrl, checkedAt: Date.now() }
+        ? { found: r.data.found, version: r.data.version, checkedAt: Date.now() }
         : { found: false, checkedAt: Date.now() }
       optionalDeps.value = { ...optionalDeps.value, [name]: info }
       return info
@@ -447,7 +443,7 @@ export const useUiStore = defineStore('ui', () => {
     if (info.found) return true
     showToast(
       'error',
-      '未检测到 Claude Code。AI 面板需要它支持，请按指南安装后重启 App。',
+      '未检测到 Claude Code。请安装并认证后重启 App，或在设置中切换到内置 DeepSeek Harness。',
       8000
     )
     return false
@@ -463,16 +459,6 @@ export const useUiStore = defineStore('ui', () => {
       startupEnvironmentNotice.value = null
       return
     }
-
-    const url = startupEnvironmentNotice.value?.primaryActionUrl
-    if (!url) return
-
-    const r = await call('system.openExternal', { url })
-    if (!r.ok) {
-      showToast('error', `打开指南失败：${r.message}`, 6000)
-      return
-    }
-    startupEnvironmentNotice.value = null
   }
 
   return {
@@ -488,7 +474,6 @@ export const useUiStore = defineStore('ui', () => {
     openProjectManagement,
     openResources,
     openSkills,
-    openGuide,
     openAiConfig,
     openExternalView,
     closeExternalView,
@@ -496,6 +481,8 @@ export const useUiStore = defineStore('ui', () => {
     rememberEditorReturnView,
     resolveEditorReturnView,
     newWorkspaceOpen,
+    createFeatureDirectoryId,
+    requestCreateFeatureProject,
     personalSpaceOpen,
     openPersonalSpace,
     closePersonalSpace,

@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildStartupEnvironmentNotice } from './startup-environment'
 
-const CLAUDE_GUIDE_URL = 'https://docs.example.com/setup/cli'
-
 describe('buildStartupEnvironmentNotice（极简版，只关心 git binary + git user）', () => {
   it('git binary 不可用 → blocking', () => {
     const notice = buildStartupEnvironmentNotice({
       gitBinaryReady: false,
-      gitUser: { name: 'Alice', email: 'user@example.com', configured: true },
-      claudeGuideUrl: CLAUDE_GUIDE_URL
+      gitUser: { name: 'Alice', email: 'user@example.com', configured: true }
     })
 
     expect(notice?.severity).toBe('blocking')
@@ -19,8 +16,7 @@ describe('buildStartupEnvironmentNotice（极简版，只关心 git binary + git
   it('git user 邮箱未配 → blocking + 引导去 Settings', () => {
     const notice = buildStartupEnvironmentNotice({
       gitBinaryReady: true,
-      gitUser: { name: '', email: '', configured: false },
-      claudeGuideUrl: CLAUDE_GUIDE_URL
+      gitUser: { name: '', email: '', configured: false }
     })
 
     expect(notice).toMatchObject({
@@ -35,8 +31,7 @@ describe('buildStartupEnvironmentNotice（极简版，只关心 git binary + git
   it('git binary 不可用 + 邮箱未配 → blocking，但不给 settings 入口（先修 git）', () => {
     const notice = buildStartupEnvironmentNotice({
       gitBinaryReady: false,
-      gitUser: { name: '', email: '', configured: false },
-      claudeGuideUrl: CLAUDE_GUIDE_URL
+      gitUser: { name: '', email: '', configured: false }
     })
 
     expect(notice?.severity).toBe('blocking')
@@ -46,8 +41,7 @@ describe('buildStartupEnvironmentNotice（极简版，只关心 git binary + git
   it('一切正常 → 返回 null（没 splash notice）', () => {
     const notice = buildStartupEnvironmentNotice({
       gitBinaryReady: true,
-      gitUser: { name: 'Alice', email: 'user@example.com', configured: true },
-      claudeGuideUrl: CLAUDE_GUIDE_URL
+      gitUser: { name: 'Alice', email: 'user@example.com', configured: true }
     })
     expect(notice).toBeNull()
   })
@@ -56,8 +50,7 @@ describe('buildStartupEnvironmentNotice（极简版，只关心 git binary + git
     // 即使 claude 没装，启动 splash 也不应该叫——它现在是 lazy detect
     const notice = buildStartupEnvironmentNotice({
       gitBinaryReady: true,
-      gitUser: { name: 'Alice', email: 'user@example.com', configured: true },
-      claudeGuideUrl: CLAUDE_GUIDE_URL
+      gitUser: { name: 'Alice', email: 'user@example.com', configured: true }
     })
     expect(notice).toBeNull()
   })

@@ -36,11 +36,7 @@ function extractHost(prompt: string): string {
   try { return new URL(m[1]).host } catch { return m[1] }
 }
 
-const tokenHelpUrl = computed(() => {
-  const host = current.value?.host ?? ''
-  if (host.includes('github.com')) return '访问 https://github.com/settings/tokens 生成 Personal Access Token。'
-  return '请使用该 Git 服务的 Personal Access Token，不要使用登录密码。'
-})
+const tokenHelpText = '请在你使用的 Git 服务账号设置中创建 Personal Access Token，不要使用登录密码。'
 
 onMounted(() => {
   window.events.on('askpass.request', (payload: unknown) => {
@@ -116,7 +112,7 @@ async function cancel(): Promise<void> {
         v-if="current?.isPassword"
         class="text-xs text-muted-foreground"
       >
-        {{ tokenHelpUrl }}
+        {{ tokenHelpText }}
       </p>
 
       <Input

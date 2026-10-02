@@ -1,3 +1,5 @@
+import { isCliAiProvider } from '../../../shared/ai-provider'
+import { cliTranscriptPath, cliNativeSessionId } from '../../agent-cli/transcript'
 // Claude headless IPC handlers：submit / abort / replay / watch
 import { BrowserWindow } from 'electron'
 import { registerIpcHandler } from '../registry'
@@ -235,7 +237,7 @@ export function claudeWorkspaceSessionKey(
   aiProvider: AiProvider = DEFAULT_AI_PROVIDER
 ): string {
   const base = branchScopedWorkspaceKey(branch, targetWorkspace?.scopeKey)
-  return aiProvider === 'deepseek-harness' ? `${base}|provider:${aiProvider}` : base
+  return aiProvider !== 'claude-code' ? `${base}|provider:${aiProvider}` : base
 }
 
 function currentAiProvider(): AiProvider {
@@ -262,7 +264,7 @@ async function sessionIdFor(
   const aiProvider = currentAiProvider()
   const scopeKey = claudeWorkspaceSessionKey(branch, targetWorkspace, aiProvider)
   const sessionId = ensureWorkspaceSessionId(projectPath, scopeKey)
-  if (aiProvider === 'deepseek-harness') return sessionId
+  if (aiProvider !== 'claude-code') return sessionId
   // 死绑定自愈：EBADF 时期 forceNew 产生的空壳会话（有 id 无 jsonl）会让
   // 面板 replay 不到任何历史。同一 workDir 有真实会话时自动回填绑定。
   const workArea = await readActiveWorkArea(projectPath)
@@ -400,15 +402,15 @@ export function registerClaudeHandlers(): void {
     if (aiProvider === 'claude-code') {
       resumeFilePath = findSessionJsonlForResume(workDir, sessionId) ?? undefined
     }
-    const hasHistory = aiProvider === 'deepseek-harness'
+    const hasHistory = isCliAiProvider(aiProvider) ? !!cliNativeSessionId(sessionId) : aiProvider === 'deepseek-harness'
       ? hasDeepSeekTranscript(sessionId)
       : resumeFilePath !== undefined
     diagnostics.markAiContextReady(taskRunId)
 
-    const spawnLease = aiProvider === 'claude-code'
+    const spawnLease = aiProvider !== 'deepseek-harness'
       ? await projectWatcher.acquireSpawnLease()
       : null
-    if (aiProvider === 'claude-code') {
+    if (aiProvider !== 'deepseek-harness') {
       if (!spawnLease) {
         throw new UIClientError(
           'AI_SPAWN_FAILED',
@@ -601,7 +603,7 @@ export function registerClaudeHandlers(): void {
     // 死绑定自愈在 sessionIdFor 内已做；work area 同步后若解析结果变了，
     // 用同步后的 workDir 再核一次，避免切换瞬间读到旧目录
     // 显式 sessionId 用于精确重连当前面板/任务，不再按 scope 暗中换会话。
-    const healed = requested || aiProvider === 'deepseek-harness'
+    const healed = requested || aiProvider !== 'claude-code'
       ? null
       : recoverDeadWorkspaceSessionBinding(
         p.path,
@@ -612,7 +614,7 @@ export function registerClaudeHandlers(): void {
     if (!requested) latestWatchRequests.set(effectiveSessionId, watchId)
     // work area 变更后 JSONL 可能仍在会话首次启动的 cwd 下。
     // 重启恢复只做读取定位，不搬文件，避免干扰仍在后台写入的 turn。
-    const jsonlPath = aiProvider === 'deepseek-harness'
+    const jsonlPath = isCliAiProvider(aiProvider) || existsSync(cliTranscriptPath(effectiveSessionId)) ? cliTranscriptPath(effectiveSessionId) : aiProvider === 'deepseek-harness'
       ? deepSeekSessionTranscriptPath(effectiveSessionId)
       : sessionJsonlPathForReplay(workDir, effectiveSessionId)
 

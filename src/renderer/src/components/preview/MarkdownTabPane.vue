@@ -164,11 +164,10 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #fff;
+  background: var(--color-bg-panel);
 }
 .md-tab-pane__header {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--color-border-border/60, #e5e7eb);
   padding: 10px 14px 8px;
   background: var(--color-bg-panel);
 }
@@ -200,35 +199,37 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
 .md-tab-pane__toolbar-label {
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: #64748b;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
 }
 .md-tab-pane__seg {
   display: flex;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 0;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  background: #fff;
+  background: var(--color-bg-panel);
 }
 .md-tab-pane__seg-btn {
   padding: 4px 12px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   transition: background 0.12s, color 0.12s;
 }
-.md-tab-pane__seg-btn + .md-tab-pane__seg-btn { border-left: 1px solid #e2e8f0; }
-.md-tab-pane__seg-btn.is-active { background: #0f172a; color: #fff; }
-.md-tab-pane__seg-btn:not(.is-active):hover { background: #f8fafc; color: #0f172a; }
+.md-tab-pane__seg-btn { border-radius: 6px; }
+.md-tab-pane__seg-btn.is-active { background: var(--color-tab-selected); color: var(--color-text-primary); }
+.md-tab-pane__seg-btn:not(.is-active):hover { background: var(--color-bg-subtle); color: var(--color-text-primary); }
 .md-tool-btn {
   height: 26px;
   padding: 0 10px;
-  border-left: 1px solid #e2e8f0;
+  border-radius: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   transition: background 0.12s, color 0.12s;
 }
 .md-tool-btn:first-child { border-left: 0; }
-.md-tool-btn:hover { background: #f8fafc; color: #0f172a; }
+.md-tool-btn:hover { background: var(--color-bg-subtle); color: var(--color-text-primary); }
 .md-tab-pane__body { flex: 1 1 auto; min-height: 0; }
 .md-tab-pane__rendering {
   position: absolute;
@@ -238,7 +239,7 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
   background: rgba(255,255,255,0.9);
   padding: 4px 10px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 </style>

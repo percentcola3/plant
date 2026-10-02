@@ -11,9 +11,10 @@ describe('WorkspaceSidebar pinned current workspace', () => {
     expect(source).not.toContain('展开项目栏')
   })
 
-  it('pins the active workspace at the top of the project list', () => {
-    expect(source).toContain('orderedProjects')
-    expect(source).toContain('sidebar-project--pinned')
-    expect(source).toContain('p.id === visibleActiveId')
+  it('shows directories in the workbench rather than duplicating a sidebar project list', () => {
+    const workbench = readFileSync(new URL('./WorkbenchPage.vue', import.meta.url), 'utf-8')
+    expect(source).not.toContain('orderedProjects')
+    expect(workbench).toContain('v-for="directory in repositories"')
+    expect(workbench).toContain('@click="toggleDirectory(directory.id)"')
   })
 })

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // ConversationView — 对话流主视图
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { Plus, Sparkle } from 'lucide-vue-next'
+import PlantIllustration from '@/components/brand/PlantIllustration.vue'
+import { Plus } from 'lucide-vue-next'
 import { useConversationStore } from '@/stores/conversation'
 import MessageContent from './MessageContent.vue'
 import MessageActions from './MessageActions.vue'
@@ -32,7 +33,7 @@ type TargetDocument = {
 }
 type TargetWorkspace = { kind: 'workspace-home'; scopeKey?: string; intent?: 'design-prd' }
 type AiPanelSettings = { cliKind?: CliKind; aiProvider?: AiProvider }
-type AssistantIdentity = { name: 'Claude' | 'Peeka'; avatar: 'C' | 'P' }
+type AssistantIdentity = { name: 'Claude' | 'Plant' | 'Codex' | 'OpenCode' | 'Pi'; avatar: 'C' | 'P' | 'O' | 'π' }
 
 const props = withDefaults(defineProps<{
   claudeStatus?: ClaudeStatus
@@ -67,7 +68,10 @@ const SCROLL_BOTTOM_THRESHOLD = 96
 const assistantIdentity = ref<AssistantIdentity>({ name: 'Claude', avatar: 'C' })
 
 function assistantIdentityFromSettings(settings: AiPanelSettings): AssistantIdentity {
-  if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }
+  if (settings.aiProvider === 'deepseek-harness') return { name: 'Plant', avatar: 'P' }
+  if (settings.aiProvider === 'codex-cli') return { name: 'Codex', avatar: 'C' }
+  if (settings.aiProvider === 'opencode-cli') return { name: 'OpenCode', avatar: 'O' }
+  if (settings.aiProvider === 'pi-cli') return { name: 'Pi', avatar: 'π' }
   return { name: 'Claude', avatar: 'C' }
 }
 
@@ -565,7 +569,7 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
     </div>
     <div ref="scrollContainer" class="cv-messages" @scroll="onMessagesScroll">
       <div v-if="messages.length === 0" class="cv-empty">
-        <Sparkle class="cv-empty__icon" :size="28" aria-hidden="true" />
+        <PlantIllustration kind="skills" class="cv-empty__illustration" />
         <strong>告诉我你想完成什么</strong>
         <span class="cv-empty__description">描述目标，或添加图片和截图作为参考</span>
       </div>
@@ -726,7 +730,6 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   gap: 7px;
   min-height: 30px;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--color-border);
   color: var(--color-text-secondary);
   font-size: 12px;
 }
@@ -972,11 +975,8 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   text-align: center;
   color: var(--color-text-muted);
 }
-.cv-empty__icon {
-  margin-bottom: 16px;
-  color: var(--color-text-primary);
-  fill: currentColor;
-  stroke: none;
+.cv-empty__illustration {
+  margin-bottom: 10px;
 }
 .cv-empty strong {
   color: var(--color-text-primary);

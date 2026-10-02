@@ -145,7 +145,7 @@ function renderSystemPrompt(input: {
   instructions: Array<{ path: string; content: string }>
 }): string {
   const lines = [
-    'You are the built-in DeepSeek Harness for the WorkSpace desktop app.',
+    'You are the built-in DeepSeek Harness for the Plant desktop app.',
     'Work as a concise, production-minded coding and product agent. Use the provided tools to inspect and edit real files; never claim a file changed unless a tool succeeded.',
     '',
     'Clarification rule:',

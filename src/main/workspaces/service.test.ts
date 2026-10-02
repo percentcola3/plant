@@ -96,6 +96,7 @@ vi.mock('../external-pool/service', () => ({
 
 import {
   ensureDefaultWorkspace,
+  listWorkspaces,
   awaitPendingWorkAreaSync,
   scan,
   setActiveWorkspace,
@@ -134,6 +135,7 @@ describe('workspace service template sync', () => {
     lifecycleMocks.readGitCapability.mockResolvedValue({ state: 'unbound' })
     externalMocks.list.mockResolvedValue([])
     await fs.rm(workspacesJsonPath(), { force: true })
+    _testOnlyResetSharedCache()
   })
 
   it('扫描已登记 UX 工作区时补齐 Claude 模板', async () => {
@@ -327,34 +329,26 @@ describe('workspace service template sync', () => {
     expect(lifecycleMocks.watcherStopAll).not.toHaveBeenCalled()
   })
 
-  it('初始化本地工作台时自动创建并绑定剪页库资源', async () => {
+  it('初始化本地工作台时不再创建或绑定剪页库', async () => {
     const result = await ensureDefaultWorkspace()
-
-    expect(lifecycleMocks.ensureDefaultKnowledgeWorkspace).toHaveBeenCalledOnce()
-    expect(externalMocks.add).toHaveBeenCalledWith({
-      alias: '剪页库',
-      category: 'knowledge',
-      kind: 'local',
-      sourcePath: '/tmp/clips'
-    })
-    expect(externalMocks.attach).toHaveBeenCalledWith('default-workspace', 'clips-ref')
+    expect(lifecycleMocks.ensureDefaultKnowledgeWorkspace).not.toHaveBeenCalled()
+    expect(externalMocks.add).not.toHaveBeenCalled()
+    expect(externalMocks.attach).not.toHaveBeenCalled()
     expect(result.id).toBe('default-workspace')
   })
 
-  it('已有剪页资源时直接复用，不重复注册', async () => {
-    externalMocks.list.mockResolvedValue([{
-      id: 'existing-clips-ref',
-      alias: '剪页库',
-      kind: 'local',
-      category: 'knowledge',
-      source: '/tmp/clips',
-      poolPath: '/tmp/clips',
-      addedAt: '2026-07-20T00:00:00.000Z'
-    }])
-
-    await ensureDefaultWorkspace()
-
-    expect(externalMocks.add).not.toHaveBeenCalled()
-    expect(externalMocks.attach).toHaveBeenCalledWith('default-workspace', 'existing-clips-ref')
+  it('可以切换多个项目仓库，并只列出可见的项目仓库', async () => {
+    const store = new WorkspacesStore()
+    const first = workspace({ id: 'first', kind: 'project', workflowMode: 'simple', isDefault: true })
+    const second = workspace({ id: 'second', kind: 'project', workflowMode: 'simple' })
+    await store.add(first)
+    await store.add(second)
+    await store.add(workspace({ id: 'knowledge', kind: 'knowledge' }))
+    await store.add(workspace({ id: 'hidden', kind: 'project', hidden: 'space' }))
+    expect((await listWorkspaces()).map(w => w.id).sort()).toEqual(['first', 'second'])
+    await setActiveWorkspace(second.id)
+    expect(await store.activeId()).toBe(second.id)
+    await setActiveWorkspace(first.id)
+    expect(await store.activeId()).toBe(first.id)
   })
 })

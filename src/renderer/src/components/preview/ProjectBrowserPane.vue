@@ -19,7 +19,6 @@ const address = computed({
 })
 const addressInput = ref<HTMLInputElement>()
 const isBlank = computed(() => !page.value?.url)
-const COOPER_URL = 'https://docs.example.com'
 const page = computed(() => browser.pages.find(p => p.id === props.pageId))
 const creatingDesign = ref(false)
 const canCreateDesign = computed(() => !creatingDesign.value && !isBlank.value && !page.value?.loading && !page.value?.error)
@@ -37,7 +36,6 @@ watch(() => props.pageId, async () => {
   await nextTick()
   if (isBlank.value) addressInput.value?.focus()
 }, { immediate: true })
-function openCooper(): void { address.value = COOPER_URL; void control('navigate') }
 
 async function createDesign(): Promise<void> {
   if (!canCreateDesign.value) return
@@ -136,11 +134,7 @@ onBeforeUnmount(() => {
     <div ref="surface" class="min-h-0 flex-1 bg-background" aria-label="项目网页">
       <div v-if="isBlank" class="flex h-full flex-col items-center justify-center gap-5 text-muted-foreground">
         <div class="text-lg font-medium text-foreground">新标签页</div>
-        <p class="text-sm">在地址栏输入网址，或打开常用网站</p>
-        <button type="button" class="flex flex-col items-center gap-2 rounded-xl border border-border px-8 py-5 hover:bg-muted" @click="openCooper">
-          <span class="text-base font-medium text-foreground">文档平台</span>
-          <span class="text-xs">docs.example.com</span>
-        </button>
+        <p class="text-sm">在地址栏输入你要访问的网址</p>
       </div>
     </div>
   </section>

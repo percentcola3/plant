@@ -3,7 +3,6 @@ import { spawnSync } from 'node:child_process'
 import { BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { readFileSync, existsSync, statSync } from 'node:fs'
-import { CLAUDE_CODE_GUIDE_URL } from '../system/setup'
 import { resolveCliSync } from '../system/cli-resolver'
 import { findCommandSync } from '../system/find-command'
 import { ensureNodePtySpawnHelpersExecutable } from './node-pty-helper'
@@ -68,8 +67,8 @@ export function defaultPtyCommand(): { shell: string; args: string[]; banner: st
     shell: sh,
     args: [],
     banner:
-      `\x1b[33m[WorkSpace] 未检测到 ${cli.kind}，临时回退到系统 shell。\r\n` +
-      `请按安装指南安装后重启 App：${CLAUDE_CODE_GUIDE_URL}\x1b[0m\r\n`
+      `\x1b[33m[Plant] 未检测到 ${cli.kind}，临时回退到系统 shell。\r\n` +
+      `安装并认证所选 CLI 后重启 App，或在设置中使用内置 DeepSeek Harness。\x1b[0m\r\n`
   }
 }
 

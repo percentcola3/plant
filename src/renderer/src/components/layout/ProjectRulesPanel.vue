@@ -5,6 +5,7 @@
 // - 若导入的项目本来就有真实 CLAUDE.md/AGENTS.md：不丢弃，在其末尾注入 @system.md 引用；
 //   面板把它们列为「项目自有」，可打开查看（App 不接管内容）。
 
+import { SlidersHorizontal, FileCheck2, FileText } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useEditorStore } from '@/stores/editor'
@@ -79,12 +80,12 @@ async function openOwn(relPath: string): Promise<void> {
 <template>
   <section class="rules-block">
     <div class="rules-block__head">
-      <h3><span aria-hidden="true">📐</span> 项目规则</h3>
+      <h3><SlidersHorizontal :size="16" aria-hidden="true" /> 项目规则</h3>
       <p>唯一事实源是 <code>system.md</code>，只维护这一份；新建需求时自动关联到 feature 目录。</p>
     </div>
     <ul class="rules-list">
       <li class="rule-row rule-row--primary">
-        <span class="rule-icon" aria-hidden="true">⭐️</span>
+        <span class="rule-icon" aria-hidden="true"><FileCheck2 :size="19" /></span>
         <div class="rule-main">
           <div class="rule-title">
             <code>system.md</code>
@@ -98,7 +99,7 @@ async function openOwn(relPath: string): Promise<void> {
         </button>
       </li>
       <li v-for="o in ownFiles" :key="o.relPath" class="rule-row">
-        <span class="rule-icon" aria-hidden="true">📄</span>
+        <span class="rule-icon" aria-hidden="true"><FileText :size="19" /></span>
         <div class="rule-main">
           <div class="rule-title">
             <code>{{ o.relPath }}</code>
@@ -114,7 +115,7 @@ async function openOwn(relPath: string): Promise<void> {
 
 <style scoped>
 .rules-block { display: flex; flex-direction: column; gap: 10px; }
-.rules-block__head h3 { margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 650; }
+.rules-block__head h3 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--color-text-primary); font-size: 14px; font-weight: 650; }
 .rules-block__head h3 span { margin-right: 4px; }
 .rules-block__head p { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 12px; }
 .rules-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -123,7 +124,8 @@ async function openOwn(relPath: string): Promise<void> {
   border: 1px solid var(--color-border); background: var(--color-bg-base);
   border-radius: 6px; padding: 8px 10px;
 }
-.rule-icon { flex: 0 0 auto; font-size: 16px; }
+.rules-block__head h3 svg { color: var(--color-leaf); }
+.rule-icon { display: grid; place-items: center; flex: none; width: 30px; height: 34px; border-radius: 7px; background: var(--color-accent-light); color: var(--color-leaf); }
 .rule-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .rule-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
 .rule-title code {

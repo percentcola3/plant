@@ -4,7 +4,7 @@ import type { GitPushHistory, GitPushSummary } from '../../shared/git-push-summa
 import { INCOMING_NOTES_REF, PUSH_NOTES_REF, parsePushNote } from './push-summary-data'
 
 const locks = new Map<string, Promise<unknown>>()
-const identity = ['-c', 'user.name=Peeka', '-c', 'user.email=peeka@localhost']
+const identity = ['-c', 'user.name=Plant', '-c', 'user.email=plant@localhost']
 
 export async function withPushNotesLock<T>(git: SimpleGit, cwd: string, work: () => Promise<T>): Promise<T> {
   const key = resolve(cwd, (await git.raw(['rev-parse', '--git-common-dir'])).trim())

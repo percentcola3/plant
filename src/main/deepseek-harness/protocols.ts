@@ -65,20 +65,20 @@ export function responsesRequest(messages: DeepSeekMessage[], tools: DeepSeekToo
 }
 
 export function parseMessages(body: { content?: Block[]; stop_reason?: string }): DeepSeekAssistantMessage {
-  if (!Array.isArray(body.content)) throw new Error('Peeka 返回格式异常：缺少 content')
+  if (!Array.isArray(body.content)) throw new Error('Plant 返回格式异常：缺少 content')
   if (body.stop_reason === 'max_tokens') throw new Error('模型输出达到长度上限，请缩小任务后重试')
   return {
     role: 'assistant',
     content: body.content.filter(b => b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('\n') || null,
     tool_calls: body.content.filter(b => b.type === 'tool_use').map(b => {
-      if (typeof b.id !== 'string' || typeof b.name !== 'string' || !b.input || typeof b.input !== 'object') throw new Error('Peeka 返回了无效工具调用')
+      if (typeof b.id !== 'string' || typeof b.name !== 'string' || !b.input || typeof b.input !== 'object') throw new Error('Plant 返回了无效工具调用')
       return { id: b.id, type: 'function', function: { name: b.name, arguments: JSON.stringify(b.input) } }
     })
   }
 }
 
 export function parseResponses(body: { output?: Block[]; status?: string }): DeepSeekAssistantMessage {
-  if (!Array.isArray(body.output) || (body.status && body.status !== 'completed')) throw new Error('Peeka Responses 请求未完成或返回格式异常')
+  if (!Array.isArray(body.output) || (body.status && body.status !== 'completed')) throw new Error('Plant Responses 请求未完成或返回格式异常')
   const texts: string[] = []
   const calls: NonNullable<DeepSeekAssistantMessage['tool_calls']> = []
   for (const item of body.output) {
@@ -89,7 +89,7 @@ export function parseResponses(body: { output?: Block[]; status?: string }): Dee
       }
     }
     if (item.type === 'function_call') {
-      if (typeof item.call_id !== 'string' || typeof item.name !== 'string' || typeof item.arguments !== 'string') throw new Error('Peeka 返回了无效工具调用')
+      if (typeof item.call_id !== 'string' || typeof item.name !== 'string' || typeof item.arguments !== 'string') throw new Error('Plant 返回了无效工具调用')
       calls.push({ id: item.call_id, type: 'function', function: { name: item.name, arguments: item.arguments } })
     }
   }

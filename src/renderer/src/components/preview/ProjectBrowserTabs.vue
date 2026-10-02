@@ -108,15 +108,14 @@ function context(event: MouseEvent, id: string): void {
   </div>
 </template>
 <style scoped>
-.workbench-tabs { display: flex; align-items: center; min-width: 0; width: 100%; height: 38px; gap: 3px; padding: 3px 8px; background: var(--color-bg-panel); border-bottom: 1px solid var(--color-border-border); }
+.workbench-tabs { display: flex; align-items: center; min-width: 0; width: 100%; height: 38px; gap: 3px; padding: 3px 8px; background: var(--color-bg-panel); }
 .tab-strip { display: flex; min-width: 0; flex: 0 1 auto; overflow-x: auto; gap: 3px; scrollbar-width: thin; }
-.tab { display: flex; flex: 1 1 190px; min-width: 76px; max-width: 220px; height: 30px; align-items: center; border-radius: 7px 7px 0 0; color: var(--color-text-muted); padding: 0 6px; gap: 3px; }
-.tab { border: 1px solid transparent; transition: background 120ms, border-color 120ms; }
+.tab { display: flex; flex: 1 1 190px; min-width: 76px; max-width: 220px; height: 30px; align-items: center; border-radius: 8px; color: var(--color-text-muted); padding: 0 6px; gap: 3px; }
+.tab { border: 0; transition: background 120ms, color 120ms; }
 .tab.active, .tab.active:hover, .overview.active {
-  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-bg-panel));
+  background: var(--color-tab-selected);
   color: var(--color-text-primary);
-  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
-  box-shadow: inset 0 -3px 0 var(--color-accent);
+  box-shadow: none;
 }
 .tab.active .tab-label { font-weight: 650; }
 .tab:hover, .new-tab:hover, .overview:hover { background: var(--color-button-outline-hover); }

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { createRequire } from 'node:module'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 
 // 决议 git 二进制路径 + bundled 时必需的运行时 env vars。
 // 优先级：
@@ -81,10 +81,9 @@ function locateBundled(): string | null {
 }
 
 function locateSystem(): string | null {
-  // 用 user shell 的 login + interactive 模式找，与 setup.ts:which() 同口径
+  // 登录 shell 的 PATH 才含用户自装的 git；可执行程序固定为字面量 /bin/zsh
   try {
-    const sh = process.env.SHELL ?? '/bin/zsh'
-    const out = execSync(`${sh} -lic 'command -v git'`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    const out = execFileSync('/bin/zsh', ['-lic', 'command -v git'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
     return out && existsSync(out) ? out : null
   } catch {
     return null

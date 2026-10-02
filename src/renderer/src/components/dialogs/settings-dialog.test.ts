@@ -7,25 +7,27 @@ describe('SettingsDialog', () => {
     const source = readFileSync(resolve(__dirname, 'SettingsDialog.vue'), 'utf8')
 
     expect(source).toContain("import { DEFAULT_CLI_KIND, type CliKind } from '@shared/cli'")
-    expect(source).toContain("type AiEngine = CliKind | 'deepseek-harness'")
+    expect(source).toContain("type AiEngine = CliKind | Exclude<AiProvider, 'claude-code'>")
     expect(source).toContain('const aiEngine = ref<AiEngine>(DEFAULT_CLI_KIND)')
     expect(source).toContain("chooseAiEngine('claude')")
   })
 
-  it('offers Claude Code and Peeka as one selection group', () => {
+  it('offers local agent CLIs and Plant as one selection group', () => {
     const source = readFileSync(resolve(__dirname, 'SettingsDialog.vue'), 'utf8')
 
     expect(source).toContain("import { DEFAULT_AI_PROVIDER, type AiProvider } from '@shared/ai-provider'")
     expect(source).toContain("chooseAiEngine('claude')")
     expect(source).toContain("chooseAiEngine('deepseek-harness')")
     expect(source).toContain('name="ai-engine"')
+    for (const provider of ['codex-cli', 'opencode-cli', 'pi-cli']) expect(source).toContain(provider)
+    expect(source).toContain('chooseAiEngine(engine.value)')
     expect(source).not.toContain('Claude Code 命令')
     expect(source).toContain("window.dispatchEvent(new CustomEvent('ai-engine-changed', { detail: settings }))")
     expect(source).toContain("aiEngine.value === 'deepseek-harness'")
-    expect(source).toContain("peekaConnection: { ...peekaConnection.value }")
+    expect(source).toContain("plantConnection: { ...plantConnection.value }")
     expect(source).toContain("call('settings.update', { deepseekApiKey: null })")
     expect(source).toContain('加密保存在本机')
-    expect(source).toContain('内置 Peeka')
+    expect(source).toContain('内置 Plant')
     expect(source).toContain('基于 DeepSeek')
     expect(source).toContain("v-if=\"aiEngine === 'deepseek-harness'\"")
     expect(source).toContain('视觉模型')
@@ -38,6 +40,17 @@ describe('SettingsDialog', () => {
     expect(source).toContain('外观')
     expect(source).toContain('chooseTheme(')
     expect(source).toContain('useThemeStore')
+  })
+
+  it('groups HTTPS and SSH under Git authentication', () => {
+    const source = readFileSync(resolve(__dirname, 'SettingsDialog.vue'), 'utf8')
+    const navigation = source.slice(source.indexOf('<nav '), source.indexOf('</nav>'))
+    expect(navigation).toContain('>Git 认证</button>')
+    expect(navigation).not.toContain('>凭证缓存</button>')
+    expect(navigation).not.toContain('>SSH Key</button>')
+    expect(source).toContain('aria-label="Git 认证方式"')
+    expect(source).toContain("call('askpass.listCreds'")
+    expect(source).toContain("call('ssh.check'")
   })
 
   it('exposes SSH key setup with neutral git-service guidance', () => {

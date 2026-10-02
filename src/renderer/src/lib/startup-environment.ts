@@ -6,9 +6,8 @@ export type StartupEnvironmentNotice = {
   title: string
   severity: 'blocking' | 'recommendation'
   items: string[]
-  primaryActionKind?: 'external' | 'settings'
+  primaryActionKind?: 'settings'
   primaryActionLabel?: string
-  primaryActionUrl?: string
 }
 
 // 启动 splash 期间只关心两件事：
@@ -22,7 +21,7 @@ export function buildStartupEnvironmentNotice(
   let severity: StartupEnvironmentNotice['severity'] = 'recommendation'
 
   if (!result.gitBinaryReady) {
-    items.push('App 内置 Git 组件不可用。请尝试重装 WorkSpace；或先在系统装一份 git 兜底，重启 App 即可。')
+    items.push('App 内置 Git 组件不可用。请尝试重装 Plant；或先在系统装一份 git 兜底，重启 App 即可。')
     severity = 'blocking'
   }
   if (!result.gitUser.configured) {

@@ -5,10 +5,10 @@ const source = readFileSync(new URL('./WorkspaceSidebar.vue', import.meta.url), 
 
 describe('WorkspaceSidebar footer actions', () => {
   it('keeps primary navigation in the workspace rail', () => {
-    expect(source).toContain('class="workspace-rail"')
-    expect(source).toContain('aria-label="首页"')
-    expect(source).toContain('aria-label="项目管理"')
-    expect(source).toContain('aria-label="资源包"')
+    expect(source).toContain('class="workspace-rail app-chrome"')
+    expect(source).not.toContain('aria-label="首页"')
+    expect(source).toContain('aria-label="工作台"')
+    expect(source).toContain('aria-label="知识库"')
     expect(source).toContain('aria-label="技能"')
     expect(source).not.toContain('class="sidebar-footer-action"')
   })

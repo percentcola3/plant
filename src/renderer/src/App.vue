@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import MainWindow from './views/MainWindow.vue'
+import PlantLogo from './components/brand/PlantLogo.vue'
 import AiTaskNotchWindow from './components/layout/AiTaskNotchWindow.vue'
 import BranchHistoryDialog from './components/dialogs/BranchHistoryDialog.vue'
 import { useUiStore } from './stores/ui'
@@ -15,23 +16,16 @@ const editor = useEditorStore()
 const isAiTaskNotchWindow = new URLSearchParams(window.location.search).get('window') === 'ai-task-notch'
 const hasUnsavedEditorChanges = computed(() => editor.isDirty)
 const startupLoading = ref(true)
-const startupStep = ref('正在启动 WorkSpace')
+const startupStep = ref('正在启动 Plant')
 const startupError = ref<string | null>(null)
 
-// 浏览器插件保存剪页成功 → 右下角提示。剪页作为知识资源包，不再切换独立工作区。
+// 显示 Git 推送总结的提示。
 if (!isAiTaskNotchWindow) onMounted(() => {
   const offSummary = window.events.on('git.push-summary-warning', (payload: unknown) => {
     const event = payload as { message: string }
     ui.showToast('info', event.message, 6000)
   })
   onBeforeUnmount(offSummary)
-  const off = window.events.on('raw.captured', (payload: unknown) => {
-    const event = payload as { title?: string; sourceHost?: string; workspaceId?: string }
-    const title = event.title || '未命名剪页'
-    const host = event.sourceHost ? ` · ${event.sourceHost}` : ''
-    ui.showToast('info', `已保存到剪页资源包 — ${title}${host}`, 4000)
-  })
-  onBeforeUnmount(off)
 })
 
 // auto-save saga 在 fs-change 触发后会 commit + push 一次 wip。用户对"未察觉自动 push"
@@ -147,10 +141,10 @@ if (!isAiTaskNotchWindow) onBeforeUnmount(() => {
       <div v-if="startupLoading" class="startup-overlay">
         <div class="startup-panel">
           <div class="startup-mark" aria-hidden="true">
-            <span />
+            <PlantLogo :size="34" />
           </div>
           <div class="startup-copy">
-            <strong>正在打开 WorkSpace</strong>
+            <strong>正在打开 Plant</strong>
             <p>{{ startupStep }}</p>
           </div>
         </div>
@@ -193,22 +187,12 @@ if (!isAiTaskNotchWindow) onBeforeUnmount(() => {
 
 .startup-mark::before {
   position: absolute;
-  inset: 8px;
+  inset: -4px;
   border: 2px solid var(--color-accent-border);
   border-top-color: var(--color-accent);
   border-radius: 999px;
   content: '';
   animation: startup-spin 0.8s linear infinite;
-}
-
-.startup-mark span {
-  position: absolute;
-  left: 14px;
-  top: 14px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--color-accent);
 }
 
 .startup-copy strong {

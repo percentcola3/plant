@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 vi.mock('./client', async () => {
   const { simpleGit } = await import('simple-git')
   const gitFor = (path: string) => simpleGit({ baseDir: path, unsafe: { allowUnsafeConfigPaths: true } })
-    .env({ PATH: process.env.PATH, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' })
+    .env({ PATH: process.env.PATH, ...(process.env.GIT_EXEC_PATH ? { GIT_EXEC_PATH: process.env.GIT_EXEC_PATH } : {}), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' })
   return { gitFor, gitForWithAskpass: async (path: string) => gitFor(path) }
 })
 
@@ -15,7 +15,7 @@ vi.mock('../system/ssh', () => ({
   sshAuthorizationError: () => null,
 }))
 
-import { bindGitRepository } from './capability'
+import { bindGitRepository, unbindGitRepository } from './capability'
 import { gitFor } from './client'
 
 let root: string
@@ -47,6 +47,20 @@ afterEach(async () => {
 })
 
 describe('Git binding with real local repositories', () => {
+  it('unbinds origin while preserving files, local branches and commit history', async () => {
+    await writeAt(remotePath, 'README.md', 'remote content')
+    await commitAll(remotePath)
+    await bindGitRepository(workspacePath, { remoteUrl: remotePath, branch: 'main' })
+    const git = gitFor(workspacePath)
+    const head = await git.revparse(['HEAD'])
+    await writeAt(workspacePath, 'draft.txt', 'unsaved draft')
+    await expect(unbindGitRepository(workspacePath)).resolves.toEqual({ state: 'local', branch: 'main' })
+    expect(await git.revparse(['HEAD'])).toBe(head)
+    expect(await fs.readFile(join(workspacePath, 'draft.txt'), 'utf8')).toBe('unsaved draft')
+    expect(await git.getRemotes()).toEqual([])
+    await expect(unbindGitRepository(workspacePath)).resolves.toEqual({ state: 'local', branch: 'main' })
+  })
+
   it('preserves scaffold and user files while importing remote-only files into a new workspace', async () => {
     const collisions = [
       '.gitignore',

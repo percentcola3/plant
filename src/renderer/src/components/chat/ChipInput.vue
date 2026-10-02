@@ -530,7 +530,7 @@ onMounted(() => {
 .chip-input-wrap--embedded .chip-input {
   min-height: 44px;
   max-height: 180px;
-  padding: 12px 14px 6px;
+  padding: 10px 12px 6px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -555,9 +555,9 @@ onMounted(() => {
   gap: 4px;
   padding: 2px 8px;
   margin: 0 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-button);
   border: 1px solid;
-  font-size: 13px;
+  font-size: 12px;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-weight: 600;
   line-height: 1.3;
@@ -594,17 +594,17 @@ onMounted(() => {
 }
 .chip-input .chip-token--chip {
   background: var(--color-success-subtle);
-  border-color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 20%, transparent);
   color: var(--color-success);
 }
 .chip-input .chip-token--image {
   background: var(--color-accent-subtle);
-  border-color: #93c5fd;
+  border-color: var(--color-accent-border);
   color: var(--color-accent-pressed);
 }
 .chip-input .chip-token--fileref {
   background: var(--color-warning-subtle);
-  border-color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 20%, transparent);
   color: var(--color-warning);
 }
 .chip-input .chip-token--resource {

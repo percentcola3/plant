@@ -1,4 +1,4 @@
-import { validatePeekaConnection } from '../../../shared/peeka'
+import { validatePlantConnection } from '../../../shared/plant'
 import { findAiTaskNotchWindow, presentAiTaskNotch } from '../../ai-tasks/notch-window'
 import { isAbsolute } from 'node:path'
 import { registerIpcHandler } from '../registry'
@@ -15,15 +15,15 @@ const VALID_CLI_KINDS = new Set<string>(['claude'])
 export function registerSettingsHandlers(): void {
   registerIpcHandler('settings.get', async () => settingsView(await settingsStore.get()))
 
-  registerIpcHandler('settings.update', async ({ workspaceRoot, preferredTool, cliKind, aiProvider, deepseekApiKey, peekaConnection, aiTaskNotchEnabled, defaultExternalRefIds, theme }) => {
+  registerIpcHandler('settings.update', async ({ workspaceRoot, preferredTool, cliKind, aiProvider, deepseekApiKey, plantConnection, aiTaskNotchEnabled, defaultExternalRefIds, theme }) => {
     const current = await settingsStore.get()
     const patch: Partial<AppSettings> = {}
     let keyConfigured = await deepSeekCredentialStore.hasApiKey()
 
-    if (peekaConnection !== undefined) {
-      try { patch.peekaConnection = validatePeekaConnection(peekaConnection) }
+    if (plantConnection !== undefined) {
+      try { patch.plantConnection = validatePlantConnection(plantConnection) }
       catch (error) { throw new UIClientError('VALIDATION', (error as Error).message) }
-      if (patch.peekaConnection.baseUrl !== current.peekaConnection.baseUrl && keyConfigured && !deepseekApiKey?.trim()) {
+      if (patch.plantConnection.baseUrl !== current.plantConnection.baseUrl && keyConfigured && !deepseekApiKey?.trim()) {
         throw new UIClientError('VALIDATION', '切换请求地址时请重新输入对应的 API key')
       }
     }

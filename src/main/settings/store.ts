@@ -1,4 +1,4 @@
-import { PEEKA_PRESETS, validatePeekaConnection, type PeekaConnection } from '../../shared/peeka'
+import { PLANT_PRESETS, validatePlantConnection, type PlantConnection } from '../../shared/plant'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { homedir } from 'node:os'
@@ -17,10 +17,10 @@ export type AppSettings = {
   pmDocsDir: string
   preferredTool?: ProjectToolKind   // 用户上次选择的工具，undefined = 用检测到的 IDE
   cliKind: CliKind                  // 跑 AI 面板用哪个 CLI；默认 'claude'
-  aiProvider: AiProvider            // AI 面板底层：本地 Claude Code 或内置 DeepSeek Harness
+  aiProvider: AiProvider            // AI 面板底层：本地 Agent CLI 或内置 DeepSeek Harness
   defaultExternalRefIds: string[]   // 新建项目时默认关联的知识库和 UX 资产
   theme: AppTheme                   // 全局界面主题
-  peekaConnection: PeekaConnection
+  plantConnection: PlantConnection
   aiTaskNotchEnabled: boolean
   schemaVersion: 3
 }
@@ -35,8 +35,8 @@ const VALID_TOOLS = new Set<string>(['finder', 'terminal', 'codex', 'cursor', 'c
 const VALID_CLI_KINDS = new Set<string>(CLI_KINDS)
 
 const DEFAULTS: AppSettings = {
-  peekaConnection: { ...PEEKA_PRESETS.official },
-  aiTaskNotchEnabled: true,
+  plantConnection: { ...PLANT_PRESETS.official },
+  aiTaskNotchEnabled: false,
   workspaceRoot: defaultWorkspaceRoot(),
   pmDocsDir: 'docs',
   cliKind: DEFAULT_CLI_KIND,
@@ -80,8 +80,9 @@ export class SettingsStore {
             .filter(Boolean))]
           : [],
         theme: isAppTheme(parsed.theme) ? parsed.theme : DEFAULTS.theme,
-        peekaConnection: readPeekaConnection(parsed.peekaConnection),
-        aiTaskNotchEnabled: typeof parsed.aiTaskNotchEnabled === 'boolean' ? parsed.aiTaskNotchEnabled : true,
+        // 兼容旧版 settings.json 的 peekaConnection 键；读取后按新键落盘
+        plantConnection: readPlantConnection(parsed.plantConnection ?? parsed.peekaConnection),
+        aiTaskNotchEnabled: typeof parsed.aiTaskNotchEnabled === 'boolean' ? parsed.aiTaskNotchEnabled : false,
         schemaVersion: SETTINGS_SCHEMA_VERSION
       }
       this.cache = merged
@@ -121,6 +122,6 @@ export class SettingsStore {
 
 export const settingsStore = new SettingsStore()
 
-function readPeekaConnection(value: unknown): PeekaConnection {
-  try { return validatePeekaConnection(value) } catch { return { ...PEEKA_PRESETS.official } }
+function readPlantConnection(value: unknown): PlantConnection {
+  try { return validatePlantConnection(value) } catch { return { ...PLANT_PRESETS.official } }
 }

@@ -1,5 +1,5 @@
 import { clipboard } from 'electron'
-import { execSync, spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { isAbsolute, resolve, join } from 'node:path'
 import { UIClientError } from '../ipc/errors'
@@ -14,11 +14,11 @@ let detected: IdeInfo | null = null
 // macOS 应用路径
 const MACOS_APPS = '/Applications'
 
-// 通过 shell 命令查找（适用于已启用命令行工具的情况）
+// 通过登录 shell 的 PATH 查找命令行工具（适用于已启用命令行工具的情况）。
+// 可执行程序固定为字面量 /bin/zsh；命令名作为 $1 传入，不拼接进命令字符串。
 function which(cmd: string): string | null {
   try {
-    const sh = process.env.SHELL ?? '/bin/zsh'
-    const out = execSync(`${sh} -lic 'which ${cmd}'`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    const out = execFileSync('/bin/zsh', ['-lic', 'command -v "$1"', 'plant-which', cmd], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
     return out || null
   } catch {
     return null

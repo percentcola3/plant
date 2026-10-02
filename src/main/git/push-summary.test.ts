@@ -11,7 +11,7 @@ vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] } }))
 const roots: string[] = []
 afterEach(async () => { await Promise.all(roots.splice(0).map(p => rm(p, { recursive: true, force: true }))) })
 async function setup() {
-  const root = await mkdtemp(join(tmpdir(), 'peeka-push-test-')); roots.push(root)
+  const root = await mkdtemp(join(tmpdir(), 'plant-push-test-')); roots.push(root)
   const bare = join(root, 'remote.git'), a = join(root, 'alice'), b = join(root, 'bob')
   await mkdir(bare); await mkdir(a)
   await simpleGit(bare).raw(['init', '--bare', '--initial-branch=main'])

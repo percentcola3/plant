@@ -1525,7 +1525,7 @@ function setKnowledgePlaceholder(text) {
   if (docHint) {
     docHint.textContent = READONLY
       ? '外部 UI 资产区以只读方式预览。'
-      : '说明内容来自组件源码注释。首次保存旧注释时，会迁移成 WorkSpace 受管块。'
+      : '说明内容来自组件源码注释。首次保存旧注释时，会迁移成 Plant 受管块。'
     docHint.className = 'doc-hint'
   }
   setDocStatus(READONLY ? '只读' : '未加载')
@@ -1588,13 +1588,13 @@ async function loadComponentDoc(item) {
     }
     if (docHint) {
       if (currentDocSource === 'legacy') {
-        docHint.textContent = '当前说明来自旧普通注释。首次保存后会迁移成 WorkSpace 受管说明块。'
+        docHint.textContent = '当前说明来自旧普通注释。首次保存后会迁移成 Plant 受管说明块。'
         docHint.className = 'doc-hint warn'
       } else if (currentDocSource === 'none') {
         docHint.textContent = '当前组件还没有说明。保存后会在组件 html 头部插入受管说明块。'
         docHint.className = 'doc-hint'
       } else {
-        docHint.textContent = '当前说明已经由 WorkSpace 受管，保存后会直接回写到组件源码。'
+        docHint.textContent = '当前说明已经由 Plant 受管，保存后会直接回写到组件源码。'
         docHint.className = 'doc-hint'
       }
     }
@@ -1692,7 +1692,7 @@ async function saveCurrentDoc() {
     const data = await res.json()
     currentDocSource = data.source || 'managed'
     if (docHint) {
-      docHint.textContent = '当前说明已经由 WorkSpace 受管，保存后会直接回写到组件源码。'
+      docHint.textContent = '当前说明已经由 Plant 受管，保存后会直接回写到组件源码。'
       docHint.className = 'doc-hint'
     }
     setDocStatus('已保存')

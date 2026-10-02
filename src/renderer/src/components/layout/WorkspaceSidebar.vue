@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleHelp, FolderKanban, Home, PackageOpen, Sparkles } from 'lucide-vue-next'
+import { FolderKanban, BookOpen, Sparkles } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
 import { useEditorStore } from '@/stores/editor'
 
@@ -8,11 +8,6 @@ const editor = useEditorStore()
 
 function leaveEditor(): void {
   editor.hide()
-}
-
-function openHome(): void {
-  leaveEditor()
-  ui.openHome()
 }
 
 function openResources(): void {
@@ -30,10 +25,6 @@ function openSkills(): void {
   ui.openSkills()
 }
 
-function openGuide(): void {
-  leaveEditor()
-  ui.openGuide()
-}
 </script>
 
 <template>
@@ -42,22 +33,10 @@ function openGuide(): void {
       <button
         type="button"
         class="workspace-rail__button"
-        :class="{ 'is-active': ui.currentView === 'home' }"
-        aria-label="首页"
-        :aria-current="ui.currentView === 'home' ? 'page' : undefined"
-        data-tooltip="首页"
-        @click="openHome"
-      >
-        <Home :size="18" aria-hidden="true" />
-      </button>
-
-      <button
-        type="button"
-        class="workspace-rail__button"
         :class="{ 'is-active': ui.currentView === 'project-management' || ui.currentView === 'features-page' || ui.currentView === 'project-home' }"
-        aria-label="项目管理"
+        aria-label="工作台"
         :aria-current="ui.currentView === 'project-management' || ui.currentView === 'features-page' || ui.currentView === 'project-home' ? 'page' : undefined"
-        data-tooltip="项目管理"
+        data-tooltip="工作台"
         @click="openProjectManagement"
       >
         <FolderKanban :size="18" aria-hidden="true" />
@@ -67,12 +46,12 @@ function openGuide(): void {
         type="button"
         class="workspace-rail__button"
         :class="{ 'is-active': ui.currentView === 'ai-config' }"
-        aria-label="资源包"
+        aria-label="知识库"
         :aria-current="ui.currentView === 'ai-config' ? 'page' : undefined"
-        data-tooltip="资源包"
+        data-tooltip="知识库"
         @click="openResources"
       >
-        <PackageOpen :size="18" aria-hidden="true" />
+        <BookOpen :size="18" aria-hidden="true" />
       </button>
 
       <button
@@ -87,17 +66,6 @@ function openGuide(): void {
         <Sparkles :size="18" aria-hidden="true" />
       </button>
 
-      <button
-        type="button"
-        class="workspace-rail__button"
-        :class="{ 'is-active': ui.currentView === 'onboarding-guide' }"
-        aria-label="新手引导"
-        :aria-current="ui.currentView === 'onboarding-guide' ? 'page' : undefined"
-        data-tooltip="新手引导"
-        @click="openGuide"
-      >
-        <CircleHelp :size="18" aria-hidden="true" />
-      </button>
     </div>
   </nav>
 </template>
@@ -113,7 +81,6 @@ function openGuide(): void {
   align-items: center;
   justify-content: space-between;
   padding: 10px 0 12px;
-  border-right: 1px solid var(--color-chrome-border, var(--color-popover-border));
 }
 
 .workspace-rail__group {

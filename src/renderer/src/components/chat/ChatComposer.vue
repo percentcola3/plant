@@ -544,8 +544,12 @@ defineExpose({
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-popover-border);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--color-bg-elevated);
+  transition: border-color 120ms;
+}
+.chat-composer__surface:focus-within {
+  border-color: var(--color-border-strong);
 }
 .cc-quick-actions {
   display: flex;
@@ -563,10 +567,10 @@ defineExpose({
   flex: 0 0 auto;
   max-width: 180px;
   overflow: hidden;
-  border: 1px solid var(--color-accent-border);
-  border-radius: 999px;
+  border: 0;
+  border-radius: var(--radius-button);
   background: var(--color-accent-light);
-  padding: 4px 10px;
+  padding: 3px 8px;
   color: var(--color-accent-pressed);
   font-size: 11px;
   text-overflow: ellipsis;
@@ -580,7 +584,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 2px 10px 10px;
+  padding: 4px 10px 10px;
 }
 .cc-attachment-wrap {
   position: relative;
@@ -593,7 +597,7 @@ defineExpose({
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-button);
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: pointer;
@@ -674,7 +678,7 @@ defineExpose({
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-button);
   background: var(--color-bg-hover);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -683,18 +687,18 @@ defineExpose({
     color var(--duration-fast, 120ms) var(--ease-out, ease),
     transform var(--duration-fast, 120ms) var(--ease-out, ease);
 }
-.cc-send-btn--ready,
-.cc-send-btn--idle {
+.cc-send-btn--ready {
   background: var(--color-button-bg);
   color: var(--color-button-fg);
   box-shadow: inset 0 0 0 1px var(--color-accent-border);
 }
-.cc-send-btn--ready:hover:not(:disabled),
-.cc-send-btn--idle:hover:not(:disabled) {
+.cc-send-btn--ready:hover:not(:disabled) {
   background: var(--color-button-bg-hover);
   color: var(--color-button-fg);
 }
 .cc-send-btn--idle:disabled {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
   opacity: 1;
   cursor: default;
 }

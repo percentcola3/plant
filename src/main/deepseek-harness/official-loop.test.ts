@@ -46,6 +46,47 @@ describe('official DSH integration', () => {
     expect(onToolResult).toHaveBeenCalledWith('denied-call', expect.stringContaining('Path outside allowed roots'), true)
   })
 
+  it('keeps image context and ordered tool results, including empty output, exactly once', async () => {
+    const history: DeepSeekMessage[] = [{ role: 'user', content: [
+      { type: 'text', text: 'Compare this design with the files' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,dGVzdA==' } },
+    ] }]
+    const requests: DeepSeekMessage[][] = []
+    const onToolResult = vi.fn()
+    const execute = vi.fn(async (_name: string, args: unknown) => ({
+      content: (args as { path: string }).path === 'empty.md' ? '' : 'design rules',
+      isError: false,
+    }))
+    const result = await runOfficialDshTurn({
+      sessionId: 'multiple-results-test', workDir: '/tmp', signal: new AbortController().signal,
+      messages: history, toolbox: { definitions: [definition], execute },
+      onAssistant: vi.fn(), onToolResult,
+      request: async (messages) => {
+        requests.push(messages)
+        if (requests.length === 1) return {
+          role: 'assistant', content: null,
+          tool_calls: ['empty.md', 'rules.md'].map((path, index) => ({
+            type: 'function', id: `call-${index}`,
+            function: { name: 'read_file', arguments: JSON.stringify({ path }) },
+          })),
+        }
+        return { role: 'assistant', content: 'Compared' }
+      },
+    })
+    expect(result).toBe('Compared')
+    expect(requests).toHaveLength(2)
+    expect(requests[1].filter(message => message.role === 'user')).toEqual(history)
+    expect(requests[1].filter(message => message.role === 'tool')).toEqual([
+      { role: 'tool', tool_call_id: 'call-0', content: '' },
+      { role: 'tool', tool_call_id: 'call-1', content: 'design rules' },
+    ])
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(onToolResult.mock.calls).toEqual([
+      ['call-0', '', false],
+      ['call-1', 'design rules', false],
+    ])
+  })
+
   it('retries a reasoning-only response without publishing it or duplicating tools', async () => {
     const onAssistant = vi.fn()
     const request = vi.fn()

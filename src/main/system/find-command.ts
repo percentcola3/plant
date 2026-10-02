@@ -11,17 +11,19 @@
 //
 // **不在这里加缓存**：调用方按需缓存（比如 claude-binary.ts 缓存 claude 二进制的位置；
 // setup.ts 的 IPC 不缓存，每次都重新探测，因为安装/卸载状态会变）。
+import { homedir } from 'node:os'
+import { delimiter } from 'node:path'
 import { existsSync } from 'node:fs'
 import { execFile, execFileSync } from 'node:child_process'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 
-const COMMON_BIN_PATHS = ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin']
+const COMMON_BIN_PATHS = ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', ...['.npm-global/bin', '.local/bin', '.bun/bin', '.opencode/bin'].map(dir => `${homedir()}/${dir}`)]
 const SHELL_PROBE_TIMEOUT_MS = 1500
 
 function pathDirs(): string[] {
-  return (process.env.PATH ?? '').split(':').filter(Boolean)
+  return (process.env.PATH ?? process.env.Path ?? '').split(delimiter).filter(Boolean)
 }
 
 function checkDirs(cmd: string, dirs: string[]): string | null {

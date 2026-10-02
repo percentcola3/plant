@@ -26,13 +26,12 @@ describe('ConversationView message hierarchy', () => {
     expect(source).toContain('告诉我你想完成什么')
     expect(source).toContain('描述目标，或添加图片和截图作为参考')
     expect(source).not.toContain('cv-empty__mention-hint')
-    expect(source).toContain('class="cv-empty__icon"')
+    expect(source).toContain('class="cv-empty__illustration"')
     expect(source).not.toContain('开始对话…')
   })
 
   it('uses the configured engine identity for assistant message cards', () => {
-    expect(source).toContain("if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }")
-    expect(source).toContain("if (settings.aiProvider === 'deepseek-harness') return { name: 'Peeka', avatar: 'P' }")
+    expect(source).toContain("if (settings.aiProvider === 'deepseek-harness') return { name: 'Plant', avatar: 'P' }")
     expect(source).toContain("return { name: 'Claude', avatar: 'C' }")
     expect(source).toContain('{{ assistantIdentity.name }}')
     expect(source).toContain('{{ assistantIdentity.avatar }}')

@@ -36,11 +36,6 @@ const resourceIndexSource = readFileSync(
   'utf-8'
 )
 
-const builtinPackagesSource = readFileSync(
-  new URL('../../../../shared/builtin-resource-packages.ts', import.meta.url),
-  'utf-8'
-)
-
 describe('external ref controls wiring', () => {
   it('project home exposes checkout switching without resource directory filtering actions', () => {
     expect(workspaceSource).toContain('switchExternalCheckout')
@@ -134,27 +129,14 @@ describe('external ref controls wiring', () => {
     expect(resourceIndexSource).not.toContain('编辑索引')
   })
 
-  it('shows builtin knowledge packages directly on the resource page', () => {
-    expect(aiConfigSource).toContain('BUILTIN_RESOURCE_PACKAGES')
-    expect(aiConfigSource).toContain('builtinKnowledgePackages')
-    expect(aiConfigSource).toContain('builtinUikitPackages')
-    expect(aiConfigSource).toContain('内置知识库')
-    expect(aiConfigSource).toContain('内置 UX 资产')
-    expect(builtinPackagesSource).toContain("alias: 'POS前端'")
-    expect(builtinPackagesSource).toContain("alias: '管理端前端'")
-    expect(builtinPackagesSource).toContain("alias: 'SaaSUI'")
-    expect(builtinPackagesSource).toContain("category: 'uikit'")
-    expect(aiConfigSource).toContain('installBuiltinResource')
-    expect(aiConfigSource).toContain('Clone 并绑定')
-    expect(aiConfigSource).toContain('builtin-knowledge-grid')
-    expect(aiConfigSource).toContain('builtin-knowledge-card')
+  it('only offers user-added resource packages', () => {
+    expect(aiConfigSource).not.toContain('BUILTIN_RESOURCE_PACKAGES')
+    expect(aiConfigSource).not.toContain('内置知识库')
+    expect(aiConfigSource).not.toContain('内置 UX 资产')
+    expect(aiConfigSource).not.toContain('installBuiltinResource')
     expect(aiConfigSource).toContain('knowledge-resource-grid')
     expect(aiConfigSource).toContain('knowledge-resource-card')
-    expect(aiConfigSource).toContain('knowledge-resource-actions')
-    expect(aiConfigSource).toContain('<GitBranch')
-    expect(aiConfigSource).toContain('.builtin-knowledge-head {')
-    expect(aiConfigSource).toContain('color: var(--color-text-primary)')
-    expect(aiConfigSource).not.toContain('color: #1d1d1f')
-    expect(aiConfigSource).not.toContain('color: #6e6e73')
+    expect(aiConfigSource).toContain("defaultCategory: 'knowledge'")
+    expect(aiConfigSource).toContain("defaultCategory: 'uikit'")
   })
 })

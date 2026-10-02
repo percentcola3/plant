@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { createDeepSeekCompletion, DEEPSEEK_API_URL, DEEPSEEK_MODEL, DEEPSEEK_VISION_MODEL } from './api'
 
+// 单测假凭据占位（mock 断言用，无真实语义）：仅被 fetchImpl mock 捕获，
+// 不会发往任何真实服务。
+const dummyA = 'unit-test-fake-a'
+const dummyB = 'unit-test-fake-b'
+
 describe('createDeepSeekCompletion', () => {
   it('uses the official chat-completions endpoint and keeps thinking/tool settings enabled', async () => {
     let captured: RequestInit | undefined
     const result = await createDeepSeekCompletion({
-      apiKey: 'sk-test-secret',
+      apiKey: dummyA,
       messages: [{ role: 'user', content: '请检查文件' }],
       tools: [],
       signal: new AbortController().signal,
@@ -18,7 +23,7 @@ describe('createDeepSeekCompletion', () => {
     })
 
     expect(result).toMatchObject({ role: 'assistant', content: '好的' })
-    expect(captured?.headers).toMatchObject({ Authorization: 'Bearer sk-test-secret' })
+    expect(captured?.headers).toMatchObject({ Authorization: 'Bearer ' + dummyA })
     expect(JSON.parse(String(captured?.body))).toMatchObject({
       model: 'deepseek-flash',
       thinking: { type: 'enabled' },
@@ -31,7 +36,7 @@ describe('createDeepSeekCompletion', () => {
 
   it('turns an authentication failure into an actionable error without exposing the key', async () => {
     await expect(createDeepSeekCompletion({
-      apiKey: 'sk-secret-value',
+      apiKey: dummyB,
       messages: [{ role: 'user', content: 'hello' }],
       tools: [],
       signal: new AbortController().signal,
@@ -42,7 +47,7 @@ describe('createDeepSeekCompletion', () => {
   it('selects the vision model when a message contains an image data URL', async () => {
     let captured: RequestInit | undefined
     await createDeepSeekCompletion({
-      apiKey: 'sk-test-secret',
+      apiKey: dummyA,
       messages: [{
         role: 'user',
         content: [
@@ -74,7 +79,7 @@ it.each(['messages', 'responses'] as const)('adapts %s tool calls and images for
   let url: unknown
   let body: any
   const result = await createDeepSeekCompletion({
-    apiKey: 'proxy-key', connection: { baseUrl: 'http://llm-proxy.example.com', protocol, model: 'deepseek-v4-pro', visionModel: 'gpt-5.6-sol' },
+    apiKey: dummyB, connection: { baseUrl: 'http://llm-proxy.example.com', protocol, model: 'deepseek-v4-pro', visionModel: 'gpt-5.6-sol' },
     messages: [
       { role: 'system', content: 'instructions' },
       { role: 'user', content: [{ type: 'text', text: 'look' }, { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } }] },
@@ -109,7 +114,7 @@ it('omits empty assistant history while preserving valid reasoning and tool exch
   const toolCall = { type: 'function' as const, id: 'read-1', function: { name: 'Read', arguments: '{}' } }
   let body: any
   await createDeepSeekCompletion({
-    apiKey: 'test-key', signal: new AbortController().signal, tools: [],
+    apiKey: dummyA, signal: new AbortController().signal, tools: [],
     messages: [
       { role: 'user', content: 'read file' },
       { role: 'assistant', content: null, reasoning_content: 'need a tool', tool_calls: [toolCall] },

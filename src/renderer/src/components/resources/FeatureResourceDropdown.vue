@@ -63,11 +63,11 @@ function indexLabel(resource: ExternalRef): string {
       <div v-if="props.resources.length === 0" class="feature-resource-dropdown__empty">
         <PackageOpen :size="20" aria-hidden="true" />
         <strong>还没有可关联的资源</strong>
-        <span>请先到资源包页面安装知识库或 UX 资产。</span>
+        <span>请先到知识库页面安装知识库或 UX 资产。</span>
       </div>
 
       <div v-else class="feature-resource-dropdown__sections">
-        <section class="feature-resource-dropdown__section">
+        <section v-if="knowledgeResources.length > 0" class="feature-resource-dropdown__section">
           <h3 class="feature-resource-dropdown__section-title">知识库</h3>
           <label
             v-for="resource in knowledgeResources"
@@ -89,22 +89,6 @@ function indexLabel(resource: ExternalRef): string {
               @click.stop
             />
           </label>
-          <div class="feature-resource-dropdown__option feature-resource-dropdown__option--disabled">
-            <span class="feature-resource-dropdown__option-main">
-              <BookOpen class="feature-resource-dropdown__option-icon" :size="17" aria-hidden="true" />
-              <span class="feature-resource-dropdown__option-copy">
-                <strong>前端知识库</strong>
-                <small>Git · 即将开放</small>
-              </span>
-            </span>
-            <Checkbox
-              class="feature-resource-dropdown__checkbox"
-              :model-value="false"
-              disabled
-              aria-label="前端知识库（暂不可选）"
-              @click.stop
-            />
-          </div>
         </section>
 
         <section v-if="uxResources.length > 0" class="feature-resource-dropdown__section">
@@ -202,13 +186,6 @@ function indexLabel(resource: ExternalRef): string {
 }
 .feature-resource-dropdown__option:hover {
   background: var(--color-bg-hover);
-}
-.feature-resource-dropdown__option--disabled {
-  cursor: default;
-  opacity: 0.72;
-}
-.feature-resource-dropdown__option--disabled:hover {
-  background: transparent;
 }
 .feature-resource-dropdown__option-main {
   display: flex;

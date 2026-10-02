@@ -1,3 +1,4 @@
+import { removeCliTranscript } from '../agent-cli/transcript'
 // 会话 ID 管理：每项目持久化一个 session-id，用于 claude --session-id / --resume
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync, rmdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -146,6 +147,7 @@ export function clearProjectSessionHistory(projectPath: string): void {
   for (const sessionId of sessionIds) {
     // 同一个 workspace session 索引也可能属于内置 DSH；两类 transcript 各自清理。
     removeDeepSeekTranscript(sessionId)
+    removeCliTranscript(sessionId)
     const actualPaths = findSessionJsonlPathsAnywhere(sessionId)
     if (actualPaths.length === 0) {
       rmSync(sessionJsonlPath(projectPath, sessionId), { force: true })

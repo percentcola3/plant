@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 默认工作台的资源包 / 技能配置页。
+// 默认工作台的知识库 / 技能配置页。
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -14,10 +14,6 @@ import type {
 import { isSimpleWorkspace, supportsPersonalSpaces } from '@shared/workspace-policy'
 import { useEditorStore } from '@/stores/editor'
 import { formatExternalCheckout } from '@shared/external-ref-controls'
-import {
-  BUILTIN_RESOURCE_PACKAGES,
-  type BuiltinResourcePackage
-} from '@shared/builtin-resource-packages'
 import { useWorkspacesStore } from '@/stores/workspaces'
 import { useExternalRefsStore } from '@/stores/external-refs'
 import { useUiStore } from '@/stores/ui'
@@ -31,7 +27,8 @@ import SkillsList from '@/components/layout/SkillsList.vue'
 import ProjectRulesPanel from '@/components/layout/ProjectRulesPanel.vue'
 import ResourceIndexStatus from '@/components/layout/ResourceIndexStatus.vue'
 import { Button } from '@/components/ui/button'
-import { GitBranch, PackageOpen, Sparkles } from 'lucide-vue-next'
+import PlantIllustration from '@/components/brand/PlantIllustration.vue'
+import { BookOpen, Sparkles, Palette, TriangleAlert, Plus, RefreshCw } from 'lucide-vue-next'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +39,7 @@ import {
 
 type ConfigSection = 'all' | 'resources' | 'skills'
 
-// embedded=true 仅用于历史容器；主导航分别打开资源包和技能页面。
+// embedded=true 仅用于历史容器；主导航分别打开知识库和技能页面。
 const props = withDefaults(defineProps<{ embedded?: boolean; section?: ConfigSection }>(), {
   embedded: false,
   section: 'all'
@@ -50,10 +47,10 @@ const props = withDefaults(defineProps<{ embedded?: boolean; section?: ConfigSec
 const embedded = computed(() => props.embedded)
 const showResources = computed(() => props.section === 'all' || props.section === 'resources')
 const showSkills = computed(() => props.section === 'all' || props.section === 'skills')
-const pageTitle = computed(() => props.section === 'skills' ? '技能' : '资源包')
+const pageTitle = computed(() => props.section === 'skills' ? '技能' : '知识库')
 const pageDescription = computed(() => props.section === 'skills'
   ? '管理 AI 在当前工作台中可使用的技能与全局规则。'
-  : '管理知识库、UX 资产和默认剪页资源。')
+  : '管理知识库、UX 资产。')
 
 const ws = useWorkspacesStore()
 const ext = useExternalRefsStore()
@@ -232,16 +229,6 @@ const projectResolvedBindings = computed(() =>
 const projectKnowledgeBindings = computed(() =>
   projectResolvedBindings.value.filter((item) => item.ref?.category === 'knowledge')
 )
-const builtinKnowledgePackages = computed(() =>
-  BUILTIN_RESOURCE_PACKAGES.filter((item) =>
-    item.category === 'knowledge' && !isBuiltinResourceBound(item)
-  )
-)
-const builtinUikitPackages = computed(() =>
-  BUILTIN_RESOURCE_PACKAGES.filter((item) =>
-    item.category === 'uikit' && !isBuiltinResourceBound(item)
-  )
-)
 const projectUikitBindings = computed(() =>
   projectResolvedBindings.value.filter((item) => item.ref?.category === 'uikit')
 )
@@ -255,7 +242,6 @@ const buildingExternalIndex = ref<Record<string, boolean>>({})
 const checkingExternalStatus = ref<Record<string, boolean>>({})
 const refreshingExternal = ref<Record<string, boolean>>({})
 const switchingExternal = ref<Record<string, boolean>>({})
-const installingBuiltinUrl = ref<string | null>(null)
 let resourceIndexPollTimer: ReturnType<typeof setInterval> | null = null
 
 type ExternalBranchState = {
@@ -274,68 +260,6 @@ async function detachExternal(externalRefId: string): Promise<void> {
   await ext.detach(active.value.id, externalRefId)
   delete ext.syncStatusById[externalRefId]
   await ws.refreshScan(active.value.id)
-}
-
-function installedBuiltinResource(preset: BuiltinResourcePackage): ExternalRef | null {
-  return ext.pool.find((item) => item.kind === 'git' && item.source === preset.url) ?? null
-}
-
-function isBuiltinResourceBound(preset: BuiltinResourcePackage): boolean {
-  const installed = installedBuiltinResource(preset)
-  return !!installed && ext.bindings.some((binding) => binding.externalRefId === installed.id)
-}
-
-function builtinResourceAliasTaken(preset: BuiltinResourcePackage): boolean {
-  return !installedBuiltinResource(preset) && ext.pool.some((item) => item.alias === preset.alias)
-}
-
-function builtinResourceStatus(preset: BuiltinResourcePackage): string {
-  if (builtinResourceAliasTaken(preset)) return '同名资源包已存在'
-  if (installedBuiltinResource(preset)) return '已 Clone 到本地，尚未绑定当前项目'
-  return '未下载 · 点击后 Clone 到本地并绑定'
-}
-
-function builtinResourceActionLabel(preset: BuiltinResourcePackage): string {
-  if (installingBuiltinUrl.value === preset.url) {
-    return installedBuiltinResource(preset) ? '绑定中…' : 'Clone 中…'
-  }
-  if (builtinResourceAliasTaken(preset)) return '别名已占用'
-  return installedBuiltinResource(preset) ? '绑定' : 'Clone 并绑定'
-}
-
-async function installBuiltinResource(preset: BuiltinResourcePackage): Promise<void> {
-  if (!active.value || active.value.kind !== 'project' || installingBuiltinUrl.value) return
-  if (isBuiltinResourceBound(preset) || builtinResourceAliasTaken(preset)) return
-  const workspaceId = active.value.id
-  installingBuiltinUrl.value = preset.url
-  try {
-    let resource = installedBuiltinResource(preset)
-    if (!resource) {
-      const created = await ext.addToPool(preset.alias, preset.category, {
-        kind: 'git',
-        url: preset.url
-      })
-      if (!created.ok) {
-        if (created.code === 'SSH_KEY_REQUIRED' || created.code === 'SSH_AUTH_FAILED') {
-          ui.showToast('info', created.message, 8000)
-          ui.openSettings('ssh')
-          return
-        }
-        ui.showToast('error', `${preset.alias} Clone 失败：${created.message}`, 6000)
-        return
-      }
-      resource = created.data
-    }
-    if (active.value?.id !== workspaceId) return
-    await ext.attach(workspaceId, resource.id)
-    await ws.refreshScan(workspaceId)
-    await checkExternalRefStatus(resource.id)
-    ui.showToast('success', `${preset.alias} 已 Clone 并绑定`)
-  } catch (error) {
-    ui.showToast('error', `${preset.alias} 绑定失败：${error instanceof Error ? error.message : String(error)}`, 6000)
-  } finally {
-    installingBuiltinUrl.value = null
-  }
 }
 
 async function hydrateExternalRefs(): Promise<void> {
@@ -615,19 +539,20 @@ watch(() => active.value?.id, () => {
 
 <template>
   <main :class="embedded ? 'flex min-w-0 flex-col' : 'flex h-full min-w-0 flex-1 flex-col overflow-hidden'">
-    <header v-if="!embedded" class="config-page-header border-b border-border/60 px-6 py-5">
+    <header v-if="!embedded" class="config-page-header border-b border-[var(--color-border-subtle)] px-6 py-5">
       <div class="config-page-header__icon" aria-hidden="true">
         <Sparkles v-if="props.section === 'skills'" :size="20" />
-        <PackageOpen v-else :size="20" />
+        <BookOpen v-else :size="20" />
       </div>
       <div>
         <h1>{{ pageTitle }}</h1>
         <p>{{ pageDescription }}</p>
       </div>
+      <PlantIllustration class="config-page-header__art" :kind="props.section === 'skills' ? 'skills' : 'knowledge'" />
     </header>
 
     <div v-if="showResources && warnings.length > 0" :class="embedded ? 'warning-strip mb-3' : 'warning-strip mx-5 mt-3'">
-      <span class="warning-dot" aria-hidden="true">⚠️</span>
+      <TriangleAlert class="warning-dot" :size="14" aria-hidden="true" />
       <span class="truncate">{{ warnings[0] }}</span>
       <span v-if="warnings.length > 1" class="warning-more">+{{ warnings.length - 1 }}</span>
       <button
@@ -663,7 +588,7 @@ watch(() => active.value?.id, () => {
       <section class="section-block project-section-card">
         <div class="section-head">
           <div>
-            <h3><span aria-hidden="true">🎨</span> UX 资产库</h3>
+            <h3><Palette :size="16" aria-hidden="true" /> UX 资产库</h3>
             <p>可同时安装多个组件、Token、图片和图标资源包。</p>
           </div>
           <div class="section-actions">
@@ -671,40 +596,9 @@ watch(() => active.value?.id, () => {
               variant="outline" size="sm"
               @click="ui.addExternalRefOpen = { defaultCategory: 'uikit' }"
             >
-              <span aria-hidden="true">＋</span><span>添加</span>
+              <Plus :size="14" aria-hidden="true" /><span>添加</span>
             </Button>
           </div>
-        </div>
-        <div v-if="builtinUikitPackages.length > 0" class="builtin-knowledge-block">
-          <div class="builtin-knowledge-head">
-            <span>内置 UX 资产</span>
-            <small>只内置 Git 地址，需要时由你手动 Clone 到本地</small>
-          </div>
-          <ul class="builtin-knowledge-grid">
-            <li
-              v-for="preset in builtinUikitPackages"
-              :key="preset.url"
-              class="builtin-knowledge-card"
-            >
-              <span class="builtin-knowledge-icon" aria-hidden="true">
-                <GitBranch :size="17" />
-              </span>
-              <div class="builtin-knowledge-copy">
-                <strong>{{ preset.alias }}</strong>
-                <span>{{ preset.description }}</span>
-              </div>
-              <Button
-                size="sm"
-                class="builtin-knowledge-action"
-                :disabled="installingBuiltinUrl !== null || builtinResourceAliasTaken(preset)"
-                @click="installBuiltinResource(preset)"
-              >{{ builtinResourceActionLabel(preset) }}</Button>
-              <div class="builtin-knowledge-status">
-                <span class="builtin-knowledge-status-dot" aria-hidden="true"></span>
-                <span>{{ builtinResourceStatus(preset) }}</span>
-              </div>
-            </li>
-          </ul>
         </div>
         <ul v-if="projectUikitBindings.length > 0" class="knowledge-resource-grid">
           <li v-for="item in projectUikitBindings" :key="item.binding.externalRefId" class="knowledge-resource-card">
@@ -783,9 +677,9 @@ watch(() => active.value?.id, () => {
             </div>
           </li>
         </ul>
-        <div v-else-if="builtinUikitPackages.length === 0" class="empty-state empty-state--compact">
-          <p>还没有 UX 资产库</p>
-          <span>安装后项目可以按需关联并复用组件、Token 和图片。</span>
+        <div v-else class="empty-state empty-state--compact">
+          <PlantIllustration kind="assets" />
+          <div><p>还没有 UX 资产库</p><span>添加后即可关联项目，复用组件、Token 和图片。</span></div>
         </div>
       </section>
 
@@ -793,8 +687,8 @@ watch(() => active.value?.id, () => {
       <section class="section-block project-section-card">
         <div class="section-head">
           <div>
-            <h3><span aria-hidden="true">📚</span> 知识库与剪页</h3>
-            <p>剪页、本地资料和外部文档库统一作为只读知识资源包。</p>
+            <h3><BookOpen :size="16" aria-hidden="true" /> 知识资源</h3>
+            <p>本地资料和外部文档库统一作为只读知识资源包。</p>
           </div>
           <div class="section-actions">
             <Button
@@ -803,43 +697,12 @@ watch(() => active.value?.id, () => {
               :disabled="Object.values(refreshingExternal).some(Boolean)"
               @click="refreshOutdatedExternalRefs"
             >
-              <span aria-hidden="true">↻</span><span>更新</span>
+              <RefreshCw :size="14" aria-hidden="true" /><span>更新</span>
             </Button>
             <Button variant="outline" size="sm" @click="ui.addExternalRefOpen = { defaultCategory: 'knowledge' }">
-              <span aria-hidden="true">＋</span><span>添加</span>
+              <Plus :size="14" aria-hidden="true" /><span>添加</span>
             </Button>
           </div>
-        </div>
-        <div v-if="builtinKnowledgePackages.length > 0" class="builtin-knowledge-block">
-          <div class="builtin-knowledge-head">
-            <span>内置知识库</span>
-            <small>只内置 Git 地址，需要时由你手动 Clone 到本地</small>
-          </div>
-          <ul class="builtin-knowledge-grid">
-            <li
-              v-for="preset in builtinKnowledgePackages"
-              :key="preset.url"
-              class="builtin-knowledge-card"
-            >
-              <span class="builtin-knowledge-icon" aria-hidden="true">
-                <GitBranch :size="17" />
-              </span>
-              <div class="builtin-knowledge-copy">
-                <strong>{{ preset.alias }}</strong>
-                <span>{{ preset.description }}</span>
-              </div>
-              <Button
-                size="sm"
-                class="builtin-knowledge-action"
-                :disabled="installingBuiltinUrl !== null || builtinResourceAliasTaken(preset)"
-                @click="installBuiltinResource(preset)"
-              >{{ builtinResourceActionLabel(preset) }}</Button>
-              <div class="builtin-knowledge-status">
-                <span class="builtin-knowledge-status-dot" aria-hidden="true"></span>
-                <span>{{ builtinResourceStatus(preset) }}</span>
-              </div>
-            </li>
-          </ul>
         </div>
         <ul v-if="projectKnowledgeBindings.length > 0" class="knowledge-resource-grid">
           <li v-for="x in projectKnowledgeBindings" :key="x.binding.alias" class="knowledge-resource-card">
@@ -917,9 +780,10 @@ watch(() => active.value?.id, () => {
             </div>
           </li>
         </ul>
-        <div v-else-if="builtinKnowledgePackages.length === 0" class="empty-state empty-state--compact">
-          <p>还没引用知识库</p>
-          <span>剪页库会自动绑定；也可以添加本地目录或 Git 知识资源包。</span>
+        <div v-else class="empty-state empty-state--compact">
+          <PlantIllustration kind="knowledge" />
+          <div><p>还没引用知识库</p>
+          <span>可以添加本地目录或 Git 知识资源包。</span></div>
         </div>
       </section>
 
@@ -990,8 +854,9 @@ watch(() => active.value?.id, () => {
 
 <style scoped>
 .project-hero { display: flex; flex-direction: column; gap: 8px; }
-.config-page-header { display: flex; align-items: center; gap: 12px; background: var(--color-bg-panel); }
+.config-page-header { position: relative; display: flex; align-items: center; gap: 12px; min-height: 94px; padding-top: 10px; padding-bottom: 10px; background: linear-gradient(110deg, color-mix(in srgb, var(--color-leaf) 5%, var(--color-bg-panel)), var(--color-bg-panel) 60%); }
 .config-page-header__icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid var(--color-accent-border); border-radius: 10px; background: var(--color-accent-light); color: var(--color-accent); }
+.config-page-header__art { margin-left: auto; }
 .config-page-header h1 { margin: 0; color: var(--color-text-primary); font-size: 20px; font-weight: 700; }
 .config-page-header p { margin: 3px 0 0; color: var(--color-text-muted); font-size: 12px; }
 .hero-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
@@ -1058,29 +923,6 @@ watch(() => active.value?.id, () => {
 .section-actions { display: inline-flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 
 .row-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.builtin-knowledge-block { margin-bottom: 14px; border-top: 1px solid var(--color-border); padding-top: 12px; }
-.builtin-knowledge-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 10px; color: var(--color-text-primary); font-size: 12px; font-weight: 650; }
-.builtin-knowledge-head small { color: var(--color-text-secondary); font-size: 11px; font-weight: 400; }
-.builtin-knowledge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
-.builtin-knowledge-card {
-  display: grid; min-width: 0; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg-base); padding: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); transition: border-color 160ms ease, box-shadow 160ms ease;
-}
-.builtin-knowledge-card:hover { border-color: var(--color-accent-border); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07); }
-.builtin-knowledge-icon {
-  display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center;
-  border: 1px solid var(--color-accent-border); border-radius: 8px; background: var(--color-accent-subtle); color: var(--color-accent-pressed);
-}
-.builtin-knowledge-copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.builtin-knowledge-copy strong { overflow: hidden; color: var(--color-text-primary); font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.builtin-knowledge-copy span { overflow: hidden; color: var(--color-text-secondary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.builtin-knowledge-action { min-width: 92px; }
-.builtin-knowledge-status {
-  display: flex; min-width: 0; grid-column: 2 / 4; align-items: center; gap: 6px;
-  border-top: 1px solid var(--color-border); padding-top: 9px; color: var(--color-text-secondary); font-size: 11px;
-}
-.builtin-knowledge-status-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 999px; background: var(--color-accent); }
 .knowledge-resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .knowledge-resource-card {
   display: grid; min-width: 0; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px;
@@ -1160,10 +1002,13 @@ watch(() => active.value?.id, () => {
 .branch-menu-state--error button { flex: 0 0 auto; border: 1px solid rgba(180, 35, 24, 0.22); border-radius: 5px; background: var(--color-bg-base); padding: 3px 8px; color: #b42318; font-size: 12px; cursor: pointer; }
 .mini-spinner { width: 12px; height: 12px; flex: 0 0 auto; border: 2px solid var(--color-accent-border); border-top-color: var(--color-accent); border-radius: 999px; animation: ai-config-spin 0.75s linear infinite; }
 @keyframes ai-config-spin { to { transform: rotate(360deg); } }
-.empty-state { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 6px 0; border: 1px dashed var(--color-accent-border); border-radius: 8px; background: var(--color-bg-subtle); padding: 18px; color: var(--color-text-secondary); font-size: 12px; }
+.empty-state { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 6px 0; border: 0; border-radius: 10px; background: var(--color-bg-subtle); padding: 18px; color: var(--color-text-secondary); font-size: 12px; }
 .empty-state p { margin: 0; color: var(--color-text-primary); font-size: 13px; font-weight: 600; }
 .empty-state span { display: block; margin-top: 3px; }
-.empty-state--compact { display: block; }
+.empty-state--compact { justify-content: flex-start; padding: 12px; gap: 12px; }
+.empty-state--compact :deep(.plant-illustration) { width: 110px; }
+.section-head h3 { display: flex; align-items: center; gap: 7px; }
+.section-head h3 svg { color: var(--color-leaf); }
 
 .config-grid {
   display: grid;
@@ -1174,8 +1019,7 @@ watch(() => active.value?.id, () => {
   .config-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 680px) {
-  .builtin-knowledge-head { align-items: flex-start; flex-direction: column; gap: 3px; }
-  .builtin-knowledge-grid, .knowledge-resource-grid { grid-template-columns: 1fr; }
+  .knowledge-resource-grid { grid-template-columns: 1fr; }
 }
 
 .search-form { display: flex; gap: 10px; }
@@ -1217,4 +1061,5 @@ watch(() => active.value?.id, () => {
   font-weight: 650;
 }
 .search-result-snippet { margin-top: 4px; color: var(--color-text-secondary); display: -webkit-box; font-size: 12px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+@media (max-width: 600px) { .config-page-header__art { display: none; } .empty-state--compact :deep(.plant-illustration) { width: 86px; } }
 </style>

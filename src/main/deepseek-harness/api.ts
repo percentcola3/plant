@@ -1,10 +1,10 @@
-import { PEEKA_PRESETS, peekaEndpoint, type PeekaConnection } from '../../shared/peeka'
+import { PLANT_PRESETS, plantEndpoint, type PlantConnection } from '../../shared/plant'
 import { messagesRequest, responsesRequest, parseMessages, parseResponses } from './protocols'
 import type { DeepSeekToolDefinition } from './tools'
 
 export const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
-export const DEEPSEEK_MODEL = PEEKA_PRESETS.official.model
-export const DEEPSEEK_VISION_MODEL = PEEKA_PRESETS.official.visionModel
+export const DEEPSEEK_MODEL = PLANT_PRESETS.official.model
+export const DEEPSEEK_VISION_MODEL = PLANT_PRESETS.official.visionModel
 
 export type DeepSeekImageContent = {
   type: 'image_url'
@@ -49,14 +49,14 @@ type CompletionResponse = {
 
 export async function createDeepSeekCompletion(input: {
   apiKey: string
-  connection?: PeekaConnection
+  connection?: PlantConnection
   messages: DeepSeekMessage[]
   tools: DeepSeekToolDefinition[]
   signal: AbortSignal
   fetchImpl?: typeof fetch
 }): Promise<DeepSeekAssistantMessage> {
   const fetcher = input.fetchImpl ?? fetch
-  const connection = input.connection ?? PEEKA_PRESETS.official
+  const connection = input.connection ?? PLANT_PRESETS.official
   const messages = input.messages.filter(message => message.role !== 'assistant'
     || !!message.content?.trim() || !!message.tool_calls?.length)
   const model = hasVisionInput(messages) && connection.visionModel ? connection.visionModel : connection.model
@@ -64,7 +64,7 @@ export async function createDeepSeekCompletion(input: {
     : connection.protocol === 'responses' ? responsesRequest(messages, input.tools)
       : { messages, tools: input.tools, tool_choice: 'auto',
           ...(model.startsWith('deepseek-') ? { thinking: { type: 'enabled' }, reasoning_effort: 'high' } : {}) }
-  const response = await fetcher(peekaEndpoint(connection), {
+  const response = await fetcher(plantEndpoint(connection), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -111,11 +111,11 @@ function isToolCall(value: DeepSeekToolCall): boolean {
 }
 
 function friendlyApiError(status: number, detail: string): string {
-  if (status === 401 || status === 403) return 'Peeka API key 无效或没有访问权限，请在设置中更新'
+  if (status === 401 || status === 403) return 'Plant API key 无效或没有访问权限，请在设置中更新'
   if (status === 402) return 'API 账户余额不足，请充值后重试'
-  if (status === 429) return 'Peeka 请求过于频繁，请稍后重试'
+  if (status === 429) return 'Plant 请求过于频繁，请稍后重试'
   const summary = safeErrorDetail(detail)
-  return `Peeka API 请求失败（HTTP ${status}）${summary ? `：${summary}` : ''}`
+  return `Plant API 请求失败（HTTP ${status}）${summary ? `：${summary}` : ''}`
 }
 
 function safeErrorDetail(detail: string): string {

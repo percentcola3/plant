@@ -18,8 +18,8 @@ export async function summarizePush(evidence: PushEvidence): Promise<GitPushSumm
   let output: string
   if (settings.aiProvider === 'deepseek-harness') {
     const apiKey = await deepSeekCredentialStore.getApiKey()
-    if (!apiKey) throw new Error('未配置 Peeka API key')
-    const answer = await createDeepSeekCompletion({ apiKey, connection: settings.peekaConnection,
+    if (!apiKey) throw new Error('未配置 Plant API key')
+    const answer = await createDeepSeekCompletion({ apiKey, connection: settings.plantConnection,
       messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }], tools: [], signal: AbortSignal.timeout(30_000) })
     output = answer.content ?? ''
   } else {
@@ -31,7 +31,7 @@ export async function summarizePush(evidence: PushEvidence): Promise<GitPushSumm
 async function summarizeWithCli(prompt: string): Promise<string> {
   const cli = await resolveCli()
   if (!cli.found) throw new Error('AI CLI 不可用')
-  const cwd = await mkdtemp(join(tmpdir(), 'peeka-push-summary-'))
+  const cwd = await mkdtemp(join(tmpdir(), 'plant-push-summary-'))
   try {
     return await new Promise<string>((resolve, reject) => {
       const env = buildSpawnEnv({ ...process.env }, cli.bin)

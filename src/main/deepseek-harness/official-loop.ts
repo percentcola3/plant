@@ -1,5 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime, { LlmAdapter, createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk, type Message } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { LlmAdapter, createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk, type RequestMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -9,7 +9,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import type { DeepSeekAssistantMessage, DeepSeekMessage } from './api'
 import type { HarnessToolbox } from './tools'
 
-export const DSH_VERSION = '0.1.5-rc.1'
+export const DSH_VERSION = '0.2.0-rc.2'
 
 type Input = {
   sessionId: string
@@ -22,21 +22,24 @@ type Input = {
   onToolResult(callId: string, content: string, isError: boolean): void
 }
 
-// Peeka owns persisted history, images and the restricted toolbox. The official
+// Plant owns persisted history, images and the restricted toolbox. The official
 // loop owns each turn's scheduling, tool dispatch, cancellation and termination.
 // A fresh scoped context per turn avoids sharing providers/tools across tasks.
 export async function runOfficialDshTurn(input: Input): Promise<string> {
   const ctx = new Context()
+  const starter = createUserMessage({ content: [{ type: 'text', text: '继续当前用户请求' }], source: { kind: 'user' } })
   let steps = 0
   let finalText = ''
-  class PeekaAdapter extends LlmAdapter {
+  class PlantAdapter extends LlmAdapter {
     override async resolveModel(provider: string, model: string) { return { provider, id: model, name: model } }
     async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-      if (++steps > 24) throw new Error('Peeka 超过最大执行步数（24）')
+      if (++steps > 24) throw new Error('Plant 超过最大执行步数（24）')
       const signal = options.signal ?? input.signal
-      // The first user message is already present in the host transcript, with
-      // its original image data. Only append loop-produced messages after it.
-      const messages = [...input.messages, ...projectLoopMessages(options.messages.slice(1))]
+      // Plant supplies history and system context, including original images.
+      // Locate the synthetic starter by identity: dsh may prepend prompt messages.
+      const starterIndex = options.messages.findIndex(message => message.id === starter.id)
+      if (starterIndex < 0) throw new Error('DSH request is missing its turn starter')
+      const messages = [...input.messages, ...projectLoopMessages(options.messages.slice(starterIndex + 1))]
       let answer = await input.request(messages, signal)
       // A reasoning-only response is not a completed answer. Retry the same
       // request once before publishing anything or executing any tools.
@@ -74,7 +77,8 @@ export async function runOfficialDshTurn(input: Input): Promise<string> {
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(AgentLoop, { agents: [], maxParallelToolCalls: 1 })
-    ctx.llm.registerAdapter(['peeka'], new PeekaAdapter())
+    // 同时注册新旧 provider 名，旧会话 JSONL 里持久化的 peeka 记录也能回放
+    ctx.llm.registerAdapter(['plant', 'peeka'], new PlantAdapter())
     for (const definition of input.toolbox.definitions) {
       ctx.tools.register({
         ...definition.function,
@@ -90,27 +94,26 @@ export async function runOfficialDshTurn(input: Input): Promise<string> {
         }
       })
     }
-    const agent = await ctx.agentLoop.create(SessionId(input.sessionId), { provider: 'peeka', model: 'configured' }, { cwd: input.workDir })
+    const agent = await ctx.agentLoop.create(SessionId(input.sessionId), { provider: 'plant', model: 'configured' }, { cwd: input.workDir })
     ctx.on('session/event', (_session, event) => {
       if (event.type !== 'tool/result') return
-      for (const block of event.data.message.content) {
-        if (block.type !== 'tool-result') continue
-        const text = block.content.filter(b => b.type === 'text').map(b => b.text).join('\n')
-        input.onToolResult(block.toolCallId, text, !!block.isError)
-      }
+      // dsh 0.2.0 stores tool results as first-class tool-role messages.
+      const message = event.data.message
+      const text = message.content.filter(b => b.type === 'text').map(b => b.text).join('\n')
+      input.onToolResult(message.toolCallId, text, !!message.isError)
     })
     const cancel = () => agent.cancel({ kind: 'user' })
     input.signal.addEventListener('abort', cancel, { once: true })
     try {
       input.signal.throwIfAborted()
-      agent.followup(createUserMessage({ content: [{ type: 'text', text: '继续当前用户请求' }], source: { kind: 'user' } }))
+      agent.followup(starter)
       await agent.whenIdle()
       input.signal.throwIfAborted()
       const end = agent.session.snapshotEvents().filter(e => e.type === 'turn/end').at(-1)
       if (!end || end.data.reason.kind !== 'completed') {
-        throw new Error(end?.data.reason.kind === 'error' ? end.data.reason.error.message : 'Peeka 任务未正常完成')
+        throw new Error(end?.data.reason.kind === 'error' ? end.data.reason.error.message : 'Plant 任务未正常完成')
       }
-      if (!finalText) throw new Error('Peeka 未返回可显示的最终回复')
+      if (!finalText) throw new Error('Plant 未返回可显示的最终回复')
       return finalText
     } finally {
       input.signal.removeEventListener('abort', cancel)
@@ -120,7 +123,7 @@ export async function runOfficialDshTurn(input: Input): Promise<string> {
   }
 }
 
-function projectLoopMessages(messages: Message[]): DeepSeekMessage[] {
+function projectLoopMessages(messages: readonly RequestMessage[]): DeepSeekMessage[] {
   return messages.flatMap((message): DeepSeekMessage[] => {
     const text = message.content.filter(b => b.type === 'text').map(b => b.text).join('\n')
     if (message.role === 'assistant') {
@@ -128,8 +131,9 @@ function projectLoopMessages(messages: Message[]): DeepSeekMessage[] {
         reasoning_content: message.content.filter(b => b.type === 'reasoning').map(b => b.text).join('\n') || null,
         tool_calls: message.content.filter(b => b.type === 'tool-call').map(b => ({ id: b.id, type: 'function', function: { name: b.name, arguments: b.arguments } })) }]
     }
-    const results: DeepSeekMessage[] = message.content.filter(b => b.type === 'tool-result').map(b => ({ role: 'tool', tool_call_id: b.toolCallId, content: b.content.filter(c => c.type === 'text').map(c => c.text).join('\n') }))
-    if (text) results.push({ role: message.role === 'system' ? 'system' : 'user', content: text })
-    return results
+    if (message.role === 'tool') {
+      return [{ role: 'tool', tool_call_id: message.toolCallId, content: text }]
+    }
+    return text ? [{ role: message.role === 'system' || message.role === 'developer' ? 'system' : 'user', content: text }] : []
   })
 }

@@ -65,19 +65,23 @@ function toggled(event: Event): void {
   </details>
 </template>
 <style scoped>
-.access-scope { margin: 6px 12px 0; font-size: 11px; color: var(--color-text-muted); min-width: 0; }
-summary { cursor: pointer; display: flex; align-items: center; gap: 7px; padding: 3px 6px; border: 1px solid var(--color-border-subtle); border-radius: 6px; width: fit-content; max-width: 100%; }
-summary::before { content: '▸'; }
+.access-scope { margin: 10px 12px 0; font-size: 11px; color: var(--color-text-secondary); min-width: 0; }
+summary { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 2px 0; border: 0; border-radius: var(--radius-button); width: 100%; min-width: 0; line-height: 20px; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: '▸'; flex: none; color: var(--color-text-muted); }
+summary > span:not(.scope-summary) { flex: none; }
+summary:hover { color: var(--color-text-primary); }
+summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 .access-scope[open] summary::before { content: '▾'; }
-.scope-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scope-body { max-height: 180px; overflow: auto; padding: 6px 8px; background: var(--color-bg-subtle); border-radius: 6px; margin-top: 4px; }
+.scope-summary { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 2px; color: var(--color-text-muted); }
+.scope-body { max-height: 180px; overflow: auto; padding: 8px 10px; background: var(--color-bg-subtle); border-radius: var(--radius-button); margin-top: 6px; }
 .scope-heading { font-weight: 600; color: var(--color-text-secondary); margin-top: 7px; margin-bottom: 4px; }
 .scope-path { overflow-wrap: anywhere; user-select: text; font-family: monospace; }
-.scope-note { margin-bottom: 5px; }
+.scope-note { margin: 0 0 8px; line-height: 1.65; }
 .scope-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.scope-chip { display: inline-flex; flex: none; align-items: center; padding: 2px 7px; border: 1px solid; border-radius: 5px; line-height: 1.5; }
-.scope-chip--read { color: light-dark(#175bb3, #91bcff); background: light-dark(#eaf2ff, #20334b); border-color: light-dark(#c6dcfa, #385c88); }
-.scope-chip--write { color: light-dark(#197448, #90d5aa); background: light-dark(#e8f6ee, #203d2d); border-color: light-dark(#b9dfc8, #38664a); }
+.scope-chip { display: inline-flex; flex: none; align-items: center; padding: 0 6px; border: 0; border-radius: var(--radius-button); line-height: 20px; font-size: 10px; }
+.scope-chip--read { color: var(--color-text-secondary); background: var(--color-bg-subtle); }
+.scope-chip--write { color: var(--color-accent); background: var(--color-accent-subtle); }
 .scope-chip--path { max-width: 100%; font-family: monospace; overflow-wrap: anywhere; user-select: text; }
 .scope-base-note { margin-left: 4px; font-size: 10px; color: var(--color-text-muted); font-weight: 400; }
 </style>

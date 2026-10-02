@@ -1,3 +1,5 @@
+import { CliAgentDriver } from '../../agent-cli/driver'
+import { isCliAiProvider } from '../../../shared/ai-provider'
 // driver 入口：导出唯一的进程级实例 + 类型。
 //
 // 当前默认是 LegacySpawnDriver（每 turn spawn）；LongRunningDriver 是骨架，
@@ -38,28 +40,31 @@ function createClaudeDriver(): AgentDriver {
 class ProviderRoutingDriver implements AgentDriver {
   constructor(
     private readonly claude: AgentDriver,
-    private readonly deepSeek: AgentDriver
+    private readonly deepSeek: AgentDriver,
+    private readonly cli: AgentDriver = new CliAgentDriver()
   ) {}
 
   submit(input: Parameters<AgentDriver['submit']>[0]): ReturnType<AgentDriver['submit']> {
+    if (isCliAiProvider(input.aiProvider)) return this.cli.submit(input)
     return input.aiProvider === 'deepseek-harness'
       ? this.deepSeek.submit(input)
       : this.claude.submit(input)
   }
 
   async abort(sessionId: string): Promise<boolean> {
-    const [claude, deepSeek] = await Promise.all([
+    const [claude, deepSeek, cli] = await Promise.all([
       this.claude.abort(sessionId),
-      this.deepSeek.abort(sessionId)
+      this.deepSeek.abort(sessionId),
+      this.cli.abort(sessionId)
     ])
-    return claude || deepSeek
+    return claude || deepSeek || cli
   }
 
   hasActiveTurn(sessionId: string): boolean {
-    return this.claude.hasActiveTurn(sessionId) || this.deepSeek.hasActiveTurn(sessionId)
+    return this.claude.hasActiveTurn(sessionId) || this.deepSeek.hasActiveTurn(sessionId) || this.cli.hasActiveTurn(sessionId)
   }
 
   async shutdown(): Promise<void> {
-    await Promise.all([this.claude.shutdown(), this.deepSeek.shutdown()])
+    await Promise.all([this.claude.shutdown(), this.deepSeek.shutdown(), this.cli.shutdown()])
   }
 }

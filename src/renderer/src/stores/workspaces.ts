@@ -242,18 +242,6 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     return r.data
   }
 
-  async function ensureDefaultKnowledgeWorkspace(): Promise<Workspace | null> {
-    const existing = list.value.find((w) => w.kind === 'knowledge')
-    if (existing) return existing
-    const r = await call('workspace.ensureDefaultKnowledge', undefined)
-    if (!r.ok) {
-      useUiStore().showToast('error', `创建剪页库失败：${r.message}`, 6000)
-      return null
-    }
-    await refresh()
-    return r.data
-  }
-
   async function importExisting(path: string, name?: string, kind: Workspace['kind'] = 'project'): Promise<Workspace | null> {
     const r = await call('workspace.import', { path, name, kind })
     if (!r.ok) return null
@@ -406,7 +394,6 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     refreshScan,
     ensurePersonalSpace,
     activateSpace,
-    ensureDefaultKnowledgeWorkspace,
     create,
     importExisting,
     cloneFromUrl,

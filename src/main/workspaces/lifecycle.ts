@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs'
-import { basename, isAbsolute, join } from 'node:path'
+import { basename, isAbsolute, join, relative, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { Workspace, WorkspaceKind } from '@shared/types'
 import { APP_MANAGED_GITIGNORE_ENTRIES } from '@shared/app-managed-paths'
@@ -17,7 +17,6 @@ import { unbindAutoSave } from '../saga/auto-save'
 import { enqueueWorkspaceScopeTransition } from './scope-transition'
 
 const store = new WorkspacesStore()
-const DEFAULT_KNOWLEDGE_WORKSPACE_NAME = '剪页库'
 const DEFAULT_WORKSPACE_NAME = '工作台'
 
 export type CreateWorkspaceInput = {
@@ -87,7 +86,6 @@ async function scaffoldCommonStructure(workspacePath: string): Promise<void> {
 }
 
 // 仅项目类：requirements/ 元信息目录 + 项目级共享 docs/、ui/ 资产目录。
-// 剪页库是独立 knowledge 工作区，不属于项目 git。
 async function scaffoldProjectStructure(workspacePath: string): Promise<void> {
   await Promise.all([
     fs.mkdir(requirementsDir(workspacePath), { recursive: true }),
@@ -115,6 +113,7 @@ export async function ensureDefaultWorkspace(): Promise<Workspace> {
 
   const now = new Date().toISOString()
   let workspace = await store.findByPath(workspacePath)
+    ?? (await store.list()).find(w => w.isDefault && w.directoryRoot === workspacePath) ?? null
   if (workspace) {
     await store.updateWorkspace(workspace.id, {
       kind: 'project',
@@ -154,7 +153,9 @@ export async function ensureDefaultWorkspace(): Promise<Workspace> {
       await store.updateWorkspace(item.id, { isDefault: false })
     }
   }
-  await setActiveWorkspaceRecord(workspace.id)
+  const activeId = await store.activeId()
+  const active = activeId ? await store.findById(activeId) : null
+  if (!active || active.hidden || active.kind !== 'project') await setActiveWorkspaceRecord(workspace.id)
   return withExternalInitWarnings(workspace)
 }
 
@@ -267,7 +268,7 @@ export async function importWorkspace(input: ImportWorkspaceInput, options: Regi
   const path = input.path
   if (!isAbsolute(path)) throw new UIClientError('VALIDATION', '路径必须是绝对路径')
   if (!(await pathExists(path))) throw new UIClientError('NOT_FOUND', `目录不存在：${path}`)
-  if (await store.findByPath(path)) {
+  if (await store.findByPath(path) || (await store.list()).some(workspace => workspace.directoryRoot === path)) {
     throw new UIClientError('PATH_TAKEN', `已登记：${path}`)
   }
   const kind = input.kind ?? 'project'
@@ -309,7 +310,11 @@ export async function cloneWorkspace(input: CloneWorkspaceInput): Promise<Worksp
   if (!isAbsolute(input.parentDir)) {
     throw new UIClientError('VALIDATION', '父目录必须是绝对路径')
   }
-  const dest = join(managedProjectsRoot(input.parentDir), input.name)
+  const name = input.name.trim()
+  if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) {
+    throw new UIClientError('VALIDATION', '仓库名称不能包含路径分隔符')
+  }
+  const dest = join(managedProjectsRoot(input.parentDir), name)
   if (await pathExists(dest)) {
     throw new UIClientError('PATH_TAKEN', `目录已存在：${dest}`)
   }
@@ -358,34 +363,31 @@ export async function cloneWorkspace(input: CloneWorkspaceInput): Promise<Worksp
   }
 }
 
-export async function ensureDefaultKnowledgeWorkspace(): Promise<Workspace> {
-  const existing = (await store.list()).find((w) => w.kind === 'knowledge')
-  if (existing) return existing
-
-  const settings = await settingsStore.get()
-  try {
-    return await createWorkspace(
-      {
-        parentDir: settings.workspaceRoot,
-        name: DEFAULT_KNOWLEDGE_WORKSPACE_NAME,
-        kind: 'knowledge'
-      },
-      { makeActive: false }
-    )
-  } catch (error) {
-    if (!(error instanceof UIClientError) || error.code !== 'PATH_TAKEN') throw error
-    const workspacePath = join(managedProjectsRoot(settings.workspaceRoot), DEFAULT_KNOWLEDGE_WORKSPACE_NAME)
-    const registered = await store.findByPath(workspacePath)
-    if (registered) return registered
-    return importWorkspace(
-      {
-        path: workspacePath,
-        name: DEFAULT_KNOWLEDGE_WORKSPACE_NAME,
-        kind: 'knowledge'
-      },
-      { makeActive: false }
-    )
-  }
+export async function setWorkspaceEntry(id: string, entryPath: string): Promise<Workspace> {
+  return enqueueWorkspaceScopeTransition(async () => {
+    const workspace = await store.findById(id)
+    if (!workspace || workspace.kind !== 'project' || workspace.hidden) throw new UIClientError('NOT_FOUND', '目录不存在')
+    const root = workspace.directoryRoot ?? workspace.path
+    const entry = entryPath.trim().replace(/\\/g, '/').replace(/\/+$/, '')
+    if (isAbsolute(entry) || entry.split('/').some(part => part === '..' || part === '.' || part === '' && entry !== '')) {
+      throw new UIClientError('VALIDATION', '入口必须是目录内的相对路径')
+    }
+    const target = join(root, entry)
+    const [realRoot, realTarget] = await Promise.all([fs.realpath(root), fs.realpath(target)]).catch(() => {
+      throw new UIClientError('NOT_FOUND', '入口目录不存在，请选择已有目录')
+    })
+    const rel = relative(realRoot, realTarget)
+    if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) || !(await fs.stat(realTarget)).isDirectory()) {
+      throw new UIClientError('VALIDATION', '入口必须位于所关联目录内')
+    }
+    await projectWatcher.stop(id)
+    clearProjectSessionHistory(workspace.path)
+    await scaffoldCommonStructure(target)
+    await scaffoldProjectStructure(target)
+    await syncWorkspaceTemplates(target, 'project')
+    await store.updateWorkspace(id, { directoryRoot: root, entryPath: entry || undefined, path: target })
+    return (await store.findById(id))!
+  })
 }
 
 export function removeWorkspace(
@@ -395,13 +397,19 @@ export function removeWorkspace(
   return enqueueWorkspaceScopeTransition(async () => {
     const ws = await store.findById(id)
     if (!ws) return
+    if (ws.isDefault) throw new UIClientError('VALIDATION', '本地工作台不能移除，可解除远端绑定')
+    const wasActive = await store.activeId() === id
     unbindAutoSave(id)
     await projectWatcher.stop(id)
     clearProjectSessionHistory(ws.path)
     if (ws.managedPath === true && options.deleteFiles === true) {
-      await fs.rm(ws.path, { recursive: true, force: true })
+      await fs.rm(ws.directoryRoot ?? ws.path, { recursive: true, force: true })
     }
     await store.remove(id)
+    if (wasActive) {
+      const available = (await store.list()).filter(w => !w.hidden && w.kind === 'project')
+      await store.setActive((available.find(w => w.isDefault) ?? available[0])?.id ?? null)
+    }
   })
 }
 

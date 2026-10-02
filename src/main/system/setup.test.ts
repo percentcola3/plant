@@ -26,7 +26,7 @@ vi.mock('node:fs', async (importOriginal) => {
   }
 })
 
-import { CLAUDE_CODE_GUIDE_URL, checkEnvironment } from './setup'
+import { checkEnvironment } from './setup'
 import { _testOnlyResetBinaryCache } from '../git/binary'
 
 // 极简 mock：execFile 是 (cmd, args, opts, cb) → cb(err, { stdout, stderr })
@@ -64,7 +64,7 @@ describe('checkEnvironment（极简版，不做 -lic shell 探测）', () => {
 
     expect(result.gitBinaryReady).toBe(false)
     expect(result.gitUser.configured).toBe(false)
-    expect(result.claudeGuideUrl).toBe(CLAUDE_CODE_GUIDE_URL)
+    expect(result).not.toHaveProperty('claudeGuideUrl')
   })
 
   it('bundled git 就绪 + 邮箱合法 → gitBinaryReady=true, configured=true', async () => {

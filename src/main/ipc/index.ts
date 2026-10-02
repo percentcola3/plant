@@ -4,7 +4,6 @@ import { registerAiTaskHandlers } from './handlers/ai-tasks'
 import { registerClaudeHandlers } from './handlers/claude'
 import { registerEditorHandlers } from './handlers/editor'
 import { registerGitHandlers } from './handlers/git'
-import { registerRawHandlers } from './handlers/raw'
 import { registerSagaHandlers } from './handlers/saga'
 import { registerSettingsHandlers } from './handlers/settings'
 import { registerSourceProjectHandlers } from './handlers/source-project'
@@ -34,6 +33,5 @@ export function registerAllIpcHandlers(): void {
   registerWorkspaceWriteHandlers()
   registerExternalHandlers()
   registerSkillsHandlers()
-  registerRawHandlers()
   assertAllChannelsRegistered()
 }

@@ -1,27 +1,127 @@
-# Flower
+<p align="center">
+  <img src="src/renderer/src/assets/brand/plant-icon.svg" width="88" height="88" alt="Plant 标志" />
+</p>
 
-一个面向 UI 设计师与产品经理的 macOS 桌面工作台（Electron + Vue 3），围绕 git 组织协作产物：
+<h1 align="center">Plant</h1>
+<p align="center"><strong>让想法生长为界面 · Grow ideas into interfaces.</strong></p>
+<p align="center">面向产品经理与设计师的 AI 工作台，把需求、界面和团队知识放进同一个创作空间。</p>
 
-- **项目与需求**：导入本地或 git 仓库，需求即分支，产物统一在一个分支上沉淀
-- **知识库 / UI 资产**：支持 git 知识库（只读）与本地知识库，跨需求共享
-- **产物编辑与预览**：Markdown 文档、UI 产物（HTML 页面）的编辑、预览与发布
-- **AI 助手**：内置 DeepSeek harness（官方 dsh-agent 回路）与 Claude Code / 自定义 CLI 接入，可在项目上下文中对话、执行任务
-- **项目浏览器**：内置多标签网页浏览，可抓取网页转 markdown 剪页
+![Plant 工作台：目录、项目分组与最近编辑的项目](docs/screenshots/workbench.jpg)
 
-## 技术栈
+## 从一个想法，到可以讨论和交付的产品方案
 
-Electron · Vue 3 · Pinia · TypeScript · Tailwind CSS · CodeMirror · xterm · node-pty · dugite (git)
+写需求时，需要业务背景；设计界面时，需要组件和规范；交付研发时，需要清晰的文件与版本。Plant 将这些环节连接起来：用 AI 协助编写 PRD、生成和调整 HTML 界面，随时引用项目文件与知识库，再通过 Git 保存和共享成果。
 
-## 开发
+Plant 适合产品经理、设计师，以及希望把 AI 融入日常工作的独立创作者和小团队。你可以先从一个本地项目开始，也可以连接团队已有的 Git 仓库。协作以普通文件和 Git 为基础，无需维护一套专门的 AI 协作服务。
 
-```bash
-npm install          # 安装依赖（postinstall 会为 node-pty 做 electron-rebuild）
-npm run dev          # 启动开发
-npm test             # 运行测试 (vitest)
-npm run typecheck    # 类型检查
-npm run pack:dir     # 本地打包（不签名）
+| 你的工作 | Plant 提供的支持 |
+| --- | --- |
+| 将想法整理成需求 | Markdown 编辑与预览，结合业务资料进行 AI 写作和 PRD 技术评审 |
+| 将需求变成界面 | HTML 源码与预览、桌面与移动端画布、页面元素选择与调整 |
+| 让 AI 理解已有产品 | 引用业务文档、代码、设计规范、组件资产和截图 |
+| 同时推进多个项目 | 多目录工作台、项目分组、全局搜索与最近编辑入口 |
+| 将成果交给团队 | 本地文件、Git 同步与变更历史，接入现有研发流程 |
+
+## 一个工作台，组织多个项目
+
+工作台按 **目录 → 项目分组 → 项目** 组织内容。目录既可以是本地文件夹，也可以是 Git 仓库；Git 仓库还可以选择其中的子目录作为项目入口。
+
+- 默认提供本地项目目录，打开即可开始。
+- 支持连接多个目录，按产品、团队或业务线分组管理项目。
+- 目录与分组均可折叠，全局搜索帮助快速定位项目。
+- 最近编辑的项目提供快捷入口；新建项目后直接进入编辑器，没有分组时自动使用默认分组。
+- 支持解绑目录，保留本地文件和 Git 历史。
+
+## 需求写作与界面设计，在同一处推进
+
+![项目编辑器：PRD 预览、文件目录与 AI 助手](docs/screenshots/project-editor.jpg)
+
+项目将 PRD、页面和辅助文件放在一起。你可以编辑 Markdown，查看 HTML 源码和预览，在桌面与移动端画布之间切换，并选中页面元素向 AI 描述修改目标。
+
+AI 输入面板支持使用 `@` 引用项目文件、网页、知识库和组件资产，也可以附加图片或截图。让一段需求、一份规范和一张参考图共同参与创作，减少反复复制背景资料的工作。
+
+> 图中展示的是新建项目的 PRD 模板与 AI 输入面板。截图均来自当前版本的真实界面。
+
+## 用团队知识，为创作提供依据
+
+![知识库：连接业务知识与 UX 设计资产](docs/screenshots/knowledge.jpg)
+
+知识库支持连接本地目录或 Git 资源，将业务文档、现有代码和设计资产带入项目。组件、设计 Tokens、图片和图标可以与文字资料一起成为创作参考。
+
+按项目关联相关知识库，构建本地索引，并查看索引状态或重新建立索引。AI 可以检索与任务有关的资料，也可以直接引用指定文件，让需求和界面更贴近已有业务与设计规范。不同资源类型的索引与预览能力有所区别。
+
+## 把常用方法沉淀成技能
+
+![技能页：管理知识库检索、PRD 技术评审与 UX 设计技能](docs/screenshots/skills.jpg)
+
+Plant 提供知识库检索、PRD 技术评审和 UX 设计等内置技能，也支持安装、编辑、启用或停用技能。团队可以通过共享的 `system.md` 规则与可复用技能，沉淀写作标准、设计原则和评审方法。
+
+## 选择适合自己的 AI 工具
+
+内置 Plant 助手集成 DeepSeek 官方 Harness，可配置服务地址、协议、模型与 API Key；无需单独安装 dsh。当前集成使用 `0.2.0-rc.2` 预发布版本。
+
+也可以使用本机的 Claude Code、Codex CLI、OpenCode CLI 或 Pi CLI。这些工具需要自行安装并完成各自的登录或模型配置。不同引擎分别保存对话历史，切换引擎对下一条消息生效，进行中的任务继续执行。
+
+内嵌终端与外部 IDE 入口方便进一步修改文件。应用支持浅色与深色主题，任务悬浮球可按需开启，默认关闭。
+
+## 五步开始你的第一个项目
+
+1. **选择目录。** 使用默认本地目录，或连接一个已有的本地目录、Git 仓库；按需选择仓库内的入口目录。
+2. **新建项目。** 选择项目分组，或者使用默认分组，创建后直接进入编辑器。
+3. **准备上下文。** 添加并关联知识库，放入业务资料、现有代码与设计资产。
+4. **开始创作。** 在设置中配置 AI 引擎，描述目标并引用资料，编写 PRD、生成界面、预览和调整。
+5. **保存与协作。** 检查产出，通过 Git 同步经确认的文件，让团队继续评审和实现。
+
+例如，你可以从这样的任务开始：
+
+> 参考关联知识库中的设计规范，为会员管理功能编写 PRD，说明用户流程与验收标准，再生成一个可预览的管理页面。
+
+## 成果是文件，也可以成为团队的共同上下文
+
+项目采用约定的目录结构，默认创建 `index.html` 和 `doc/prd.md`：
+
+```text
+目录入口/
+└── features/
+    └── 项目分组/
+        └── 项目/
+            ├── index.html       # 界面原型
+            └── doc/
+                └── prd.md       # 产品需求
 ```
 
-## License
+产品与设计成员可以在共享 Git 仓库中维护这些成果，通过团队已有的分支和审阅流程确认版本。研发成员直接读取文件，或将产物仓库作为 Git submodule 引入应用仓库，让编辑器和编码助手使用同一份需求与设计上下文。
 
-MIT
+Plant 提供创作、文件管理和 Git 同步能力；下游仓库的 submodule 配置与版本更新由研发团队管理。打包版本通过 dugite 内置 Git，远程访问仍使用团队自己的 Git 托管服务和凭据。
+
+## 数据与运行方式
+
+项目文件和知识库索引保存在本地。使用 AI 时，任务内容及所引用的上下文会发送到你配置的模型服务；本地 CLI 使用各自的认证与运行配置。API Key 在本地加密保存，并在界面中以掩码提示已保存状态。
+
+使用本地项目无需 Git 托管服务；使用远程协作或 AI 时，需要相应的仓库访问权限与模型服务配置。
+
+## 下载与安装
+
+[下载首个预览版 v0.2.12](https://github.com/percentcola3/plant/releases/tag/v0.2.12) · [直接下载 macOS Apple Silicon 安装包](https://github.com/percentcola3/plant/releases/download/v0.2.12/Plant-0.2.12-arm64.dmg)
+
+当前提供 macOS arm64（Apple Silicon）DMG。打开安装包后，将 Plant 拖入 Applications。此预览版尚未签名与公证，macOS 可能阻止首次启动；请按系统提示在“隐私与安全性”中确认允许打开。
+
+截图更新于 2026-10-02，展示当前版本的工作台、Markdown 编辑器、知识库和技能管理。首个预览版的验证结果与已知限制见 [发布验证记录](docs/release-validation-v0.2.12.md)。
+
+## 本地开发
+
+Plant 基于 Electron、Vue 3 和 TypeScript，当前打包目标为 **macOS arm64**。开发需要 Node.js、pnpm，以及 `node-pty` 等原生模块所需的构建工具。
+
+```sh
+pnpm install            # 安装依赖并重建原生模块
+pnpm dev                # 启动桌面应用
+pnpm build              # 构建应用
+pnpm test               # 运行测试
+pnpm typecheck          # 检查类型
+pnpm setup:bundled-git  # 准备打包使用的 Git
+pnpm pack:dir           # 生成未签名的本地应用包
+```
+
+核心组件包括 Pinia、CodeMirror、xterm、node-pty、dugite、zvec-grep 和 DeepSeek Harness。仓库同时维护 npm 与 pnpm 锁文件；依赖变更时应保持两者一致，dsh 相关包应使用相同版本。
+
+品牌标志与图标生成方式见 [Plant 品牌资源](resources/brand/README.md)。

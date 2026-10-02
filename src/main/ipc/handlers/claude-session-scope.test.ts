@@ -41,6 +41,13 @@ describe('claude workspace session scope', () => {
     )).toBe('branch:space/b|workspace:home|provider:deepseek-harness')
   })
 
+  it('isolates each CLI history on the same workspace scope', () => {
+    const keys = (['claude-code', 'deepseek-harness', 'codex-cli', 'opencode-cli', 'pi-cli'] as const)
+      .map(provider => claudeWorkspaceSessionKey('space/b', { kind: 'workspace-home' }, provider))
+    expect(new Set(keys).size).toBe(5)
+    expect(keys[2]).toBe('branch:space/b|workspace:home|provider:codex-cli')
+  })
+
   it('aborts superseded sessions when a new task replaces the same project scope', () => {
     expect(source).toContain('recordRunningReplacingScope')
     expect(source).toContain('for (const replacedTask of replaced)')

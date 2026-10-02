@@ -1,3 +1,4 @@
+import { retireLegacyClipLibrary } from './workspaces/retire-clip-library'
 // 全局错误捕获：whenReady 内的 await 抛 Promise 拒绝时，Electron 默认会以 code 0 静默退出，
 // 看不到根因。挂这两个 handler 让原因始终被打到 stderr。
 function isConsoleEpipe(error: unknown): boolean {
@@ -30,7 +31,8 @@ process.on('unhandledRejection', (reason) => {
 
 import { app, BrowserWindow, shell } from 'electron'
 import { execFileSync } from 'node:child_process'
-import { join } from 'node:path'
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { registerAllIpcHandlers } from './ipc'
 import { isBundled, resolveGitBinary, resolveGitEnv } from './git/binary'
@@ -39,8 +41,6 @@ import { cleanupClaudeResources } from './ipc/handlers/claude'
 import { projectWatcher } from './projects/watcher'
 import { askpassServer, ensureAskpassHelper, ensureCachedAskpassHelper } from './http/askpass-server'
 import { previewServer } from './http/preview-server'
-import { captureServer } from './raw/server'
-import { ensureExtensionInstalled } from './raw/extension-installer'
 import { hydrateProcessPathSync, hydrateProcessPathFromShell } from './system/shell-path'
 import { ensureSpawnHealth, recordSpawnRelatedEpipe } from './system/spawn-health'
 import { startAutoRefresh, stopAutoRefresh } from './external-pool/service'
@@ -69,9 +69,29 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 let mainWindow: BrowserWindow | null = null
 let aiTaskNotchWindow: BrowserWindow | null = null
 
-// 让 dev 模式下 app.getPath('userData') 也指向 WorkSpace 而非 Electron 默认目录
+// 让 dev 模式下 app.getPath('userData') 也指向 Plant 而非 Electron 默认目录
 // （否则 dev 用一份 projects.json，打包用另一份）
-app.setName('WorkSpace')
+app.setName('Plant')
+
+// 品牌由 WorkSpace 更名为 Plant：一次性把旧 userData 的设置和项目注册表带过来，
+// 已存在新文件时不覆盖。API key 等安全存储不迁移，用户需要重新输入一次。
+function migrateLegacyUserData(): void {
+  try {
+    const newPath = app.getPath('userData')
+    const legacyPath = join(dirname(newPath), 'WorkSpace')
+    if (newPath === legacyPath || !existsSync(legacyPath)) return
+    for (const file of ['settings.json', 'projects.json']) {
+      const from = join(legacyPath, file)
+      const to = join(newPath, file)
+      if (!existsSync(from) || existsSync(to)) continue
+      mkdirSync(dirname(to), { recursive: true })
+      copyFileSync(from, to)
+    }
+  } catch (error) {
+    console.warn('[main] legacy WorkSpace userData migration failed:', error)
+  }
+}
+migrateLegacyUserData()
 
 // GUI 启动 Electron 时 PATH 默认只有 /usr/bin:/bin:/...，不含用户装的 node / brew / nvm
 // 等目录。在创建任何子进程之前先把常见目录注入 process.env.PATH，避免 spawn claude /
@@ -103,7 +123,7 @@ function createMainWindow(): BrowserWindow {
     minHeight: 600,
     show: false,
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#151b17',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -156,7 +176,7 @@ function createAiTaskNotchWindow(): BrowserWindow {
     // 允许窗口尺寸/位置超出物理屏幕范围，避免 macOS 把窗口挤到菜单栏下方
     enableLargerThanScreen: true,
     backgroundColor: '#00000000',
-    title: 'WorkSpace AI Tasks',
+    title: 'Plant AI Tasks',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -174,7 +194,7 @@ function createAiTaskNotchWindow(): BrowserWindow {
     // 若有持久化的用户拖动位置，用它覆盖默认居中
     void readNotchPosition().then((pos) => {
       if (pos && !win.isDestroyed()) applyAiTaskNotchPosition(win, pos)
-      if (!win.isDestroyed() && settingsStore.getCached()?.aiTaskNotchEnabled !== false) win.showInactive()
+      if (!win.isDestroyed() && settingsStore.getCached()?.aiTaskNotchEnabled === true) win.showInactive()
     })
   })
   // 用户拖动窗口后落位就把位置写盘（debounce 由 native 事件天然稀疏，无需手动）。
@@ -230,7 +250,7 @@ function focusMainWindow(): void {
 app.whenReady().then(async () => {
   if (!app.requestSingleInstanceLock()) {
     // 显式打印原因；之前一行 app.quit() 让人误以为 electron-vite 自己出问题
-    console.warn('[main] 另一个 WorkSpace 实例已在运行（持有 single instance lock）。本实例退出。')
+    console.warn('[main] 另一个 Plant 实例已在运行（持有 single instance lock）。本实例退出。')
     console.warn('[main] 如果上一次 dev session 没退干净，可以执行: pkill -9 -f "Electron \\."')
     app.quit()
     return
@@ -255,18 +275,7 @@ app.whenReady().then(async () => {
   await ensureCachedAskpassHelper()
   await previewServer.start()
 
-  // 剪页插件 capture server（127.0.0.1:9527→9531）。绑不到端口不致命，
-  // 用户下次可以在 Settings 手动重启 App；这里只 warn 不抛。
-  const bound = await captureServer.start().catch((e) => {
-    console.warn('[main] capture server failed to start:', e)
-    return null
-  })
-  if (bound) console.log('[main] capture server bound at 127.0.0.1:' + bound.port)
-  else console.warn('[main] capture server did not bind any port (9527-9531 all busy?)')
-
-  // Chrome 插件资源拷贝到 ~/Documents/workspace-extension/，best-effort
-  void ensureExtensionInstalled().catch((e) => console.warn('[main] ensureExtensionInstalled failed:', e))
-
+  await retireLegacyClipLibrary().catch(error => console.warn('[main] retire clip library failed:', error))
   registerAllIpcHandlers()
   startAutoRefresh()
   startBackgroundFetch()
@@ -350,7 +359,7 @@ app.on('before-quit', (event) => {
     unbindAllAutoSave()
     killAllTtys()
     cleanupClaudeResources()
-    await Promise.allSettled([projectWatcher.stopAll(), askpassServer.stop(), previewServer.stop(), captureServer.stop()])
+    await Promise.allSettled([projectWatcher.stopAll(), askpassServer.stop(), previewServer.stop()])
     stopAutoRefresh()
     stopBackgroundFetch()
     app.quit()

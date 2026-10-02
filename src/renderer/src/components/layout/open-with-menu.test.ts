@@ -34,7 +34,7 @@ describe('OpenWithMenu component', () => {
     expect(source).toContain('window.localStorage.setItem')
   })
 
-  it('uses peeka-style app icons for the tool trigger and dropdown items', () => {
+  it('uses plant-style app icons for the tool trigger and dropdown items', () => {
     expect(source).toContain("from '@/assets/project-tools/app-cursor.png'")
     expect(source).toContain('open-with-menu__dropdown-item--active')
     expect(source).toContain('role="menuitemradio"')

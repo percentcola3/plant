@@ -751,7 +751,7 @@ async function startForActiveProject(): Promise<void> {
     try { fit?.fit() } catch { /* ignore */ }
 
     t.clear()
-    t.write(`\x1b[2m[WorkSpace] 编辑范围: ${scopeLabel.value}\x1b[0m\r\n`)
+    t.write(`\x1b[2m[Plant] 编辑范围: ${scopeLabel.value}\x1b[0m\r\n`)
 
     status.value = 'spawning'
     errorMsg.value = ''
@@ -984,7 +984,7 @@ function onEditorDocumentOpened(event: Event): void {
     <!-- Header：紧凑布局。scope 一键切换 + UI/TUI + 状态点 + 关闭 -->
     <div
       v-if="!props.suppressHeader"
-      class="h-9 px-2 flex items-center gap-2 border-b border-border/60 text-xs"
+      class="h-9 px-2 flex items-center gap-2 text-xs"
     >
       <template v-if="hasProject">
         <span
@@ -1103,7 +1103,7 @@ function onEditorDocumentOpened(event: Event): void {
   z-index: 8;
   width: 1px;
   pointer-events: none;
-  background: rgba(148, 163, 184, 0.35);
+  background: var(--color-border-subtle);
 }
 
 .terminal-resize-handle {

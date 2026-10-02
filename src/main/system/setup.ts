@@ -7,8 +7,6 @@ import { resolveCli } from './cli-resolver'
 
 const execFileAsync = promisify(execFile)
 
-export const CLAUDE_CODE_GUIDE_URL = 'https://code.claude.com/docs/en/overview'
-
 // 启动检查：极简策略——只查 git binary 是否存在 + git user 是否配。
 // node / npm 是 Electron 自带，不需要检测；claude-code / cursor / vscode 改成 lazy + 后台。
 // 之前用 zsh -lic 跑 6 次 which，每次 100-500ms 累计 1.5-3s，全删。
@@ -19,14 +17,12 @@ export type EnvCheckResult = {
     email: string
     configured: boolean
   }
-  claudeGuideUrl: string
 }
 
 export type OptionalDepStatus = {
   name: 'claude-code' | 'cursor' | 'vscode'
   found: boolean
   version?: string
-  guideUrl?: string
 }
 
 // 极简同步检查：不 spawn shell，只用 fs.existsSync 验证 bundled git
@@ -69,8 +65,7 @@ export async function checkEnvironment(): Promise<EnvCheckResult> {
   ])
   return {
     gitBinaryReady,
-    gitUser,
-    claudeGuideUrl: CLAUDE_CODE_GUIDE_URL
+    gitUser
   }
 }
 
@@ -91,11 +86,11 @@ async function getVersion(cmd: string, args: string[] = ['--version']): Promise<
   }
 }
 
-// 当前选中的 CLI 检测（claude）：打开 AI 面板时调，没装就 toast + guideUrl。
+// 当前选中的 CLI 检测（claude）：打开 AI 面板时调，未安装时由界面提示。
 export async function checkClaude(): Promise<OptionalDepStatus> {
   const cli = await resolveCli()
   if (!cli.found) {
-    return { name: 'claude-code', found: false, guideUrl: CLAUDE_CODE_GUIDE_URL }
+    return { name: 'claude-code', found: false }
   }
   const version = await getVersion(cli.bin, cli.wrapArgs(['--version']))
   return { name: 'claude-code', found: true, version }

@@ -3,24 +3,22 @@ import { describe, expect, it } from 'vitest'
 
 const source = readFileSync(new URL('./WorkspaceSidebar.vue', import.meta.url), 'utf-8')
 
-describe('WorkspaceSidebar Peeka navigation', () => {
-  it('renders the Peeka section above the workspace header with quick actions only', () => {
-    const codexIndex = source.indexOf('class="sidebar-codex')
-    const workspaceHeaderIndex = source.indexOf('>设计项目</span>')
+describe('WorkspaceSidebar rail navigation', () => {
+  it('renders the main navigation rail with the three primary views', () => {
+    expect(source).toContain('aria-label="主导航"')
+    expect(source).toContain('workspace-rail__button')
+    expect(source).not.toContain('aria-label="首页"')
+    expect(source).toContain('aria-label="工作台"')
+    expect(source).toContain('aria-label="知识库"')
+    expect(source).toContain('aria-label="技能"')
+  })
 
-    expect(codexIndex).toBeGreaterThanOrEqual(0)
-    expect(workspaceHeaderIndex).toBeGreaterThan(codexIndex)
-    expect(source).toContain('>Peeka</h2>')
-    expect(source).toContain('aria-label="Peeka"')
-    expect(source).not.toContain("label: '新建任务'")
-    expect(source).not.toContain("label: '已安排'")
-    expect(source).not.toContain("label: '插件'")
-    expect(source).not.toContain("label: '拉取请求'")
-    expect(source).not.toContain("label: '聊天'")
-    expect(source).toContain("label: '剪页库'")
-    expect(source).toContain("label: '新建项目'")
-    expect(source).toContain('sidebar-codex__quick-actions')
-    expect(source).toContain('Paperclip')
-    expect(source).toContain('onPeekaQuickAction')
+  it('marks the active view with aria-current and highlights linked views', () => {
+    expect(source).toContain(`ui.currentView === 'project-management' || ui.currentView === 'features-page' || ui.currentView === 'project-home'`)
+  })
+
+  it('leaves the editor before switching views so the rail always returns home-level surfaces', () => {
+    expect(source).toContain('function leaveEditor(): void')
+    expect(source).toContain('editor.hide()')
   })
 })

@@ -5,8 +5,8 @@ import { createHash } from 'node:crypto'
 import type { SimpleGit } from 'simple-git'
 import type { GitPushFileSummary, GitPushSummary } from '../../shared/git-push-summary'
 
-export const PUSH_NOTES_REF = 'refs/notes/peeka-push'
-export const INCOMING_NOTES_REF = 'refs/notes/peeka-push-incoming'
+export const PUSH_NOTES_REF = 'refs/notes/plant-push'
+export const INCOMING_NOTES_REF = 'refs/notes/plant-push-incoming'
 const SHA = /^[0-9a-f]{40,64}$/
 const MAX_FILES = 300
 const MAX_DIFF_CHARS = 36_000
@@ -104,7 +104,7 @@ export function parsePushNote(text: string): GitPushSummary[] {
 }
 
 async function emptyTree(git: SimpleGit): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'peeka-empty-tree-'))
+  const dir = await mkdtemp(join(tmpdir(), 'plant-empty-tree-'))
   try {
     const path = join(dir, 'empty')
     await writeFile(path, '')

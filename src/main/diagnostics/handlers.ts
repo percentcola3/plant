@@ -29,7 +29,7 @@ export function registerDiagnosticsHandlers(): void {
   registerIpcHandler('diagnostics.export', async ({ sessionId }) => {
     const sessionTarget = sessionId ? sanitizeCorrelationId(sessionId) : undefined
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const outputPath = join(app.getPath('downloads'), `WorkSpace-diagnostics-${stamp}.zip`)
+    const outputPath = join(app.getPath('downloads'), `Plant-diagnostics-${stamp}.zip`)
     await exportRuntimeDiagnosticBundle({
       outputPath,
       metadata: {

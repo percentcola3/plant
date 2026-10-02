@@ -102,7 +102,7 @@ export async function exportDiagnosticBundle(input: {
   }
   zip.file('metadata.json', JSON.stringify(sanitizeAttributes(input.metadata), null, 2))
   zip.file('README.txt', [
-    'WorkSpace 本地诊断包',
+    'Plant 本地诊断包',
     '日志不包含用户提示词、AI 回复正文或项目文件内容。',
     input.sessionTarget ? `目标会话：${sanitizeCorrelationId(input.sessionTarget)}` : '目标会话：未指定',
     '研发可按 turnId 或 sessionId 串联一次 AI 请求。'

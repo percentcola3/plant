@@ -1,5 +1,5 @@
 // Verify zg in a built macOS app without loading a model or building an index.
-// Usage: node scripts/check-packaged-zg.cjs /path/to/WorkSpace.app
+// Usage: node scripts/check-packaged-zg.cjs /path/to/Plant.app
 const { spawnSync } = require('node:child_process')
 const { realpathSync } = require('node:fs')
 const { tmpdir } = require('node:os')
@@ -8,10 +8,10 @@ const { getRawHeader } = require('@electron/asar')
 
 function main() {
   if (process.argv.length !== 3) {
-    throw new Error('Usage: node scripts/check-packaged-zg.cjs /path/to/WorkSpace.app')
+    throw new Error('Usage: node scripts/check-packaged-zg.cjs /path/to/Plant.app')
   }
   const appPath = resolve(process.argv[2])
-  const executable = join(appPath, 'Contents', 'MacOS', 'WorkSpace')
+  const executable = join(appPath, 'Contents', 'MacOS', 'Plant')
   const resources = join(appPath, 'Contents', 'Resources')
   const archive = join(resources, 'app.asar')
   const modules = realpathSync(join(resources, 'app.asar.unpacked', 'node_modules'))

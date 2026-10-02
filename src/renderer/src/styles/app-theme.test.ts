@@ -17,23 +17,28 @@ const editorChromeSources = [
 ].map((path) => readFileSync(resolve(__dirname, path), 'utf8')).join('\n')
 
 describe('app shell theme tokens', () => {
-  it('uses neutral dark palette with inverted primary buttons', () => {
+  it('uses botanical dark palette with leaf-green primary buttons', () => {
     expect(css).toContain('color-scheme: dark;')
-    expect(css).toContain('--background: 0 0% 7%;')
-    expect(css).toContain('--card: 0 0% 10%;')
-    expect(css).toContain('--color-bg-base: #121212;')
-    expect(css).toContain('--color-bg-panel: #1a1a1a;')
-    expect(css).toContain('--color-bg-canvas: #0a0a0a;')
-    expect(css).toContain('--color-text-primary: #ececec;')
-    expect(css).toContain('--color-accent: #d4d4d4;')
-    expect(css).toContain('--color-button-bg: #f5f5f5;')
-    expect(css).toContain('--color-button-fg: #121212;')
+    expect(css).toContain('--background: 152 12% 7%;')
+    expect(css).toContain('--card: 152 10% 10%;')
+    expect(css).toContain('--color-bg-base: #101512;')
+    expect(css).toContain('--color-bg-panel: #151b17;')
+    expect(css).toContain('--color-bg-canvas: #0b0f0d;')
+    expect(css).toContain('--color-text-primary: #e6ede8;')
+    expect(css).toContain('--color-accent: #46c98b;')
+    expect(css).toContain('--color-button-bg: #33b57e;')
+    expect(css).toContain('--color-button-fg: #04160d;')
+    // 叶绿色阶在暗/亮两套主题中成对定义
+    expect(css).toContain('--color-leaf: #46c98b;')
+    expect(css).toContain('--color-leaf: #1e8e5a;')
 
     expect(css).not.toContain('#0d1117')
     expect(css).not.toContain('#58a6ff')
     expect(css).not.toContain('#fffdf3')
     expect(css).not.toContain('#fdf6e3')
     expect(css).not.toContain('#66a962')
+    expect(css).not.toContain('#0d99ff')
+    expect(css).not.toContain('#0969da')
   })
 
   it('uses black button tokens for app shell primary actions', () => {

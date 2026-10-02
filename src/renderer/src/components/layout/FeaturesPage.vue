@@ -2,8 +2,7 @@
 // 项目管理：集中处理项目的创建、导入、重命名、分组和删除。
 
 import { computed, onMounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { ArrowRight, Ellipsis, FolderDown, FolderPlus, GitBranch, Plus, RefreshCw, Search } from 'lucide-vue-next'
+import { ArrowRight, Ellipsis, FolderDown, FolderKanban, FolderPlus, GitBranch, Plus, RefreshCw } from 'lucide-vue-next'
 import type { FeatureCard, GitCapability, GitStatus, PersonalSpace } from '@shared/types'
 import { isSimpleWorkspace, supportsPersonalSpaces } from '@shared/workspace-policy'
 import { useWorkspacesStore } from '@/stores/workspaces'
@@ -18,7 +17,7 @@ import { formatWorkspaceGitSummary } from '@/lib/workspace-git-summary'
 import { shouldApplyWorkspaceGitStatusResult } from '@/lib/workspace-git-status-request'
 import { shouldRequestWorkspaceGitStatus } from '@/lib/workspace-capabilities'
 import { formatDateTimeMinute } from '@/lib/date-format'
-import { featureMatchesSearch as matchesFeatureSearch } from '@/lib/feature-search'
+import { featureMatchesSearch as matchesFeatureSearch, fuzzyMatch } from '@/lib/feature-search'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -28,13 +27,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import ProjectCardMoreMenu from '@/components/layout/ProjectCardMoreMenu.vue'
+import PlantIllustration from '@/components/brand/PlantIllustration.vue'
 import FeatureResourceDialog from '@/components/dialogs/FeatureResourceDialog.vue'
 
+const props = defineProps<{ workspaceId?: string; searchQuery?: string; actionsTarget?: string }>()
+const emit = defineEmits<{ changed: []; searchMatch: [matches: boolean] }>()
 const ws = useWorkspacesStore()
 const ui = useUiStore()
 const previewStore = usePreviewStore()
 const externalRefs = useExternalRefsStore()
-const { active, scan } = storeToRefs(ws)
+const active = computed(() => props.workspaceId ? ws.list.find(w => w.id === props.workspaceId) ?? null : ws.active)
+const scan = computed(() => ws.activeId === active.value?.id ? ws.scan : null)
 
 type FeatureSection = { group: string | null; items: FeatureCard[] }
 type CopySpaceCandidate = {
@@ -45,6 +48,7 @@ type CopySpaceCandidate = {
 }
 
 const UNGROUPED_GROUP_VALUE = '__ungrouped__'
+const DEFAULT_FEATURE_GROUP = '默认分组'
 
 const features = ref<FeatureCard[]>([])
 const featureGroups = ref<string[]>([])
@@ -58,13 +62,19 @@ const statusLoading = ref(false)
 const createResourceDialogOpen = ref(false)
 const creatingFeature = ref(false)
 const pendingFeatureSlug = ref('')
+const pendingFeatureGroup = ref('')
+const pendingWorkspaceId = ref('')
 const pendingExternalRefIds = ref<string[]>([])
 const collapsedFeatureGroups = ref<Set<string>>(new Set())
-const featureSearchQuery = ref('')
+const featureSearchQuery = computed(() => props.searchQuery ?? '')
 let gitStatusRequestSeq = 0
+let featureRequestSeq = 0
 
 const projectScan = computed(() => scan.value?.kind === 'project' ? scan.value : null)
-const activeFeatureRelPath = computed(() => previewStore.activeProject?.relPath ?? null)
+const activeFeatureRelPath = computed(() => {
+  const project = previewStore.activeProject
+  return project && project.workspaceId === active.value?.id ? project.relPath : null
+})
 const supportsLegacyCollaboration = computed(() => !!active.value && supportsPersonalSpaces(active.value))
 const isGitUnbound = computed(() =>
   !!active.value && isSimpleWorkspace(active.value) && !!gitCapability.value && gitCapability.value.state !== 'remote'
@@ -110,7 +120,7 @@ const filteredGroupedFeatures = computed<FeatureSection[]>(() => {
       ...section,
       items: section.items.filter((card) => featureMatchesSearch(card, query)),
     }))
-    .filter((section) => section.items.length > 0)
+    .filter((section) => section.items.length > 0 || (!!section.group && fuzzyMatch(section.group, query.trim())))
 })
 
 const filteredFeatureCount = computed(() =>
@@ -118,6 +128,7 @@ const filteredFeatureCount = computed(() =>
 )
 
 const hasFeatureSearchQuery = computed(() => featureSearchQuery.value.trim().length > 0)
+watch(filteredGroupedFeatures, sections => emit('searchMatch', sections.length > 0), { immediate: true })
 const uniqueGroups = computed<string[]>(() => {
   const set = new Set(featureGroups.value)
   for (const f of features.value) {
@@ -136,7 +147,7 @@ function featureGroupKey(group: string | null): string {
 }
 
 function isFeatureGroupCollapsed(group: string | null): boolean {
-  return collapsedFeatureGroups.value.has(featureGroupKey(group))
+  return !hasFeatureSearchQuery.value && collapsedFeatureGroups.value.has(featureGroupKey(group))
 }
 
 function toggleFeatureGroup(group: string | null): void {
@@ -166,10 +177,12 @@ async function loadFeatures(): Promise<void> {
   loading.value = true
   error.value = null
   const workspaceId = active.value.id
+  const requestSeq = ++featureRequestSeq
   const [featuresResult, groupsResult] = await Promise.all([
     call('feature.list', { workspaceId }),
     call('feature.listGroups', { workspaceId })
   ])
+  if (active.value?.id !== workspaceId || requestSeq !== featureRequestSeq) return
   loading.value = false
   if (!featuresResult.ok) {
     error.value = `${featuresResult.code}: ${featuresResult.message}`
@@ -181,6 +194,7 @@ async function loadFeatures(): Promise<void> {
   }
   features.value = featuresResult.data
   featureGroups.value = groupsResult.data
+  emit('changed')
 }
 
 onMounted(() => {
@@ -189,10 +203,18 @@ onMounted(() => {
 })
 
 watch(() => active.value?.id, () => {
-  featureSearchQuery.value = ''
+  features.value = []
+  featureGroups.value = []
   void loadFeatures()
   void refreshGitStatus()
 })
+
+watch(() => ui.createFeatureDirectoryId, (id) => {
+  if (id && id === active.value?.id) {
+    ui.createFeatureDirectoryId = null
+    void loadFeatures().then(() => createFeature())
+  }
+}, { immediate: true })
 
 async function refreshGitStatus(): Promise<void> {
   const current = active.value?.kind === 'project' ? active.value : null
@@ -283,6 +305,7 @@ async function bindGit(): Promise<void> {
     gitCapability.value = result.data
     ui.showToast('success', `Git 已绑定到 ${branch} 分支`)
     await refreshGitStatus()
+    emit('changed')
   } finally {
     gitBinding.value = false
   }
@@ -305,8 +328,20 @@ function openBranchHistory(): void {
   })
 }
 
-async function createFeature(): Promise<void> {
+async function createFeature(targetGroup?: string): Promise<void> {
   if (!active.value) return
+  const directoryId = active.value.id
+  let group = targetGroup
+  if (!group) {
+    if (!featureGroups.value.length) {
+      group = DEFAULT_FEATURE_GROUP
+    } else {
+      group = await ui.askPrompt({ title: '选择项目分组', message: '在当前目录的项目分组内创建项目。', defaultValue: featureGroups.value[0], options: featureGroups.value.map(value => ({ label: value, value })), confirmLabel: '下一步' }) ?? undefined
+      if (!group) return
+    }
+  }
+  pendingFeatureGroup.value = group
+  pendingWorkspaceId.value = directoryId
   const slug = await ui.askPrompt({
     title: '新建项目',
     message: '创建一个空白项目，稍后可进入编辑页继续构建。',
@@ -328,10 +363,12 @@ async function createFeature(): Promise<void> {
 async function confirmCreateFeature(payload: { externalRefIds: string[]; setAsDefault: boolean }): Promise<void> {
   const current = active.value
   if (!current || !pendingFeatureSlug.value || creatingFeature.value) return
+  const workspaceId = pendingWorkspaceId.value
   creatingFeature.value = true
   try {
     const r = await call('feature.create', {
-      workspaceId: current.id,
+      workspaceId,
+      group: pendingFeatureGroup.value,
       slug: pendingFeatureSlug.value,
       externalRefIds: [...payload.externalRefIds],
       setResourcesAsDefault: payload.setAsDefault
@@ -343,6 +380,21 @@ async function confirmCreateFeature(payload: { externalRefIds: string[]; setAsDe
     createResourceDialogOpen.value = false
     pendingFeatureSlug.value = ''
     await loadFeatures()
+    await ws.setActive(workspaceId)
+    const project = createPreviewProjectContext(
+      workspaceId,
+      ws.personalSpace?.slug ?? '__public__',
+      r.data.featureRelPath,
+      r.data.featureRelPath.split('/').at(-1) ?? '新项目'
+    )
+    await call('uiProduct.seedAgentFiles', {
+      workspaceId,
+      productRelPath: r.data.featureRelPath
+    }).catch(() => undefined)
+    previewStore.openProject({
+      project,
+      primaryRelPath: r.data.indexHtmlRelPath ?? r.data.prdRelPath ?? undefined
+    })
     ui.showToast('success', `已创建：${r.data.featureRelPath}`)
   } finally {
     creatingFeature.value = false
@@ -352,6 +404,8 @@ async function confirmCreateFeature(payload: { externalRefIds: string[]; setAsDe
 async function importFeatureProject(): Promise<void> {
   if (!active.value) return
   const workspaceId = active.value.id
+  const group = !featureGroups.value.length ? DEFAULT_FEATURE_GROUP : await ui.askPrompt({ title: '选择项目分组', message: '把项目导入当前目录的项目分组。', defaultValue: featureGroups.value[0], options: featureGroups.value.map(value => ({ label: value, value })), confirmLabel: '选择项目目录' })
+  if (!group) return
   const picked = await call('system.selectDirectory', {
     title: '选择要导入的项目目录',
     buttonLabel: '导入'
@@ -363,7 +417,8 @@ async function importFeatureProject(): Promise<void> {
   if (!picked.data) return
   const r = await call('feature.import', {
     workspaceId,
-    sourcePath: picked.data.path
+    sourcePath: picked.data.path,
+    group
   })
   if (!r.ok) {
     ui.showToast('error', `导入失败：${r.message}`, 4500)
@@ -492,8 +547,8 @@ function normalizeFeatureGroupName(input: string): string {
 async function createGroup(): Promise<void> {
   if (!active.value) return
   const input = await ui.askPrompt({
-    title: '新建分组',
-    message: '在 features/ 下新建一个分组目录，用于归类项目。',
+    title: '新建项目分组',
+    message: '在当前目录入口的 features/ 下建立项目分组。',
     placeholder: '例如：订单组',
     confirmLabel: '新建'
   })
@@ -777,6 +832,7 @@ function findFeatureFilesTabId(card: FeatureCard): string | null {
 
 function closeStaleFeatureTabs(oldRelPath: string): void {
   for (const tabItem of [...previewStore.tabs]) {
+    if (tabItem.workspaceId !== active.value?.id) continue
     if (
       (tabItem.type === 'product' && tabItem.productMeta?.path === oldRelPath) ||
       (tabItem.type === 'files' && tabItem.filesMeta?.rootRelPath === oldRelPath)
@@ -789,6 +845,7 @@ function closeStaleFeatureTabs(oldRelPath: string): void {
 function closeStaleFeatureGroupTabs(group: string): void {
   const oldPrefix = `features/${group}/`
   for (const tabItem of [...previewStore.tabs]) {
+    if (tabItem.workspaceId !== active.value?.id) continue
     if (
       (tabItem.type === 'product' && tabItem.productMeta?.path?.startsWith(oldPrefix)) ||
       (tabItem.type === 'files' && tabItem.filesMeta?.rootRelPath?.startsWith(oldPrefix))
@@ -801,6 +858,7 @@ function closeStaleFeatureGroupTabs(group: string): void {
 async function openFeatureProject(card: FeatureCard): Promise<void> {
   if (!active.value) return
   const workspaceId = active.value.id
+  await ws.setActive(workspaceId)
   const project = createPreviewProjectContext(
     workspaceId,
     ws.personalSpace?.slug ?? '__public__',
@@ -827,93 +885,52 @@ function displayFeatureDocPath(card: FeatureCard): string {
 </script>
 
 <template>
-  <main class="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-    <div class="home-top">
-      <div
-        v-if="isGitUnbound"
-        class="home-git-callout"
-      >
-        <div
-          class="git-notice git-notice--action"
-          role="status"
-          aria-labelledby="git-notice-title"
-        >
-          <div class="git-notice__lead">
-            <GitBranch class="git-notice__icon" :size="16" aria-hidden="true" />
-            <h2 id="git-notice-title">当前工作台尚未绑定 Git</h2>
-          </div>
-          <button
-            type="button"
-            class="git-notice__cta"
-            :disabled="gitBinding"
-            @click="bindGit"
-          >
-            {{ gitBinding ? '绑定中…' : '绑定 Git' }}
-            <ArrowRight class="git-notice__cta-arrow" :size="14" :stroke-width="2" aria-hidden="true" />
-          </button>
-        </div>
+  <main class="directory-projects min-w-0">
+    <Teleport :to="props.actionsTarget ?? 'body'" :disabled="!props.actionsTarget" defer>
+      <div class="home-header__actions">
+        <Button v-if="isGitUnbound" variant="outline" size="sm" :disabled="gitBinding" @click="bindGit">{{ gitBinding ? '绑定中…' : '绑定远端 Git' }}</Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" size="sm" class="text-xs">
+              <Ellipsis aria-hidden="true" />
+              更多操作
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="min-w-36 text-xs">
+            <slot name="directory-menu" />
+            <DropdownMenuSeparator v-if="$slots['directory-menu']" />
+            <DropdownMenuItem
+              class="text-xs"
+              :disabled="loading"
+              @select="loadFeatures"
+            >
+              <RefreshCw
+                :class="{ 'home-header__action-icon--spinning': loading }"
+                aria-hidden="true"
+              />
+              {{ loading ? '刷新中…' : '刷新' }}
+            </DropdownMenuItem>
+            <DropdownMenuItem v-if="gitCapability?.state === 'remote'" class="text-xs" :disabled="statusLoading" @select="startSync">同步仓库</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem class="text-xs" @select="openBranchHistory">
+              历史版本
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="outline" size="sm" class="text-xs" @click="importFeatureProject">
+          <FolderDown aria-hidden="true" />
+          导入项目
+        </Button>
+        <Button variant="outline" size="sm" class="text-xs" @click="createGroup"><FolderPlus aria-hidden="true" />新建项目分组</Button>
+        <Button size="sm" class="text-xs" :disabled="loading || creatingFeature" @click="createFeature()">
+          <Plus aria-hidden="true" />
+          新建项目
+        </Button>
       </div>
-
-      <header class="home-header px-6 py-5">
-        <div class="home-header__top">
-          <h1 class="home-header__title">{{ active?.name ?? 'PM 项目' }}</h1>
-          <div class="home-header__actions">
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="outline" size="sm" class="text-xs">
-                  <Ellipsis aria-hidden="true" />
-                  更多操作
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="min-w-36 text-xs">
-                <DropdownMenuItem
-                  class="text-xs"
-                  :disabled="loading"
-                  @select="loadFeatures"
-                >
-                  <RefreshCw
-                    :class="{ 'home-header__action-icon--spinning': loading }"
-                    aria-hidden="true"
-                  />
-                  {{ loading ? '刷新中…' : '刷新' }}
-                </DropdownMenuItem>
-                <DropdownMenuItem class="text-xs" @select="createGroup">
-                  <FolderPlus aria-hidden="true" />
-                  新建分组
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem class="text-xs" @select="openBranchHistory">
-                  历史版本
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" class="text-xs" @click="importFeatureProject">
-              <FolderDown aria-hidden="true" />
-              导入项目
-            </Button>
-            <Button size="sm" class="text-xs" @click="createFeature">
-              <Plus aria-hidden="true" />
-              新建项目
-            </Button>
-          </div>
-        </div>
-        <label class="home-header__search">
-          <Search class="home-header__search-icon" aria-hidden="true" />
-          <input
-            v-model="featureSearchQuery"
-            type="search"
-            class="home-header__search-input"
-            placeholder="搜索项目名称、分组或 PRD…"
-            aria-label="搜索项目"
-            autocomplete="off"
-          >
-        </label>
-      </header>
-    </div>
-
-    <section class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+    </Teleport>
+    <section class="flex-1 px-5 py-4">
       <div
-        v-if="gitCapability?.state === 'remote'"
+        v-if="!props.actionsTarget && gitCapability?.state === 'remote'"
         class="git-notice git-notice--success"
         role="status"
       >
@@ -950,18 +967,19 @@ function displayFeatureDocPath(card: FeatureCard): string {
         </div>
       </div>
 
-      <div class="mb-4 flex items-center justify-end gap-3">
+      <div v-if="!props.actionsTarget" class="mb-4 flex items-center justify-end gap-3">
         <span class="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
           {{ hasFeatureSearchQuery ? `${filteredFeatureCount} / ${features.length}` : features.length }} 个项目
         </span>
       </div>
       <div v-if="loading && features.length === 0 && featureGroups.length === 0" class="text-sm text-muted-foreground">加载中…</div>
       <div v-else-if="error" class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{{ error }}</div>
-      <div v-else-if="features.length === 0 && featureGroups.length === 0" class="flex h-full items-center justify-center text-sm text-muted-foreground">
-        还没有项目。可以回到首页描述需求并开始构建，或点击“新建项目”。
+      <div v-else-if="features.length === 0 && featureGroups.length === 0" class="flex items-center justify-center text-xs text-muted-foreground" :class="props.actionsTarget ? 'min-h-16' : 'min-h-32'">
+        <PlantIllustration kind="plant" class="directory-empty-art" />
+        <span>此目录还没有项目。可直接新建项目，自动归入默认分组。</span>
       </div>
 
-      <div v-else-if="hasFeatureSearchQuery && filteredFeatureCount === 0" class="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div v-else-if="hasFeatureSearchQuery && filteredGroupedFeatures.length === 0" class="flex items-center justify-center text-xs text-muted-foreground" :class="props.actionsTarget ? 'min-h-16' : 'min-h-32'">
         没有匹配「{{ featureSearchQuery.trim() }}」的项目
       </div>
 
@@ -976,7 +994,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
               type="button"
               class="feature-group-header__toggle"
               :aria-expanded="!isFeatureGroupCollapsed(section.group)"
-              aria-label="展开或折叠分组"
+              aria-label="展开或折叠项目分组"
               @click="toggleFeatureGroup(section.group)"
             >
               <svg
@@ -994,9 +1012,10 @@ function displayFeatureDocPath(card: FeatureCard): string {
               class="feature-group-header__title-button"
               @click="toggleFeatureGroup(section.group)"
             >
-              <h2 class="feature-group-header__title">{{ section.group ?? '未分组' }}</h2>
+              <h2 class="feature-group-header__title">{{ section.group ?? '未分组项目' }}</h2>
               <span class="feature-group-header__count">{{ section.items.length }}</span>
             </button>
+            <Button v-if="section.group" variant="ghost" size="sm" @click="createFeature(section.group)"><Plus :size="14" />新建项目</Button>
             <DropdownMenu v-if="section.group">
               <DropdownMenuTrigger as-child>
                 <button
@@ -1048,32 +1067,27 @@ function displayFeatureDocPath(card: FeatureCard): string {
                 :class="{ 'product-card__preview--active': isFeatureActive(card) }"
               >
                 <div class="product-card__preview-cover">
-                  <span class="product-card__preview-tag">SAAS</span>
+                  <span class="product-card__preview-icon" aria-hidden="true"><FolderKanban :size="18" :stroke-width="1.5" /></span>
                   <div class="product-card__preview-body">
-                    <span class="product-card__preview-title">
+                    <h3 class="product-card__title">
                       <span class="product-card__preview-title-text">{{ card.name }}</span>
-                    </span>
+                    </h3>
                     <span class="feature-card__preview-details">
-                      <span>{{ card.prdRelPath ? `PRD · ${displayFeatureDocPath(card)}` : '无 PRD' }}</span>
-                      <span>{{ `UI · ${featureUiSummary(card)}` }}</span>
+                      <span :title="card.prdRelPath ?? undefined">{{ card.prdRelPath ? '含 PRD' : '无 PRD' }}</span>
+                      <span>{{ featureUiSummary(card) }}</span>
                     </span>
+                    <div class="product-card__meta">
+                      <span class="product-card__time">{{ formatFeatureModifiedAt(card.modifiedAt) }}</span>
+                      <span v-if="isFeatureActive(card)" class="product-card__editing">编辑中</span>
+                      <ProjectCardMoreMenu
+                        @rename="renameFeature(card)"
+                        @move="moveFeatureToGroup(card)"
+                        @copy="copyFeature(card)"
+                        @delete="deleteFeature(card)"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="product-card__meta">
-                <div class="product-card__text">
-                  <h3 class="product-card__title">{{ card.name }}</h3>
-                  <div class="product-card__meta-line">
-                    <span class="product-card__time">{{ formatFeatureModifiedAt(card.modifiedAt) }}</span>
-                    <span v-if="isFeatureActive(card)" class="product-card__editing">编辑中</span>
-                  </div>
-                </div>
-                <ProjectCardMoreMenu
-                  @rename="renameFeature(card)"
-                  @move="moveFeatureToGroup(card)"
-                  @copy="copyFeature(card)"
-                  @delete="deleteFeature(card)"
-                />
               </div>
             </article>
           </div>
@@ -1095,79 +1109,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
 </template>
 
 <style scoped>
-.home-top {
-  flex: none;
-}
-.home-header {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.home-header__top {
-  display: flex;
-  min-height: 58px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-.home-header__search {
-  display: flex;
-  width: min(320px, 100%);
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 8px;
-  background: var(--color-bg-hover);
-  color: var(--color-text-tertiary);
-  transition:
-    border-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1),
-    box-shadow 180ms cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-.home-header__search:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
-  color: var(--color-text-secondary);
-}
-.home-header__search-icon {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-}
-.home-header__search-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  line-height: 1.4;
-  outline: none;
-}
-.home-header__search-input::placeholder {
-  color: var(--color-text-tertiary);
-}
-.home-header__search-input::-webkit-search-cancel-button {
-  cursor: pointer;
-}
-.home-git-callout {
-  display: flex;
-  justify-content: center;
-  padding: 14px 24px 0;
-}
-.home-header__title {
-  min-width: 0;
-  overflow: hidden;
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-header__actions { display: inline-flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.home-header__actions { display: inline-flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .home-header__action-icon--spinning { animation: home-header-action-spin 0.8s linear infinite; }
 @keyframes home-header-action-spin {
   from { transform: rotate(0deg); }
@@ -1387,12 +1329,13 @@ function displayFeatureDocPath(card: FeatureCard): string {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
+.directory-empty-art { margin-right: 10px; width: 110px; }
 .feature-group-body { padding-left: 26px; }
 .feature-group-body--grid {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 240px));
+  gap: 16px;
 }
 .product-card {
   display: flex;
@@ -1409,7 +1352,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
 .product-card__preview {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 164px;
   overflow: hidden;
   border: 1px solid var(--color-product-card-border, var(--color-border-subtle));
   border-radius: 8px;
@@ -1421,25 +1364,23 @@ function displayFeatureDocPath(card: FeatureCard): string {
   height: 100%;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
-  padding: 16px 20px;
-  background: #f8f4ec url('@/assets/project-preview-bg.png') center / cover no-repeat;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  background-color: var(--color-bg-elevated);
+  background-image: url('@/assets/project-placeholder.svg'), linear-gradient(135deg, color-mix(in srgb, var(--color-leaf) 10%, var(--color-bg-elevated)), var(--color-bg-elevated) 75%);
+  background-size: cover;
+  background-position: center;
 }
-.product-card__preview-tag {
-  z-index: 1;
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  align-items: center;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  background: #ff5f14;
-  padding: 5px 12px;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
+.product-card__preview-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: var(--color-leaf);
+  background: color-mix(in srgb, var(--color-leaf) 9%, var(--color-bg-elevated));
 }
 .product-card__preview-body {
   display: flex;
@@ -1449,14 +1390,14 @@ function displayFeatureDocPath(card: FeatureCard): string {
   align-items: flex-start;
   text-align: left;
 }
-.product-card__preview-title { width: 100%; max-width: 100%; overflow: hidden; }
 .product-card__preview-title-text {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: clamp(18px, 2.4vw, 28px);
-  font-weight: 800;
+  -webkit-line-clamp: 1;
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 650;
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
@@ -1465,10 +1406,10 @@ function displayFeatureDocPath(card: FeatureCard): string {
   width: 100%;
   min-width: 0;
   align-items: center;
-  gap: 12px;
-  margin-top: 10px;
-  color: #4a4a4a;
-  font-size: 11px;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -1483,24 +1424,15 @@ function displayFeatureDocPath(card: FeatureCard): string {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
-.product-card__meta { display: flex; align-items: center; gap: 8px; }
-.product-card__text { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
-.product-card__title {
-  overflow: hidden;
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.product-card__meta { display: flex; width: 100%; align-items: center; gap: 6px; margin-top: 7px; }
+.product-card__meta :deep(.project-card-more-menu__trigger) { margin-left: auto; opacity: 1; }
+.product-card__title { width: 100%; min-width: 0; margin: 0; }
 .product-card__meta-line { display: flex; min-width: 0; align-items: center; gap: 8px; }
 .product-card__time {
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1523,6 +1455,5 @@ function displayFeatureDocPath(card: FeatureCard): string {
   }
   .git-notice--action .git-notice__cta { margin-left: 16px; }
   .feature-group-body { padding-left: 0; }
-  .feature-group-body--grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

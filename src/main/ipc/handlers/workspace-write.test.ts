@@ -12,7 +12,6 @@ vi.mock('../registry', () => ({
 vi.mock('../../workspaces/lifecycle', () => ({
   cloneWorkspace: vi.fn(),
   createWorkspace: vi.fn(),
-  ensureDefaultKnowledgeWorkspace: vi.fn(),
   importWorkspace: vi.fn(),
   removeWorkspace: vi.fn(),
   renameWorkspace: vi.fn()

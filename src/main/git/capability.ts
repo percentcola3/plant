@@ -12,7 +12,8 @@ async function hasGitEntry(workspacePath: string): Promise<boolean> {
     await fs.lstat(join(workspacePath, '.git'))
     return true
   } catch {
-    return false
+    return gitFor(workspacePath).raw(['rev-parse', '--is-inside-work-tree'])
+      .then(value => value.trim() === 'true').catch(() => false)
   }
 }
 
@@ -29,6 +30,15 @@ export async function readGitCapability(workspacePath: string): Promise<GitCapab
   return remoteUrl
     ? { state: 'remote', branch, remoteUrl }
     : { state: 'local', branch }
+}
+
+// 仅解除远端绑定，保留工作树、提交和本地分支。
+export async function unbindGitRepository(workspacePath: string): Promise<GitCapability> {
+  if (!(await hasGitEntry(workspacePath))) return { state: 'unbound' }
+  const sg = gitFor(workspacePath)
+  const remotes = await sg.getRemotes()
+  if (remotes.some((remote) => remote.name === 'origin')) await sg.removeRemote('origin')
+  return readGitCapability(workspacePath)
 }
 
 export async function bindGitRepository(

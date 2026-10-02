@@ -1,6 +1,7 @@
+import type { AiProvider } from './ai-provider'
 import type { BrowserScope, BrowserBounds, ProjectWebPage, WebPageText, WebPageDesign } from './project-browser'
 import type { GitPushHistory } from './git-push-summary'
-import type { PeekaConnection } from './peeka'
+import type { PlantConnection } from './plant'
 // IPC 通讯单一事实源。main 与 renderer 都从这里取类型。
 // 新增 channel = 加一行到 IpcContract + 把 channel 名加进 IPC_CHANNELS。
 
@@ -65,11 +66,11 @@ export interface IpcContract {
   // ──── App 全局设置 ────
   'settings.get': {
     input: void
-    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
+    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: AiProvider; deepseekApiKeyConfigured: boolean; plantConnection: PlantConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
   }
   'settings.update': {
-    input: { workspaceRoot?: string; pmDocsDir?: string; preferredTool?: string; cliKind?: 'claude'; aiProvider?: 'claude-code' | 'deepseek-harness'; deepseekApiKey?: string | null; peekaConnection?: PeekaConnection; aiTaskNotchEnabled?: boolean; defaultExternalRefIds?: string[]; theme?: 'dark' | 'light' }
-    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: 'claude-code' | 'deepseek-harness'; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
+    input: { workspaceRoot?: string; pmDocsDir?: string; preferredTool?: string; cliKind?: 'claude'; aiProvider?: AiProvider; deepseekApiKey?: string | null; plantConnection?: PlantConnection; aiTaskNotchEnabled?: boolean; defaultExternalRefIds?: string[]; theme?: 'dark' | 'light' }
+    output: { workspaceRoot: string; pmDocsDir: string; preferredTool?: string; cliKind: 'claude'; aiProvider: AiProvider; deepseekApiKeyConfigured: boolean; plantConnection: PlantConnection; aiTaskNotchEnabled: boolean; defaultExternalRefIds: string[]; theme: 'dark' | 'light'; schemaVersion: 3 }
   }
 
   // ──── 本地诊断日志 ────
@@ -299,7 +300,6 @@ export interface IpcContract {
     output: {
       gitBinaryReady: boolean
       gitUser: { name: string; email: string; configured: boolean }
-      claudeGuideUrl: string
     }
   }
   // 按需检查可选依赖：claude-code（打开 AI 面板时调）/ cursor / vscode（后台异步调）
@@ -309,7 +309,6 @@ export interface IpcContract {
       name: 'claude-code' | 'cursor' | 'vscode'
       found: boolean
       version?: string
-      guideUrl?: string
     }
   }
 
@@ -367,6 +366,7 @@ export interface IpcContract {
     input: { workspaceId: string; remoteUrl: string; branch: string }
     output: GitCapability
   }
+  'git.unbind': { input: { workspaceId: string }; output: GitCapability }
   'git.status': {
     input: { workspaceId: string }
     output: GitStatus
@@ -442,14 +442,6 @@ export interface IpcContract {
     input: { host: string; username?: string; password?: string }
     output: void
   }
-
-  // ──── 剪页插件配置引导（Settings 用） ────
-  'raw.extensionInfo': {
-    input: void
-    output: { destDir: string; version: string | null; installed: boolean; error?: string }
-  }
-  'raw.revealExtensionDir': { input: void; output: void }
-  'raw.openChromeExtensions': { input: void; output: void }
 
   // ──── 终端（PTY） ────
   'terminal.create': {
@@ -610,7 +602,6 @@ export interface IpcContract {
   'workspace.activeId': { input: void; output: string | null }
   'workspace.setActive': { input: { id: string | null }; output: void }
   'workspace.scan': { input: { id: string }; output: WorkspaceScanResult }
-  'workspace.ensureDefaultKnowledge': { input: void; output: Workspace }
   'workspace.create': {
     input: { parentDir: string; name: string; kind?: 'project' | 'ux' | 'asset' | 'knowledge'; initialBranch?: string }
     output: Workspace
@@ -624,6 +615,7 @@ export interface IpcContract {
     output: Workspace
   }
   'workspace.remove': { input: { id: string; deleteFiles?: boolean }; output: void }
+  'workspace.setEntry': { input: { id: string; entryPath: string }; output: Workspace }
   'workspace.rename': { input: { id: string; name: string }; output: void }
   'workspace.setWorkArea': {
     input: {
@@ -913,6 +905,7 @@ export const IPC_CHANNELS = [
   'git.capability',
   'git.remoteBranches',
   'git.bind',
+  'git.unbind',
   'git.branches',
   'git.snapshot',
   'git.restoreFile',
@@ -930,9 +923,6 @@ export const IPC_CHANNELS = [
   'askpass.listCreds',
   'askpass.clearAll',
   'askpass.upsert',
-  'raw.extensionInfo',
-  'raw.revealExtensionDir',
-  'raw.openChromeExtensions',
   'terminal.create',
   'terminal.write',
   'terminal.resize',
@@ -959,12 +949,12 @@ export const IPC_CHANNELS = [
   'workspace.activeId',
   'workspace.setActive',
   'workspace.scan',
-  'workspace.ensureDefaultKnowledge',
   'workspace.create',
   'workspace.import',
   'workspace.clone',
   'workspace.remove',
   'workspace.rename',
+  'workspace.setEntry',
   'workspace.setWorkArea',
   'workspace.setWatchScope',
   'workspace.checkoutHome',
@@ -1035,7 +1025,6 @@ export const EVENT_PREFIXES = [
   'conflict.aiResolve.done:',
   'saga.fs-change-pushed:',
   'git.remote-updated:',
-  'raw.captured'
 ] as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[number]

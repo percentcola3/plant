@@ -83,30 +83,6 @@ describe('topbar navigation', () => {
     })).toBe(false)
   })
 
-  it('labels and closes the onboarding guide as a context tab', () => {
-    expect(resolveTopBarTabTitle({
-      workspaceName: 'SaaS',
-      workspaceKind: 'project',
-      currentView: 'onboarding-guide',
-      uxActiveNode: 'home',
-      outputsFirstProject: false,
-      previewTabTitle: null,
-      previewActive: false,
-      editorTitle: null,
-      editorOpen: false,
-      externalAlias: null,
-    })).toBe('新手引导')
-
-    expect(isTopBarTabClosable({
-      previewActive: false,
-      editorOpen: false,
-      currentView: 'onboarding-guide',
-      uxActiveNode: 'home',
-      outputsFirstProject: false,
-      workspaceKind: 'project',
-    })).toBe(true)
-  })
-
   it('hides the placeholder context tab on the project home landing view', () => {
     expect(shouldShowTopBarContextTab({
       homeActive: true,

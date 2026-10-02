@@ -111,7 +111,7 @@ export class WorkspacesStore {
       const text = await fs.readFile(path, 'utf-8')
       const parsed = JSON.parse(text) as WorkspacesFile
       if (!Array.isArray(parsed.workspaces)) {
-        sharedCache = { ...EMPTY }
+        sharedCache = { ...EMPTY, workspaces: [] }
       } else {
         const migrated = migrateLoadedWorkspaces(parsed.workspaces, parsed.activeWorkspaceId ?? null)
         sharedCache = {
@@ -124,7 +124,7 @@ export class WorkspacesStore {
         }
       }
     } catch {
-      sharedCache = { ...EMPTY }
+      sharedCache = { ...EMPTY, workspaces: [] }
     }
     return sharedCache
   }

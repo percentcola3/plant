@@ -36,15 +36,15 @@ export const MARKDOWN_MERMAID_CONFIG = {
 export const MARKDOWN_DOCUMENT_CSS = `
   :root {
     color-scheme: light;
-    --md-bg: #f6f8fb;
+    --md-bg: #f5f7f5;
     --md-panel: #ffffff;
-    --md-panel-soft: #f8fafc;
-    --md-text: #1f2937;
-    --md-muted: #64748b;
-    --md-border: #e2e8f0;
-    --md-border-strong: #cbd5e1;
-    --md-accent: #0f766e;
-    --md-accent-soft: #e6fffb;
+    --md-panel-soft: #f6f8f6;
+    --md-text: #29372f;
+    --md-muted: #718077;
+    --md-border: rgba(39, 66, 49, 0.09);
+    --md-border-strong: rgba(39, 66, 49, 0.16);
+    --md-accent: #20764f;
+    --md-accent-soft: #edf5ef;
     --md-warm: #f59e0b;
     --md-warm-soft: #fff7ed;
     --md-indigo-soft: #eef2ff;
@@ -53,15 +53,15 @@ export const MARKDOWN_DOCUMENT_CSS = `
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --md-bg: #121212;
-    --md-panel: #121212;
-    --md-panel-soft: #1a1a1a;
-    --md-text: #d4d4d4;
+    --md-bg: #101512;
+    --md-panel: #151b17;
+    --md-panel-soft: #1b231e;
+    --md-text: #d8e2da;
     --md-muted: #a3a3a3;
-    --md-border: #333333;
-    --md-border-strong: #404040;
-    --md-accent: #7dd3fc;
-    --md-accent-soft: rgba(125, 211, 252, 0.12);
+    --md-border: rgba(190, 226, 203, 0.1);
+    --md-border-strong: rgba(190, 226, 203, 0.18);
+    --md-accent: #79cda2;
+    --md-accent-soft: rgba(121, 205, 162, 0.08);
     --md-warm: #fbbf24;
     --md-warm-soft: rgba(251, 191, 36, 0.1);
     --md-indigo-soft: rgba(196, 181, 253, 0.12);
@@ -71,19 +71,20 @@ export const MARKDOWN_DOCUMENT_CSS = `
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 28px;
+    padding: 24px;
     background: var(--md-bg);
     color: var(--md-text);
-    font: 15px/1.86 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: 16px/1.9 "LXGW WenKai Lite", "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
+    overflow-wrap: anywhere;
   }
   .markdown {
-    max-width: 960px;
+    max-width: 900px;
     margin: 0 auto;
     background: var(--md-panel);
     border: 1px solid var(--md-border);
-    border-radius: 8px;
-    padding: 34px 40px 48px;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    border-radius: 12px;
+    padding: 36px 44px 48px;
+    box-shadow: 0 4px 20px rgba(28, 56, 40, 0.025);
   }
   .markdown > :first-child { margin-top: 0; }
   .markdown > :last-child { margin-bottom: 0; }
@@ -91,33 +92,33 @@ export const MARKDOWN_DOCUMENT_CSS = `
   .markdown h2,
   .markdown h3,
   .markdown h4 {
-    color: #111827;
-    line-height: 1.28;
+    color: var(--md-text);
+    line-height: 1.5;
     letter-spacing: 0;
   }
   .markdown h1 {
-    margin: 0 0 1.1em;
-    padding-bottom: 0.55em;
+    margin: 0 0 1em;
+    padding-bottom: 0.5em;
     border-bottom: 1px solid var(--md-border);
-    font-size: 2.05rem;
-    font-weight: 760;
+    font-size: 1.9rem;
+    font-weight: 600;
   }
   .markdown h2 {
-    margin: 1.9em 0 0.7em;
-    padding-left: 12px;
-    border-left: 4px solid var(--md-accent);
-    font-size: 1.45rem;
-    font-weight: 720;
+    margin: 1.6em 0 0.65em;
+    padding-left: 0;
+    border: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
   }
   .markdown h3 {
     margin: 1.5em 0 0.55em;
     font-size: 1.15rem;
-    font-weight: 700;
+    font-weight: 600;
   }
   .markdown h4 {
     margin: 1.3em 0 0.45em;
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 600;
   }
   .markdown p,
   .markdown ul,
@@ -139,7 +140,7 @@ export const MARKDOWN_DOCUMENT_CSS = `
     text-decoration: none;
   }
   .markdown a:hover { text-decoration: underline; }
-  .markdown strong { color: #111827; font-weight: 760; }
+  .markdown strong { color: var(--md-text); font-weight: 600; }
   .markdown mark {
     border-radius: 5px;
     background: #fef3c7;
@@ -152,14 +153,14 @@ export const MARKDOWN_DOCUMENT_CSS = `
     max-width: 100%;
     height: auto;
     border: 1px solid var(--md-border);
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    border-radius: 12px;
+    box-shadow: none;
   }
   .markdown pre:not(.mermaid) {
     overflow: auto;
     background: var(--md-code-bg);
     color: #f8fafc;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 16px 18px;
   }
   .markdown code {
@@ -176,11 +177,11 @@ export const MARKDOWN_DOCUMENT_CSS = `
     padding: 0;
   }
   .markdown blockquote {
-    border: 1px solid #fed7aa;
-    border-left: 4px solid var(--md-warm);
-    border-radius: 8px;
-    background: var(--md-warm-soft);
-    color: #475569;
+    border: 0;
+    border-left: 2px solid var(--md-border-strong);
+    border-radius: 12px;
+    background: var(--md-panel-soft);
+    color: var(--md-muted);
     padding: 10px 16px;
   }
   .markdown blockquote > :first-child { margin-top: 0; }
@@ -190,13 +191,13 @@ export const MARKDOWN_DOCUMENT_CSS = `
     width: 100%;
     overflow: auto;
     border: 1px solid var(--md-border);
-    border-radius: 8px;
+    border-radius: 12px;
     border-spacing: 0;
     border-collapse: separate;
   }
   .markdown th,
   .markdown td {
-    border-right: 1px solid var(--md-border);
+    border-right: 0;
     border-bottom: 1px solid var(--md-border);
     padding: 9px 12px;
     text-align: left;
@@ -206,11 +207,11 @@ export const MARKDOWN_DOCUMENT_CSS = `
   .markdown tbody tr:last-child > * { border-bottom: 0; }
   .markdown th {
     background: var(--md-panel-soft);
-    color: #111827;
-    font-weight: 720;
+    color: var(--md-text);
+    font-weight: 600;
     white-space: nowrap;
   }
-  .markdown tbody tr:nth-child(even) td { background: #fbfdff; }
+  .markdown tbody tr:nth-child(even) td { background: var(--md-panel-soft); }
   .markdown hr {
     border: 0;
     border-top: 1px solid var(--md-border);
@@ -218,28 +219,28 @@ export const MARKDOWN_DOCUMENT_CSS = `
   }
   .markdown .md-chart {
     overflow: hidden;
-    border: 1px solid #dbeafe;
-    border-radius: 8px;
-    background: #fbfdff;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+    border: 1px solid var(--md-border);
+    border-radius: 12px;
+    background: var(--md-panel-soft);
+    box-shadow: none;
   }
   .markdown .md-chart__header {
     display: flex;
     align-items: center;
     min-height: 38px;
-    border-bottom: 1px solid #dbeafe;
-    background: #f8fafc;
+    border-bottom: 1px solid var(--md-border);
+    background: var(--md-panel-soft);
     padding: 8px 14px;
   }
   .markdown .md-chart__title {
     color: var(--md-accent);
     font-size: 12px;
-    font-weight: 760;
+    font-weight: 600;
     letter-spacing: 0;
   }
   .markdown .md-chart__body {
     overflow: auto;
-    background: #fbfdff;
+    background: var(--md-panel-soft);
     padding: 18px;
   }
   .markdown .md-chart .mermaid,
@@ -280,14 +281,14 @@ export const MARKDOWN_DOCUMENT_CSS = `
     margin: 8px 0;
     border-radius: 6px;
     border: 1px solid #e2e8f0;
-    background: #f8fafc;
+    background: var(--md-panel-soft);
     overflow: hidden;
   }
   .markdown .raw-image-fold > summary {
     cursor: pointer;
     padding: 6px 12px;
     font-size: 12px;
-    color: #475569;
+    color: var(--md-muted);
     user-select: none;
     list-style: none;
   }
@@ -335,14 +336,13 @@ export const MARKDOWN_DOCUMENT_CSS = `
     color: #e5e5e5;
   }
   :root[data-theme="dark"] .markdown blockquote {
-    border-color: rgba(251, 191, 36, 0.28);
-    border-left-color: var(--md-warm);
+    border-left-color: var(--md-border-strong);
     color: var(--md-muted);
   }
   :root[data-theme="dark"] .markdown tbody tr:nth-child(even) td,
   :root[data-theme="dark"] .markdown .md-chart,
   :root[data-theme="dark"] .markdown .md-chart__body {
-    background: #171717;
+    background: var(--md-panel-soft);
   }
   :root[data-theme="dark"] .markdown .md-chart,
   :root[data-theme="dark"] .markdown .md-chart__header {
@@ -362,14 +362,15 @@ export const MARKDOWN_DOCUMENT_CSS = `
     background: var(--md-code-inline);
   }
   @media (max-width: 720px) {
-    body { padding: 14px; }
-    .markdown {
+    body { padding: 12px; }
+    .markdown,
+    :root[data-theme="dark"] .markdown {
       padding: 22px 18px 30px;
-      border-radius: 8px;
+      border-radius: 12px;
     }
     .markdown h1 { font-size: 1.7rem; }
     .markdown h2 { font-size: 1.25rem; }
-    .markdown .md-chart__body { padding: 14px; }
+    .markdown .md-chart__body { padding: 12px; }
   }
 `
 
@@ -383,17 +384,21 @@ export function createMarkdownDocumentHtml(input: {
   body: string
   mermaidScript?: string
   theme?: 'light' | 'dark'
+  fontUrl?: string
 }): string {
   const article = input.body.trim() ? `<article class="markdown">${input.body}</article>` : ''
   const title = input.title ? escapeHtml(input.title) : 'Markdown Preview'
   const theme = input.theme ?? 'light'
+  const fontCss = input.fontUrl
+    ? `@font-face { font-family: "LXGW WenKai Lite"; src: url("${escapeHtml(input.fontUrl)}") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }`
+    : ''
   return `<!doctype html>
 <html lang="zh-CN" data-theme="${theme}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${title}</title>
-    <style>${MARKDOWN_DOCUMENT_CSS}</style>
+    <style>${fontCss}\n${MARKDOWN_DOCUMENT_CSS}</style>
   </head>
   <body>
     ${article}

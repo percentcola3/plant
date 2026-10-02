@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 const source = readFileSync(new URL('./TopBar.vue', import.meta.url), 'utf-8')
 
 describe('TopBar theme', () => {
-  it('uses the PEEKA-style tab bar with home, project tabs, and add controls', () => {
+  it('uses the Plant-style tab bar with home, project tabs, and add controls', () => {
     expect(source).toContain('class="app-tabbar app-chrome topbar-drag shrink-0"')
     expect(source).toContain('class="app-tabbar__inset"')
     expect(source).toContain('min-width: 80px')
@@ -29,8 +29,8 @@ describe('TopBar theme', () => {
   })
 
   it('uses Lucide icons for home, file tabs, add, and close controls', () => {
-    expect(source).toContain("import { House, ListTodo, PenTool, Plus, X } from 'lucide-vue-next'")
-    expect(source).toContain('<House class="app-tabbar__glyph app-tabbar__glyph--md"')
+    expect(source).toContain("import { FolderKanban, ListTodo, PenTool, Plus, X } from 'lucide-vue-next'")
+    expect(source).toContain('<FolderKanban class="app-tabbar__glyph app-tabbar__glyph--md"')
     expect(source).toContain('<PenTool class="app-tabbar__glyph app-tabbar__glyph--sm"')
     expect(source).toContain('<Plus class="app-tabbar__glyph app-tabbar__glyph--md"')
     expect(source).toContain('<X class="app-tabbar__glyph app-tabbar__glyph--xs"')

@@ -47,7 +47,9 @@ vi.mock('../projects/watcher', () => ({
   projectWatcher: watcherMocks
 }))
 
-import { createWorkspace, cloneWorkspace, importWorkspace, removeWorkspace } from './lifecycle'
+import { createWorkspace, cloneWorkspace, importWorkspace, removeWorkspace, setWorkspaceEntry } from './lifecycle'
+import { createFeature } from '../features/lifecycle'
+import { listFeatures } from '../features/scanner'
 import { setWorkspaceWatchScope } from './service'
 import { _testOnlyResetSharedCache, WorkspacesStore } from './store'
 import { workspacesJsonPath } from './paths'
@@ -79,6 +81,44 @@ function deferred(): { promise: Promise<void>; resolve: () => void } {
 }
 
 describe('workspace lifecycle template injection', () => {
+  it('解绑当前仓库会回到本地工作台，并保留目录与文件', async () => {
+    const local = await createWorkspace({ parentDir, name: 'local' })
+    const store = new WorkspacesStore()
+    await store.updateWorkspace(local.id, { isDefault: true })
+    const repository = await cloneWorkspace({ parentDir, name: 'remote', url: 'https://example.com/repo.git' })
+    expect(await store.activeId()).toBe(repository.id)
+    await removeWorkspace(repository.id)
+    expect(await store.activeId()).toBe(local.id)
+    expect(await fs.readFile(join(repository.path, 'README.md'), 'utf8')).toBe('# cloned\n')
+    expect((await fs.stat(join(repository.path, '.git'))).isDirectory()).toBe(true)
+    await expect(removeWorkspace(local.id)).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('uses the selected entry for scanning and creation, and restores the default entry', async () => {
+    const repository = await cloneWorkspace({ parentDir, name: 'entry-repo', url: 'https://example.com/repo.git' })
+    const entry = join(repository.path, 'apps', 'design')
+    await fs.mkdir(entry, { recursive: true })
+    const configured = await setWorkspaceEntry(repository.id, 'apps/design')
+    expect(configured.directoryRoot).toBe(repository.path)
+    expect(configured.path).toBe(entry)
+    await createFeature({ workspacePath: configured.path, group: 'orders', slug: 'checkout' })
+    expect((await listFeatures(configured.path)).map(card => card.relPath)).toEqual(['features/orders/checkout'])
+    expect(await listFeatures(repository.path)).toEqual([])
+    const restored = await setWorkspaceEntry(repository.id, '')
+    expect(restored.path).toBe(repository.path)
+    expect(restored.entryPath).toBeUndefined()
+  })
+
+  it('rejects traversal and symlink entries outside the directory without changing its root', async () => {
+    const directory = await createWorkspace({ parentDir, name: 'entry-safety' })
+    await expect(setWorkspaceEntry(directory.id, '../escape')).rejects.toMatchObject({ code: 'VALIDATION' })
+    const outside = await mkdtemp(join(tmpdir(), 'outside-entry-'))
+    await fs.symlink(outside, join(directory.path, 'outside'))
+    await expect(setWorkspaceEntry(directory.id, 'outside')).rejects.toMatchObject({ code: 'VALIDATION' })
+    expect((await new WorkspacesStore().findById(directory.id))?.path).toBe(directory.path)
+    await fs.rm(outside, { recursive: true, force: true })
+  })
+
   it('createWorkspace 默认在 .mywork 下创建 simple 项目且不初始化 Git', async () => {
     const ws = await createWorkspace({ parentDir, name: 'local-demo' })
 

@@ -1,6 +1,6 @@
 import { runOfficialDshTurn } from './official-loop'
 import { settingsStore } from '../settings/store'
-import type { PeekaConnection } from '../../shared/peeka'
+import type { PlantConnection } from '../../shared/plant'
 import { randomUUID } from 'node:crypto'
 import { BrowserWindow } from 'electron'
 import type { AgentDriver } from '../claude-headless/driver/types'
@@ -111,7 +111,7 @@ function createDeepSeekTurn(input: TurnInput): ActiveTurn {
 
   const run = async (): Promise<void> => {
     try {
-      const connection = { ...(await settingsStore.get()).peekaConnection }
+      const connection = { ...(await settingsStore.get()).plantConnection }
       const apiKey = await deepSeekCredentialStore.getApiKey()
       if (!apiKey) throw new Error('未配置 DeepSeek API key，请先在设置的「AI 助手」中配置')
       if (controller.signal.aborted) throw abortError()
@@ -224,7 +224,7 @@ function assistantEventFrom(message: DeepSeekAssistantMessage): StreamJsonEvent 
 
 async function requestWithTimeout(input: {
   apiKey: string
-  connection: PeekaConnection
+  connection: PlantConnection
   messages: DeepSeekMessage[]
   tools: ReturnType<typeof createHarnessToolbox>['definitions']
   controller: AbortController

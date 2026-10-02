@@ -26,7 +26,9 @@ export type Workspace = {
   workflowMode?: WorkspaceWorkflowMode
   isDefault?: boolean                  // 当前 workspaceRoot/.mywork 对应的系统默认工作台
   name: string
-  path: string                        // 仓库根绝对路径
+  path: string                        // 当前项目入口的绝对路径
+  directoryRoot?: string              // 所关联目录的根，未选入口时与 path 相同
+  entryPath?: string                  // 根目录内的相对入口；空值采用默认 features/ 约定
   managedPath?: boolean               // App 是否拥有该目录；导入目录固定为 false
   remoteUrl?: string
   defaultBranch: string               // 通常 'main'

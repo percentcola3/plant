@@ -1,3 +1,4 @@
+import wenKaiFontUrl from '@/assets/fonts/LXGWWenKaiLite-Regular.woff2?url'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import mermaid from 'mermaid'
@@ -160,7 +161,9 @@ export async function renderMarkdownPreview(input: RenderInput): Promise<string>
 
   return createMarkdownDocumentHtml({
     body: container.innerHTML,
-    theme: input.theme
+    theme: input.theme,
+    // srcdoc needs an absolute app URL in development and packaged file:// builds.
+    fontUrl: typeof window === 'undefined' ? undefined : new URL(wenKaiFontUrl, window.location.href).href
   })
 }
 

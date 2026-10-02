@@ -12,17 +12,11 @@ import { resumeWorkspaceSagas } from '../saga/service'
 import { syncWorkspaceTemplates } from './templates'
 import { writeActiveWorkArea, type ActiveWorkArea } from './work-area'
 import {
-  ensureDefaultKnowledgeWorkspace as ensureDefaultKnowledgeWorkspaceLifecycle,
   ensureDefaultWorkspace as ensureDefaultWorkspaceLifecycle
 } from './lifecycle'
 import { resolvePersonalSpaceWorktreePath } from './personal-space'
 import { isSimpleWorkspace } from '@shared/workspace-policy'
 import { readGitCapability } from '../git/capability'
-import {
-  addExternalRef,
-  attachExternalRef,
-  listExternalRefs
-} from '../external-pool/service'
 import { enqueueWorkspaceScopeTransition } from './scope-transition'
 
 // IPC handler 调用入口的薄封装。Workspace / Requirement 维度。
@@ -31,51 +25,15 @@ import { enqueueWorkspaceScopeTransition } from './scope-transition'
 const store = new WorkspacesStore()
 
 export async function listWorkspaces(): Promise<Workspace[]> {
-  return (await store.list()).filter((workspace) => workspace.isDefault)
-}
-
-export async function ensureDefaultKnowledgeWorkspace(): Promise<Workspace> {
-  return ensureDefaultKnowledgeWorkspaceLifecycle()
+  return (await store.list()).filter((workspace) => !workspace.hidden && workspace.kind === 'project')
 }
 
 export async function ensureDefaultWorkspace(): Promise<Workspace> {
   const workspace = await ensureDefaultWorkspaceLifecycle()
-  let ready = workspace
-  try {
-    await ensureDefaultClipLibraryBinding(workspace)
-  } catch (error) {
-    ready = {
-      ...workspace,
-      externalInitWarnings: [
-        ...(workspace.externalInitWarnings ?? []),
-        `剪页库默认绑定失败：${error instanceof Error ? error.message : String(error)}`
-      ]
-    }
-  }
-  await attachWorkspaceLifecycle(ready)
-  return ready
-}
-
-async function ensureDefaultClipLibraryBinding(workspace: Workspace): Promise<void> {
-  const clipsWorkspace = await ensureDefaultKnowledgeWorkspaceLifecycle()
-  const refs = await listExternalRefs()
-  let clipsRef = refs.find((ref) =>
-    ref.category === 'knowledge'
-    && ref.kind === 'local'
-    && ref.source === clipsWorkspace.path
-  )
-  if (!clipsRef) {
-    const alias = refs.some((ref) => ref.alias === '剪页库')
-      ? `clips-${clipsWorkspace.id.slice(0, 8)}`
-      : '剪页库'
-    clipsRef = await addExternalRef({
-      alias,
-      category: 'knowledge',
-      kind: 'local',
-      sourcePath: clipsWorkspace.path
-    })
-  }
-  await attachExternalRef(workspace.id, clipsRef.id)
+  const activeId = await store.activeId()
+  const active = activeId ? await store.findById(activeId) : null
+  await attachWorkspaceLifecycle(active ?? workspace)
+  return workspace
 }
 
 export async function getWorkspace(id: string): Promise<Workspace | null> {
@@ -95,9 +53,10 @@ export function setActiveWorkspace(id: string | null): Promise<void> {
   return enqueueWorkspaceScopeTransition(async () => {
     const previousId = await store.activeId()
     const requested = id ? await store.findById(id) : null
-    const target = requested?.isDefault
-      ? requested
-      : (await store.list()).find((workspace) => workspace.isDefault) ?? null
+    if (id && (!requested || requested.hidden || requested.kind !== 'project')) {
+      throw new UIClientError('VALIDATION', '请选择可用的项目仓库')
+    }
+    const target = requested
     const nextId = target?.id ?? null
     if (previousId !== nextId) {
       await projectWatcher.stopAll()

@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 const source = readFileSync(new URL('./WorkspaceSidebar.vue', import.meta.url), 'utf-8')
 
-describe('WorkspaceSidebar branch active state', () => {
-  it('uses the same left primary status line for the active requirement branch', () => {
-    expect(source).toContain('ui.viewingRequirementIdSlug === `${r.id}-${r.slug}`')
-    expect(source).toContain('before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary')
+describe('WorkspaceSidebar project navigation', () => {
+  it('keeps project and requirement views under the workbench entry', () => {
+    expect(source).toContain("ui.currentView === 'project-management' || ui.currentView === 'features-page' || ui.currentView === 'project-home'")
+    expect(source).toContain('aria-label="工作台"')
+    expect(source).toContain(':aria-current=')
   })
 })

@@ -11,7 +11,7 @@ import type { GitCommitSummary, GitFileDiff, GitRevertToResult, GitSnapshot, Git
 import { isAppManagedPath } from '@shared/app-managed-paths'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { bindGitRepository, listRemoteGitBranches, readGitCapability } from '../../git/capability'
+import { bindGitRepository, unbindGitRepository, listRemoteGitBranches, readGitCapability } from '../../git/capability'
 
 const store = new WorkspacesStore()
 const MAX_DIFF_CHARS = 24_000
@@ -295,6 +295,15 @@ export function registerGitHandlers(): void {
     const ws = await store.findById(workspaceId)
     if (!ws) throw new UIClientError('NOT_FOUND', `工作区 ${workspaceId} 不存在`)
     return bindGitRepository(ws.path, { remoteUrl, branch })
+  })
+
+  registerIpcHandler('git.unbind', async ({ workspaceId }) => {
+    if (!workspaceId) throw new UIClientError('VALIDATION', '缺少 workspaceId')
+    const ws = await store.findById(workspaceId)
+    if (!ws) throw new UIClientError('NOT_FOUND', `工作区 ${workspaceId} 不存在`)
+    const result = await unbindGitRepository(ws.path)
+    await store.updateWorkspace(ws.id, { remoteUrl: undefined })
+    return result
   })
 
   registerIpcHandler('git.status', async ({ workspaceId }) => {

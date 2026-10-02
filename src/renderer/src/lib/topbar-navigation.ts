@@ -1,14 +1,12 @@
 import type { Workspace } from '@shared/types'
 
 export type TopBarProjectView =
-  | 'home'
   | 'project-management'
   | 'project-home'
   | 'features-page'
   | 'ai-config'
   | 'skills-config'
   | 'external-view'
-  | 'onboarding-guide'
 export type TopBarUxNode = 'home' | 'assets' | 'images' | 'outputs' | 'skills'
 export type TopBarAddAction = 'create-product' | 'new-workspace' | 'open-project'
 
@@ -41,11 +39,10 @@ export function resolveTopBarTabTitle(input: {
 }): string {
   if (input.previewActive && input.previewTabTitle) return input.previewTabTitle
   if (input.editorOpen && input.editorTitle) return input.editorTitle
-  if (input.currentView === 'features-page') return '项目'
-  if (input.currentView === 'ai-config') return '资源包'
+  if (input.currentView === 'features-page' || input.currentView === 'project-management') return '工作台'
+  if (input.currentView === 'ai-config') return '知识库'
   if (input.currentView === 'skills-config') return '技能'
   if (input.currentView === 'external-view') return input.externalAlias ?? '外部库'
-  if (input.currentView === 'onboarding-guide') return '新手引导'
   if (input.workspaceKind === 'ux') {
     const node = effectiveUxNode(input.uxActiveNode, input.outputsFirstProject)
     return UX_NODE_LABELS[node] ?? input.workspaceName ?? '项目'
@@ -61,7 +58,7 @@ export function isTopBarHomeActive(input: {
   outputsFirstProject: boolean
 }): boolean {
   if (input.previewActive || input.editorOpen) return false
-  if (input.currentView === 'home') return true
+  if (input.currentView === 'project-management' || input.currentView === 'features-page') return true
   if (input.currentView !== 'project-home') return false
   const node = effectiveUxNode(input.uxActiveNode, input.outputsFirstProject)
   return node === 'home' || node === 'outputs'
@@ -77,7 +74,6 @@ export function isTopBarTabClosable(input: {
 }): boolean {
   if (input.previewActive || input.editorOpen) return true
   if (input.currentView === 'external-view') return true
-  if (input.currentView === 'onboarding-guide') return true
   if (
     input.currentView === 'project-management'
     || input.currentView === 'features-page'

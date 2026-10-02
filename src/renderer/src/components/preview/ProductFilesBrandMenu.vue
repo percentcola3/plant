@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { PenTool } from 'lucide-vue-next'
+import PlantLogo from '@/components/brand/PlantLogo.vue'
 
 withDefaults(defineProps<{
   title: string
@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
       @click.stop="toggleMenu"
     >
       <div class="product-brand__icon" aria-hidden="true">
-        <PenTool class="product-brand__icon-glyph" :stroke-width="2" />
+        <PlantLogo class="product-brand__icon-glyph" :size="24" />
       </div>
       <span class="product-brand__title">{{ title }}</span>
       <svg class="product-brand__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -142,13 +142,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-brand-accent);
-  color: var(--color-text-onbrand);
+  background: #fff;
 }
 
 .product-brand__icon-glyph {
-  width: 14px;
-  height: 14px;
+  width: 24px;
+  height: 24px;
 }
 
 .product-brand__title {

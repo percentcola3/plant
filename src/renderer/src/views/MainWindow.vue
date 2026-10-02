@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import TopBar from '@/components/layout/TopBar.vue'
 import WorkspaceSidebar from '@/components/layout/WorkspaceSidebar.vue'
-import FeaturesPage from '@/components/layout/FeaturesPage.vue'
-import WorkbenchHome from '@/components/layout/WorkbenchHome.vue'
+import WorkbenchPage from '@/components/layout/WorkbenchPage.vue'
 import ProjectAiConfigPanel from '@/components/layout/ProjectAiConfigPanel.vue'
-import OnboardingGuide from '@/components/layout/OnboardingGuide.vue'
 import ExternalRefViewer from '@/components/layout/ExternalRefViewer.vue'
 import TerminalPane from '@/components/layout/TerminalPane.vue'
 import AiTaskLanePanel from '@/components/layout/AiTaskLanePanel.vue'
@@ -74,7 +72,7 @@ const showTerminal = computed(() => shouldShowTerminalPane({
       <div
         v-if="suppressTerminalHeader"
         id="product-workbench-topbar"
-        class="shrink-0"
+        class="shrink-0 border-b border-[var(--color-border-subtle)]"
       />
       <div class="flex min-h-0 flex-1 min-w-0 overflow-hidden">
         <!-- 首页与项目 Tab 切换时保留预览实例，避免项目内编辑状态被卸载。 -->
@@ -91,9 +89,7 @@ const showTerminal = computed(() => shouldShowTerminalPane({
             <ProjectAiConfigPanel v-else-if="currentView === 'ai-config'" section="resources" />
             <ProjectAiConfigPanel v-else-if="currentView === 'skills-config'" section="skills" />
             <ExternalRefViewer v-else-if="currentView === 'external-view'" />
-            <OnboardingGuide v-else-if="currentView === 'onboarding-guide'" />
-            <WorkbenchHome v-else-if="currentView === 'home'" />
-            <FeaturesPage v-else />
+            <WorkbenchPage v-else />
           </div>
         </template>
         <TerminalPane v-if="showTerminal" :suppress-header="suppressTerminalHeader" />

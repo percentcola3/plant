@@ -23,7 +23,8 @@ describe('SettingsStore defaults', () => {
       cliKind: 'claude',
       aiProvider: 'claude-code',
       defaultExternalRefIds: [],
-      theme: 'light'
+      theme: 'light',
+      aiTaskNotchEnabled: false
     })
   })
 
@@ -73,15 +74,27 @@ describe('SettingsStore cliKind migration', () => {
     })
   })
 
+  it.each(['codex-cli', 'opencode-cli', 'pi-cli'])('preserves %s across settings reloads', async (aiProvider) => {
+    writeSettingsFile({ aiProvider, cliKind: 'claude', schemaVersion: 3 })
+    await expect(new SettingsStore().get()).resolves.toMatchObject({ aiProvider })
+  })
+
+  it('migrates the legacy peekaConnection key from old settings files', async () => {
+    writeSettingsFile({ peekaConnection: { baseUrl: 'http://llm-proxy.example.com', protocol: 'responses', model: 'gpt-5.6-sol', visionModel: '' } })
+    await expect(new SettingsStore().get()).resolves.toMatchObject({
+      plantConnection: { baseUrl: 'http://llm-proxy.example.com', protocol: 'responses', model: 'gpt-5.6-sol', visionModel: '' }
+    })
+  })
+
   it('falls back to claude for an unknown cliKind value', async () => {
     writeSettingsFile({ cliKind: 'something-else', schemaVersion: 2 })
     await expect(new SettingsStore().get()).resolves.toMatchObject({ cliKind: 'claude' })
   })
 })
 
- it('persists a closed notch and custom Peeka connection across restarts', async () => {
+ it('persists a closed notch and custom Plant connection across restarts', async () => {
    const store = new SettingsStore()
-   const peekaConnection = { baseUrl: 'http://llm-proxy.example.com', protocol: 'responses' as const, model: 'gpt-5.6-sol', visionModel: '' }
-   await store.update({ aiTaskNotchEnabled: false, peekaConnection })
-   await expect(new SettingsStore().get()).resolves.toMatchObject({ aiTaskNotchEnabled: false, peekaConnection })
+   const plantConnection = { baseUrl: 'http://llm-proxy.example.com', protocol: 'responses' as const, model: 'gpt-5.6-sol', visionModel: '' }
+   await store.update({ aiTaskNotchEnabled: false, plantConnection })
+   await expect(new SettingsStore().get()).resolves.toMatchObject({ aiTaskNotchEnabled: false, plantConnection })
  })

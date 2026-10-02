@@ -2,7 +2,7 @@
 // 可复用「用外部工具打开」分体按钮：主键＝用默认工具打开 relPath（缺省＝项目根），
 // 右侧箭头展开菜单选 Cursor/Finder/Codex/VS Code 并可设默认。
 // 项目编辑页与项目卡片共用，目录由 relPath 决定；不再提供工作台级入口。
-// 视觉对齐 docs/references/peeka-shell 的 shell-tabbar__tool-menu。
+// 视觉对齐 docs/references/plant-shell 的 shell-tabbar__tool-menu。
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { call } from '@/lib/api'

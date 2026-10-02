@@ -7,6 +7,8 @@ import { storeToRefs } from 'pinia'
 import { useWorkspacesStore } from '@/stores/workspaces'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
+import { Sparkles, Folder, Palette, ScanSearch, ClipboardCheck } from 'lucide-vue-next'
+import PlantIllustration from '@/components/brand/PlantIllustration.vue'
 import AddSkillForm from './AddSkillForm.vue'
 import type { SkillSummary } from '@shared/types'
 
@@ -109,7 +111,7 @@ watch(() => editor.isOpen, (open) => {
   <section class="skills-list">
     <header class="skills-list__head">
       <div class="skills-list__head-top">
-        <h3 class="skills-list__title"><span aria-hidden="true">🧠</span> 技能</h3>
+        <h3 class="skills-list__title"><Sparkles :size="16" aria-hidden="true" /> 技能</h3>
         <div class="skills-list__head-actions">
           <button
             type="button"
@@ -151,8 +153,8 @@ watch(() => editor.isOpen, (open) => {
             </div>
           </div>
           <div class="skills-list__main">
-            <span class="skills-list__name">{{ skillLabel(skill) }}</span>
-            <span class="skills-list__code" :title="skill.skillDirRelPath">📁 {{ skill.skillDirRelPath }}</span>
+            <span class="skills-list__name"><span class="skills-list__symbol" aria-hidden="true"><component :is="skill.name === 'ux-design' ? Palette : skill.name === 'knowledge-search' ? ScanSearch : skill.name === 'prd-tech-review' ? ClipboardCheck : Sparkles" :size="16" /></span>{{ skillLabel(skill) }}</span>
+            <span class="skills-list__code" :title="skill.skillDirRelPath"><Folder :size="12" aria-hidden="true" /> {{ skill.skillDirRelPath }}</span>
             <span class="skills-list__sub">
               <template v-if="skill.description">{{ skill.description }}</template>
               <template v-else><em>未填 description</em></template>
@@ -194,6 +196,7 @@ watch(() => editor.isOpen, (open) => {
     </section>
 
     <div v-else class="skills-list__empty">
+      <PlantIllustration kind="skills" />
       <p>还没有 skills</p>
       <div class="skills-list__empty-actions">
         <button type="button" class="skills-list__head-btn" @click="addOpen = true">+ 添加 skill</button>
@@ -321,4 +324,8 @@ watch(() => editor.isOpen, (open) => {
 @media (prefers-reduced-motion: reduce) {
   .skills-list__card { transition: none; }
 }
+.skills-list__title svg { color: var(--color-leaf); }
+.skills-list__name { display: flex; align-items: center; gap: 8px; }
+.skills-list__symbol { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; background: var(--color-accent-light); color: var(--color-leaf); flex: none; }
+.skills-list__code svg { display: inline; vertical-align: -2px; margin-right: 4px; }
 </style>

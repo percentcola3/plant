@@ -1497,7 +1497,7 @@ onMounted(async () => {
             type="button"
             variant="outline"
             size="sm"
-            class="product-workbench-action-btn text-xs"
+            class="text-xs"
             :disabled="!canSave"
             @click="saveCurrent"
           >
@@ -1872,7 +1872,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
   padding: 0 10px 0 12px;
 }
@@ -1898,7 +1897,7 @@ onMounted(async () => {
   font-weight: 600;
 }
 .product-files__project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
-.product-files__resource-count { display: inline-flex; min-width: 17px; height: 17px; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-accent-light); color: var(--color-accent); font-size: 9px; font-weight: 700; }
+.product-files__resource-count { display: inline-flex; min-width: 17px; height: 17px; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-tab-selected); color: var(--color-text-primary); font-size: 9px; font-weight: 700; }
 .product-files__error {
   flex-shrink: 0;
   border-bottom: 1px solid rgba(220,38,38,0.18);
@@ -1930,7 +1929,6 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 8px;
   margin: -6px -6px 4px;
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
   padding: 6px;
 }
@@ -2141,6 +2139,15 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
 }
+/* Header actions share one compact size, including save, history and Git submit. */
+.product-files__editor-actions :deep(button) {
+  height: 28px;
+  min-height: 28px;
+  border-radius: var(--radius-button);
+  padding: 0 10px;
+  font-size: 11px;
+  line-height: 1;
+}
 .product-files__editor-title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2179,7 +2186,6 @@ onMounted(async () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
   padding: 14px 18px 10px;
 }
@@ -2205,11 +2211,11 @@ onMounted(async () => {
 .product-files__md-pill {
   flex-shrink: 0;
   border-radius: 999px;
-  background: #eef2f7;
+  background: var(--color-bg-subtle);
   padding: 2px 10px;
   font-size: 10px;
   line-height: 16px;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 .product-files__md-toolbar {
   display: flex;
@@ -2217,10 +2223,8 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  border-top: 1px solid var(--color-border-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
-  padding: 14px 18px;
+  padding: 10px 16px;
 }
 .product-files__md-toolbar-label {
   flex-shrink: 0;
@@ -2232,19 +2236,21 @@ onMounted(async () => {
 .product-files__md-seg {
   display: flex;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 0;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
   background: var(--color-bg-panel);
 }
 .product-files__md-seg-btn,
 .product-files__md-tool-btn {
   height: 28px;
   flex-shrink: 0;
-  border-left: 1px solid #e2e8f0;
+  border-radius: 6px;
   padding: 0 12px;
   font-size: 12px;
   line-height: 1;
-  color: #64748b;
+  color: var(--color-text-secondary);
   transition: background-color 0.12s, color 0.12s;
 }
 .product-files__md-seg-btn:first-child,
@@ -2252,13 +2258,13 @@ onMounted(async () => {
   border-left: 0;
 }
 .product-files__md-seg-btn.is-active {
-  background: #0f172a;
-  color: #fff;
+  background: var(--color-tab-selected);
+  color: var(--color-text-primary);
 }
 .product-files__md-seg-btn:not(.is-active):hover,
 .product-files__md-tool-btn:hover {
   background: var(--color-bg-subtle);
-  color: #0f172a;
+  color: var(--color-text-primary);
 }
 .product-files__md-body {
   flex: 1 1 auto;
@@ -2291,7 +2297,7 @@ onMounted(async () => {
   box-shadow: 0 8px 24px rgba(15,23,42,0.08);
   padding: 4px 10px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 .product-files__editor {
   flex: 1 1 auto;

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import ModelSelect from './ModelSelect.vue'
+import { Palette, KeyRound, Bot, Activity, Sprout } from 'lucide-vue-next'
+import PlantIllustration from '@/components/brand/PlantIllustration.vue'
+import PlantLogo from '@/components/brand/PlantLogo.vue'
 import { computed, ref, watch } from 'vue'
-import { PEEKA_LLM_PROXY_MODELS, PEEKA_LLM_PROXY_VISION_MODELS, PEEKA_OFFICIAL_MODELS, PEEKA_OFFICIAL_VISION_MODELS, PEEKA_PRESETS, type PeekaConnection } from '@shared/peeka'
+import { PLANT_LLM_PROXY_MODELS, PLANT_LLM_PROXY_VISION_MODELS, PLANT_OFFICIAL_MODELS, PLANT_OFFICIAL_VISION_MODELS, PLANT_PRESETS, type PlantConnection } from '@shared/plant'
 import { DEFAULT_CLI_KIND, type CliKind } from '@shared/cli'
 import { DEFAULT_AI_PROVIDER, type AiProvider } from '@shared/ai-provider'
 import type { AppTheme } from '@shared/app-theme'
@@ -13,6 +16,8 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import PATEditDialog from './PATEditDialog.vue'
 
@@ -24,31 +29,6 @@ const open = computed({
   get: () => ui.settingsOpen,
   set: (v) => { if (!v) close() },
 })
-
-type ExtInfo = { destDir: string; version: string | null; installed: boolean; error?: string }
-const extInfo = ref<ExtInfo | null>(null)
-const extLoading = ref(false)
-
-async function loadExtension(): Promise<void> {
-  extLoading.value = true
-  const r = await call('raw.extensionInfo', undefined)
-  extLoading.value = false
-  if (r.ok) extInfo.value = r.data
-}
-
-async function revealExtensionDir(): Promise<void> {
-  await call('raw.revealExtensionDir', undefined)
-}
-
-async function copyExtensionPath(): Promise<void> {
-  if (!extInfo.value?.destDir) return
-  const r = await call('system.copyToClipboard', { text: extInfo.value.destDir })
-  if (r.ok) ui.showToast('success', '已复制路径')
-}
-
-async function openChromeExtensions(): Promise<void> {
-  await call('raw.openChromeExtensions', undefined)
-}
 
 type SshKeyState = {
   exists: boolean
@@ -197,7 +177,13 @@ async function clearAllCreds(): Promise<void> {
   }
 }
 
-type AiEngine = CliKind | 'deepseek-harness'
+const cliEngines = [
+  { value: 'codex-cli' as const, label: 'Codex CLI', description: '使用本机 Codex CLI，以 exec JSON 模式执行。' },
+  { value: 'opencode-cli' as const, label: 'OpenCode CLI', description: '使用本机 OpenCode CLI，以 run JSON 模式执行。' },
+  { value: 'pi-cli' as const, label: 'Pi CLI', description: '使用本机 Pi CLI，以非交互 JSON 模式执行。' },
+]
+
+type AiEngine = CliKind | Exclude<AiProvider, 'claude-code'>
 
 // AI 面板引擎：Claude Code / 内置 DeepSeek Harness。
 // 切换本机命令时会清空 capability cache，下一次开 AI 面板时重探新二进制。
@@ -208,13 +194,13 @@ const aiSaving = ref(false)
 const aiError = ref('')
 const deepseekApiKey = ref('')
 const deepseekApiKeyConfigured = ref(false)
-const peekaConnection = ref<PeekaConnection>({ ...PEEKA_PRESETS.official })
-const savedPeekaBaseUrl = ref(PEEKA_PRESETS.official.baseUrl)
-const endpointChanged = computed(() => peekaConnection.value.baseUrl.replace(/\/+$/, '') !== savedPeekaBaseUrl.value)
-const peekaPreset = computed(() => peekaConnection.value.baseUrl === PEEKA_PRESETS.official.baseUrl ? 'official' : peekaConnection.value.baseUrl === PEEKA_PRESETS.llm.baseUrl ? 'llm' : 'custom')
-function choosePeekaPreset(event: Event): void {
+const plantConnection = ref<PlantConnection>({ ...PLANT_PRESETS.official })
+const savedPlantBaseUrl = ref(PLANT_PRESETS.official.baseUrl)
+const endpointChanged = computed(() => plantConnection.value.baseUrl.replace(/\/+$/, '') !== savedPlantBaseUrl.value)
+const plantPreset = computed(() => plantConnection.value.baseUrl === PLANT_PRESETS.official.baseUrl ? 'official' : plantConnection.value.baseUrl === PLANT_PRESETS.llm.baseUrl ? 'llm' : 'custom')
+function choosePlantPreset(event: Event): void {
   const value = (event.target as HTMLSelectElement).value
-  if (value === 'official' || value === 'llm') peekaConnection.value = { ...PEEKA_PRESETS[value] }
+  if (value === 'official' || value === 'llm') plantConnection.value = { ...PLANT_PRESETS[value] }
   deepseekApiKey.value = ''
 }
 
@@ -230,29 +216,30 @@ async function loadCli(): Promise<void> {
     })
     aiEngineSaved.value = aiEngine.value
     deepseekApiKeyConfigured.value = r.data.deepseekApiKeyConfigured
-    peekaConnection.value = { ...r.data.peekaConnection }
-    savedPeekaBaseUrl.value = r.data.peekaConnection.baseUrl
+    deepseekApiKey.value = ''
+    plantConnection.value = { ...r.data.plantConnection }
+    savedPlantBaseUrl.value = r.data.plantConnection.baseUrl
   }
 }
 
 function aiEngineFromSettings(settings: { cliKind: CliKind; aiProvider: AiProvider }): AiEngine {
-  return settings.aiProvider === 'deepseek-harness' ? 'deepseek-harness' : settings.cliKind
+  return settings.aiProvider === 'claude-code' ? settings.cliKind : settings.aiProvider
 }
 
-function applyAiSettings(settings: { cliKind: CliKind; aiProvider: AiProvider; deepseekApiKeyConfigured: boolean; peekaConnection: PeekaConnection }): void {
+function applyAiSettings(settings: { cliKind: CliKind; aiProvider: AiProvider; deepseekApiKeyConfigured: boolean; plantConnection: PlantConnection }): void {
   cliKind.value = settings.cliKind
   aiEngine.value = aiEngineFromSettings(settings)
   aiEngineSaved.value = aiEngine.value
   deepseekApiKeyConfigured.value = settings.deepseekApiKeyConfigured
   deepseekApiKey.value = ''
-  peekaConnection.value = { ...settings.peekaConnection }
-  savedPeekaBaseUrl.value = settings.peekaConnection.baseUrl
+  plantConnection.value = { ...settings.plantConnection }
+  savedPlantBaseUrl.value = settings.plantConnection.baseUrl
   window.dispatchEvent(new CustomEvent('ai-engine-changed', { detail: settings }))
 }
 
 function aiEngineLabel(value: AiEngine): string {
   if (value === 'claude') return 'Claude Code'
-  return '内置 DeepSeek Harness'
+  return value === 'deepseek-harness' ? '内置 Plant' : cliEngines.find(engine => engine.value === value)?.label ?? value
 }
 
 async function chooseAiEngine(value: AiEngine): Promise<void> {
@@ -265,9 +252,9 @@ async function chooseAiEngine(value: AiEngine): Promise<void> {
 
   aiSaving.value = true
   aiError.value = ''
-  const input: { aiProvider: AiProvider; cliKind?: CliKind; deepseekApiKey?: string } = value === 'deepseek-harness'
-    ? { aiProvider: value }
-    : { aiProvider: 'claude-code', cliKind: value }
+  const input: { aiProvider: AiProvider; cliKind?: CliKind; deepseekApiKey?: string } = value === 'claude'
+    ? { aiProvider: 'claude-code', cliKind: value }
+    : { aiProvider: value }
   if (value === 'deepseek-harness' && deepseekApiKey.value.trim()) {
     input.deepseekApiKey = deepseekApiKey.value.trim()
   }
@@ -291,14 +278,14 @@ async function saveDeepseekApiKey(): Promise<void> {
   aiSaving.value = true
   aiError.value = ''
   const r = await call('settings.update', {
-    peekaConnection: { ...peekaConnection.value },
+    plantConnection: { ...plantConnection.value },
     ...(value ? { deepseekApiKey: value } : {}),
     ...(aiEngine.value === 'deepseek-harness' ? { aiProvider: 'deepseek-harness' as const } : {})
   })
   aiSaving.value = false
   if (r.ok) {
     applyAiSettings(r.data)
-    ui.showToast('success', 'Peeka 连接配置已保存，下一条消息生效')
+    ui.showToast('success', 'Plant 连接配置已保存，下一条消息生效')
   } else {
     aiError.value = `${r.code}: ${r.message}`
   }
@@ -323,7 +310,7 @@ const appThemeSaved = ref<AppTheme>('light')
 const themeSaving = ref(false)
 const themeError = ref('')
 
-const aiTaskNotchEnabled = ref(true)
+const aiTaskNotchEnabled = ref(false)
 const notchSaving = ref(false)
 async function toggleNotch(event: Event): Promise<void> {
   notchSaving.value = true
@@ -423,7 +410,6 @@ watch(
       tab.value = ui.settingsInitialTab
       void loadCreds()
       void loadSsh()
-      void loadExtension()
       void loadCli()
       void loadTheme()
       void loadDiagnostics()
@@ -445,54 +431,57 @@ function close(): void {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="flex p-0 overflow-hidden sm:max-w-[640px] h-[480px] gap-0">
-      <nav class="w-36 shrink-0 border-r border-border/60 p-2 flex flex-col gap-1">
+    <DialogContent class="flex flex-col p-0 overflow-hidden sm:max-w-[640px] h-[480px] max-h-[calc(100dvh-2rem)] gap-0">
+      <header class="flex h-12 shrink-0 items-center border-b border-border/60 px-5 pr-12">
+        <DialogTitle class="text-sm font-semibold">设置</DialogTitle>
+        <DialogDescription class="sr-only">管理外观、Git 认证、AI 助手与应用信息。</DialogDescription>
+      </header>
+      <div class="flex min-h-0 flex-1 overflow-hidden">
+      <nav class="w-36 shrink-0 overflow-y-auto border-r border-border/60 p-2 flex flex-col gap-1">
         <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
+          class="flex items-center gap-2 text-left px-3 py-2 rounded-md text-xs transition-colors"
           :class="tab === 'appearance' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
           @click="tab = 'appearance'"
-        >外观</button>
+        ><Palette :size="14" aria-hidden="true" />外观</button>
         <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
-          :class="tab === 'credentials' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
+          class="flex items-center gap-2 text-left px-3 py-2 rounded-md text-xs transition-colors"
+          :class="tab === 'credentials' || tab === 'ssh' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
           @click="tab = 'credentials'"
-        >凭证缓存</button>
+        ><KeyRound :size="14" aria-hidden="true" />Git 认证</button>
         <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
-          :class="tab === 'ssh' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
-          @click="tab = 'ssh'"
-        >SSH Key</button>
-        <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
+          class="flex items-center gap-2 text-left px-3 py-2 rounded-md text-xs transition-colors"
           :class="tab === 'cli' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
           @click="tab = 'cli'"
-        >AI 助手</button>
+        ><Bot :size="14" aria-hidden="true" />AI 助手</button>
         <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
-          :class="tab === 'extension' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
-          @click="tab = 'extension'"
-        >剪页插件</button>
-        <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
+          class="flex items-center gap-2 text-left px-3 py-2 rounded-md text-xs transition-colors"
           :class="tab === 'diagnostics' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
           @click="tab = 'diagnostics'"
-        >诊断与日志</button>
+        ><Activity :size="14" aria-hidden="true" />诊断与日志</button>
         <button
-          class="text-left px-3 py-2 rounded-md text-sm transition-colors"
+          class="flex items-center gap-2 text-left px-3 py-2 rounded-md text-xs transition-colors"
           :class="tab === 'about' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'"
           @click="tab = 'about'"
-        >关于</button>
+        ><Sprout :size="14" aria-hidden="true" />关于</button>
       </nav>
 
-      <div class="flex-1 p-5 overflow-y-auto">
+      <div class="min-w-0 flex-1 p-5 overflow-y-auto">
+        <div v-if="tab === 'credentials' || tab === 'ssh'" class="mb-5">
+          <h2 class="text-md font-medium">Git 认证</h2>
+          <p class="mt-1 text-xs text-muted-foreground">按仓库地址选择认证方式。</p>
+          <div class="mt-3 flex gap-2" role="group" aria-label="Git 认证方式">
+            <Button :variant="tab === 'credentials' ? 'default' : 'outline'" size="sm" :aria-pressed="tab === 'credentials'" @click="tab = 'credentials'">HTTPS 凭证</Button>
+            <Button :variant="tab === 'ssh' ? 'default' : 'outline'" size="sm" :aria-pressed="tab === 'ssh'" @click="tab = 'ssh'">SSH Key</Button>
+          </div>
+        </div>
         <div v-if="tab === 'appearance'">
           <label class="mb-5 flex items-center gap-3 rounded-md border border-border p-3">
             <input type="checkbox" :checked="aiTaskNotchEnabled" :disabled="notchSaving" @change="toggleNotch" />
-            <span class="text-sm">显示悬浮任务球<span class="mt-1 block text-xs text-muted-foreground">关闭后后台任务继续运行，可随时在这里重新开启。</span></span>
+            <span class="text-sm">显示全局悬浮球<span class="mt-1 block text-xs text-muted-foreground">默认关闭。开启后在所有应用上方显示任务球；隐藏不影响后台任务。</span></span>
           </label>
           <h2 class="text-md font-medium mb-1">外观</h2>
           <p class="text-xs text-muted-foreground/70 mb-4">
-            切换 WorkSpace 全局界面主题。选择后会立即生效，并保存到本机设置。
+            切换 Plant 全局界面主题。选择后会立即生效，并保存到本机设置。
           </p>
 
           <div class="flex flex-col gap-2">
@@ -546,18 +535,17 @@ function close(): void {
 
         <div v-if="tab === 'credentials'">
           <div class="flex items-start justify-between mb-1 gap-3">
-            <h2 class="text-md font-medium">凭证缓存</h2>
-            <Button size="sm" @click="openCreate">新增凭据</Button>
+            <h3 class="text-sm font-medium">HTTPS 凭证</h3>
+            <Button size="sm" @click="openCreate">新增凭证</Button>
           </div>
           <p class="text-xs text-muted-foreground/70 mb-4">
-            clone HTTPS git 仓库时记住的 PAT。也可在此手动新增/编辑，避免下次 clone 弹框输入。
-            密码用 safeStorage 加密落盘到本机 userData。
+            用于 https:// 开头的仓库地址。访问令牌（PAT）加密保存在本机，可在此新增、编辑或清除。
           </p>
 
           <div v-if="credsLoading" class="text-xs text-muted-foreground/70 py-4">加载中…</div>
           <div v-else-if="creds.length === 0" class="border border-dashed border-border rounded-md p-6 text-center">
             <p class="text-sm text-muted-foreground/70">还没有缓存凭证</p>
-            <p class="text-xs text-muted-foreground/70 mt-1">点上方「新增凭据」或下次 clone 输入 PAT 时勾「记住」。</p>
+            <p class="text-xs text-muted-foreground/70 mt-1">点击「新增凭证」，或克隆 HTTPS 仓库时输入访问令牌并勾选「记住」。</p>
           </div>
           <ul v-else class="flex flex-col gap-2">
             <li
@@ -589,8 +577,8 @@ function close(): void {
 
         <div v-if="tab === 'ssh'">
           <div class="mb-5">
-            <h2 class="text-md font-medium">配置 SSH Key</h2>
-            <p class="mt-1 text-xs text-muted-foreground">按下面 3 步完成配置。</p>
+            <h3 class="text-sm font-medium">配置 SSH Key</h3>
+            <p class="mt-1 text-xs text-muted-foreground">用于 git@ 或 ssh:// 开头的仓库地址。按下面 3 步完成配置。</p>
           </div>
 
           <div v-if="sshLoading" class="text-xs text-muted-foreground/70 py-4">读取中…</div>
@@ -678,6 +666,16 @@ function close(): void {
               </div>
             </label>
 
+            <label v-for="engine in cliEngines" :key="engine.value"
+              class="flex items-start gap-3 p-3 border border-border/60 rounded-md cursor-pointer hover:bg-muted/40 transition-colors"
+              :class="aiEngine === engine.value ? 'border-foreground/40 bg-muted/30' : ''">
+              <input type="radio" name="ai-engine" :value="engine.value" :disabled="aiSaving" :checked="aiEngine === engine.value" class="mt-1" @change="chooseAiEngine(engine.value)" />
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium">{{ engine.label }}</div>
+                <div class="text-xs text-muted-foreground/70 mt-1">{{ engine.description }}</div>
+              </div>
+            </label>
+
             <label
               class="flex items-start gap-3 p-3 border border-border/60 rounded-md cursor-pointer hover:bg-muted/40 transition-colors"
               :class="aiEngine === 'deepseek-harness' ? 'border-foreground/40 bg-muted/30' : ''"
@@ -692,7 +690,7 @@ function close(): void {
                 @change="chooseAiEngine('deepseek-harness')"
               />
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium">内置 Peeka</div>
+                <div class="text-sm font-medium">内置 Plant</div>
                 <div class="text-xs text-muted-foreground/70 mt-1">基于 DeepSeek，无需本机安装 Claude Code。</div>
               </div>
             </label>
@@ -701,8 +699,8 @@ function close(): void {
           <div v-if="aiEngine === 'deepseek-harness'" class="mt-4 rounded-md border border-border/60 p-3">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <div class="text-sm font-medium">Peeka 连接配置</div>
-                <p class="mt-1 text-xs text-muted-foreground/70">API key 加密保存在本机，界面不会回显已保存的 key。</p>
+                <div class="text-sm font-medium">Plant 连接配置</div>
+                <p class="mt-1 text-xs text-muted-foreground/70">API key 加密保存在本机，保存后以 XXX 显示。输入新 key 可替换。</p>
               </div>
               <span class="shrink-0 text-xs" :class="deepseekApiKeyConfigured && !endpointChanged ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
                 {{ deepseekApiKeyConfigured && !endpointChanged ? '已配置' : '未配置' }}
@@ -710,34 +708,35 @@ function close(): void {
             </div>
             <fieldset :disabled="aiSaving" class="mt-3 flex flex-col gap-3">
               <label class="flex flex-col gap-1 text-xs">请求路径预设
-                <select :value="peekaPreset" class="rounded-md border border-input bg-background p-2 text-sm" @change="choosePeekaPreset">
+                <select :value="plantPreset" class="rounded-md border border-input bg-background p-2 text-sm" @change="choosePlantPreset">
                   <option value="official">DeepSeek 官方 API</option><option value="llm">LLM 内网代理</option><option value="custom" disabled>自定义地址</option>
                 </select>
               </label>
               <label class="flex flex-col gap-1 text-xs">Base URL
-                <input v-model="peekaConnection.baseUrl" type="url" class="rounded-md border border-input bg-background p-2 text-sm" />
+                <input v-model="plantConnection.baseUrl" type="url" class="rounded-md border border-input bg-background p-2 text-sm" />
               </label>
               <label class="flex flex-col gap-1 text-xs">API 格式
-                <select v-model="peekaConnection.protocol" class="rounded-md border border-input bg-background p-2 text-sm">
+                <select v-model="plantConnection.protocol" class="rounded-md border border-input bg-background p-2 text-sm">
                   <option value="chat-completions">Chat Completions (/chat/completions)</option><option value="messages">Anthropic Messages (/v1/messages)</option><option value="responses">Responses (/responses)</option>
                 </select>
               </label>
               <label class="flex flex-col gap-1 text-xs">模型
-                <ModelSelect v-model="peekaConnection.model" :options="peekaPreset === 'official' ? PEEKA_OFFICIAL_MODELS : PEEKA_LLM_PROXY_MODELS" />
+                <ModelSelect v-model="plantConnection.model" :options="plantPreset === 'official' ? PLANT_OFFICIAL_MODELS : PLANT_LLM_PROXY_MODELS" />
               </label>
               <label class="flex flex-col gap-1 text-xs">视觉模型（可选，留空使用上面的模型）
-                <ModelSelect v-model="peekaConnection.visionModel" :options="peekaPreset === 'official' ? PEEKA_OFFICIAL_VISION_MODELS : PEEKA_LLM_PROXY_VISION_MODELS" allow-empty />
+                <ModelSelect v-model="plantConnection.visionModel" :options="plantPreset === 'official' ? PLANT_OFFICIAL_VISION_MODELS : PLANT_LLM_PROXY_VISION_MODELS" allow-empty />
               </label>
             </fieldset>
-            <p v-if="peekaPreset === 'official'" class="mt-2 text-xs text-muted-foreground">V4.1 Flash 的模型 ID 为 deepseek-flash，同时支持文本和图片。</p>
+            <p v-if="plantPreset === 'official'" class="mt-2 text-xs text-muted-foreground">V4.1 Flash 的模型 ID 为 deepseek-flash，同时支持文本和图片。</p>
             <p v-if="endpointChanged" class="mt-2 text-xs text-muted-foreground">请求地址已改变，请输入该地址对应的 API key。</p>
             <div class="mt-3 flex gap-2">
               <input
                 v-model="deepseekApiKey"
                 type="password"
                 autocomplete="off"
-                placeholder="请输入 Peeka API key"
-                class="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                :placeholder="deepseekApiKeyConfigured && !endpointChanged ? 'XXX（已保存）' : '请输入 Plant API key'"
+                aria-label="Plant API key"
+                class="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:[outline:2px_solid_var(--color-leaf)] focus-visible:[outline-offset:1px]"
                 :disabled="aiSaving"
                 @keyup.enter="saveDeepseekApiKey"
               />
@@ -749,54 +748,6 @@ function close(): void {
 
           <div v-if="aiError" class="mt-3 p-3 rounded-md bg-destructive/10 text-xs text-destructive break-all">
             {{ aiError }}
-          </div>
-        </div>
-
-        <div v-if="tab === 'extension'">
-          <h2 class="text-md font-medium mb-1">剪页插件</h2>
-          <p class="text-xs text-muted-foreground/70 mb-4">
-            安装到 Chrome 后，可以在网页选区里把内容保存到本地剪页资源包。
-            插件文件由 App 自动放在固定位置，方便 Chrome 加载。
-          </p>
-
-          <div v-if="extLoading" class="text-xs text-muted-foreground/70 py-4">读取中…</div>
-          <ol v-else class="space-y-4 text-sm">
-            <li>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-medium">1. 插件已就位</span>
-                <span v-if="extInfo?.version" class="text-xs text-muted-foreground/70">v{{ extInfo.version }}</span>
-              </div>
-              <p class="text-xs text-muted-foreground/70 mb-2">
-                位置：<code class="font-mono text-muted-foreground">{{ extInfo?.destDir || '~/Documents/workspace-extension/' }}</code>
-              </p>
-              <div class="flex gap-2">
-                <Button size="sm" :disabled="!extInfo" @click="revealExtensionDir">
-                  在 Finder 中打开
-                </Button>
-                <Button variant="outline" size="sm" :disabled="!extInfo" @click="copyExtensionPath">复制路径</Button>
-              </div>
-            </li>
-
-            <li>
-              <div class="font-medium mb-1">2. 在 Chrome 中加载</div>
-              <ul class="list-disc list-inside text-xs text-muted-foreground space-y-1 mb-2 leading-relaxed">
-                <li>右上角打开"开发者模式"</li>
-                <li>点击"加载已解压的扩展程序"</li>
-                <li>把第 1 步打开的目录拖进去（或浏览到该目录选中确认）</li>
-              </ul>
-              <Button size="sm" @click="openChromeExtensions">打开 chrome://extensions</Button>
-            </li>
-
-            <li>
-              <div class="font-medium mb-1">3. 完成</div>
-              <p class="text-xs text-muted-foreground/70 leading-relaxed">
-                回到任意网页 → 点工具栏的插件图标 → 选取内容 → 保存到剪页资源包。
-              </p>
-            </li>
-          </ol>
-
-          <div v-if="extInfo?.error" class="mt-4 p-3 rounded-md bg-destructive/10 text-xs text-destructive break-all">
-            插件分发出错：{{ extInfo.error }}
           </div>
         </div>
 
@@ -837,15 +788,17 @@ function close(): void {
         </div>
 
         <div v-if="tab === 'about'">
-          <h2 class="text-md font-medium mb-1">关于 WorkSpace</h2>
+          <div class="flex items-center justify-between mb-3"><PlantLogo :size="48" alt="Plant" /><PlantIllustration kind="plant" /></div>
+          <h2 class="text-md font-medium mb-1">关于 Plant</h2>
           <p v-if="ui.runtime" class="text-xs text-muted-foreground/70 mb-3">
             v{{ ui.runtime.version }} · Electron {{ ui.runtime.electron }} · Node {{ ui.runtime.node }}
           </p>
           <p class="text-sm text-muted-foreground leading-relaxed">
-            给 UI 与产品经理的 git 工作台。隐藏源码与终端复杂度，
-            让 AI 设计 / 文档能力成为日常工具。
+            让想法生长为界面。Plant 是面向设计师与产品经理的 AI UI 设计工具，
+            将需求、界面生成与预览汇集在同一个工作台。
           </p>
         </div>
+      </div>
       </div>
     </DialogContent>
   </Dialog>

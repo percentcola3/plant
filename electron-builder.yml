@@ -1,5 +1,5 @@
-appId: com.workspace.app
-productName: WorkSpace
+appId: com.plant.app
+productName: Plant
 
 # Avoid recursive expansion of cyclic hoisted dependencies in builder 26.15.3.
 beforePack: scripts/builder-cycle-guard.cjs
@@ -15,17 +15,22 @@ files:
   - "!node_modules/**/{CHANGELOG.md,README.md,readme.md,PATENTS,LICENSE}"
   - "!**/{.eslintrc,.prettierrc,.editorconfig,.gitignore,.gitattributes}"
 
-# 把 inspector / chrome-extension / skill-templates 这些运行时资源复制到
+# 把 inspector / skill-templates 这些运行时资源复制到
 # process.resourcesPath/<...>，preview-server 的 resolveAppResource() 在
 # packaged 态从这里读。
 # 注：claude-code 二进制不内置——用户照内网指南自己装，App 仅做环境检查。
 extraResources:
   - from: resources
     to: .
+    filter:
+      - "**/*"
+      - "!chrome-extension/**/*"
   # Dock 在灵动岛窗口触发 macOS 进程类型切换后会重新显示；运行时用这张
   # PNG 显式恢复图标，避免系统选中错误尺寸的缓存 representation。
   - from: build/icon.png
     to: icon.png
+  - from: src/renderer/src/assets/fonts/OFL.txt
+    to: licenses/lxgw-wenkai/OFL.txt
 
 # 应用代码保留 asar；生产依赖完整 unpack。
 # zg 通过 ELECTRON_RUN_AS_NODE 从真实路径运行，普通 Node 模块解析不会去
@@ -48,14 +53,6 @@ mac:
   gatekeeperAssess: false
   notarize: false
   artifactName: "${productName}-${version}-${arch}.${ext}"
-  extendInfo:
-    NSCameraUsageDescription: ""
-    NSMicrophoneUsageDescription: ""
-    # 注册 ui-client:// 协议，让 Chrome 插件保存成功后能 deep-link 唤起 App
-    CFBundleURLTypes:
-      - CFBundleURLName: WorkSpace Raw Capture
-        CFBundleURLSchemes:
-          - ui-client
 
 dmg:
   artifactName: "${productName}-${version}-${arch}.${ext}"
@@ -67,5 +64,5 @@ dmg:
       type: link
       path: /Applications
 
-# v1 不发布到任何远端
+# GitHub 发布由 gh release 上传安装包
 publish: null

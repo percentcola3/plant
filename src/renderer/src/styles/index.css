@@ -9,94 +9,105 @@
   :root {
     color-scheme: dark;
 
-    /* Neutral dark — Codex-like structure without blue cast */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 93%;
+    /* Botanical dark — 叶绿基调的夜间花园，中性面绿倾向、主色叶绿 */
+    --background: 152 12% 7%;
+    --foreground: 140 10% 92%;
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 93%;
+    --card: 152 10% 10%;
+    --card-foreground: 140 10% 92%;
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 93%;
+    --popover: 152 10% 10%;
+    --popover-foreground: 140 10% 92%;
 
-    --primary: 0 0% 96%;
-    --primary-foreground: 0 0% 7%;
+    --primary: 152 48% 52%;
+    --primary-foreground: 152 60% 6%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 93%;
+    --secondary: 152 9% 15%;
+    --secondary-foreground: 140 10% 92%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 152 9% 15%;
+    --muted-foreground: 148 6% 62%;
 
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 93%;
+    --accent: 152 9% 15%;
+    --accent-foreground: 140 10% 92%;
 
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --popover-border: 0 0% 100% / 0.08;
-    --dialog-border: 0 0% 100% / 0.06;
-    --ring: 0 0% 83%;
+    --border: 152 9% 18%;
+    --input: 152 9% 22%;
+    --popover-border: 140 15% 90% / 0.08;
+    --dialog-border: 140 15% 90% / 0.06;
+    --ring: 152 40% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    --radius-button: 6px;
 
-    --color-bg-base: #121212;
-    --color-bg-panel: #1a1a1a;
-    --color-bg-subtle: #1a1a1a;
-    --color-bg-elevated: #262626;
-    --color-bg-hover: rgba(255, 255, 255, 0.06);
-    --color-bg-canvas: #0a0a0a;
-    --color-bg-shell: #0a0a0a;
-    --color-bg-shell-gradient: linear-gradient(180deg, #141414 0%, #0a0a0a 100%);
-    --color-bg-content: #121212;
-    --color-chrome-bg: #242424;
-    --color-chrome-border: rgba(255, 255, 255, 0.08);
-    --color-border: #333333;
-    --color-border-subtle: #2a2a2a;
+    --color-bg-base: #101512;
+    --color-bg-panel: #151b17;
+    --color-bg-subtle: #151b17;
+    --color-bg-elevated: #1e2621;
+    --color-bg-hover: rgba(178, 224, 199, 0.06);
+    --color-bg-canvas: #0b0f0d;
+    --color-bg-shell: #0b0f0d;
+    --color-bg-shell-gradient: linear-gradient(180deg, #131a15 0%, #0b0f0d 100%);
+    --color-bg-content: #101512;
+    --color-chrome-bg: #1c231f;
+    --color-tab-selected: #303632;
+    --color-chrome-border: rgba(190, 226, 203, 0.07);
+    --color-border: #27312b;
+    --color-border-subtle: rgba(190, 226, 203, 0.07);
     --color-product-card-border: color-mix(in srgb, var(--color-border) 72%, transparent);
-    --color-product-card-hover-bg: rgba(255, 255, 255, 0.06);
-    --color-popover-border: rgba(255, 255, 255, 0.08);
-    --color-dialog-border: rgba(255, 255, 255, 0.06);
-    --color-border-strong: #404040;
-    --color-text-primary: #ececec;
-    --color-text-secondary: #a3a3a3;
-    --color-text-tertiary: #737373;
-    --color-text-muted: #737373;
-    --color-accent: #d4d4d4;
-    --color-accent-hover: #e5e5e5;
-    --color-accent-pressed: #fafafa;
-    --color-accent-light: rgba(255, 255, 255, 0.08);
-    --color-accent-subtle: rgba(255, 255, 255, 0.05);
-    --color-accent-border: rgba(255, 255, 255, 0.14);
-    --color-brand-accent: #0d99ff;
-    --color-text-onbrand: #ffffff;
-    --color-button-bg: #f5f5f5;
-    --color-button-fg: #121212;
-    --color-button-bg-hover: #e5e5e5;
-    --color-button-bg-pressed: #d4d4d4;
+    --color-product-card-hover-bg: rgba(178, 224, 199, 0.06);
+    --color-popover-border: rgba(190, 226, 203, 0.08);
+    --color-dialog-border: rgba(190, 226, 203, 0.06);
+    --color-border-strong: #37453d;
+    --color-text-primary: #e6ede8;
+    --color-text-secondary: #a3b3aa;
+    --color-text-tertiary: #74837b;
+    --color-text-muted: #74837b;
+    --color-accent: #46c98b;
+    --color-accent-hover: #5bd69c;
+    --color-accent-pressed: #37b57b;
+    --color-accent-light: rgba(70, 201, 139, 0.14);
+    --color-accent-subtle: rgba(70, 201, 139, 0.09);
+    --color-accent-border: rgba(70, 201, 139, 0.3);
+    --color-brand-accent: #46c98b;
+    --color-text-onbrand: #04160d;
+    --color-button-bg: #33b57e;
+    --color-button-fg: #04160d;
+    --color-button-bg-hover: #45c48d;
+    --color-button-bg-pressed: #2aa06c;
     --product-workbench-bar-height: 48px;
     --product-workbench-control-height: 32px;
     --product-workbench-icon-btn-width: 32px;
     --product-workbench-icon-size: 14px;
-    --color-button-outline-bg: #1a1a1a;
-    --color-button-outline-fg: #ececec;
-    --color-button-outline-hover: #262626;
+    --color-button-outline-bg: #151b17;
+    --color-button-outline-fg: #e6ede8;
+    --color-button-outline-hover: #1e2621;
     --color-success: #4ade80;
     --color-success-subtle: rgba(74, 222, 128, 0.14);
     --color-warning: hsl(38 92% 50%);
     --color-warning-subtle: hsl(38 92% 50% / 0.14);
     --color-error: hsl(var(--destructive));
     --color-error-subtle: hsl(var(--destructive) / 0.14);
-    --color-info: #d4d4d4;
-    --color-info-subtle: rgba(255, 255, 255, 0.08);
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --color-info: #8fe0b6;
+    --color-info-subtle: rgba(70, 201, 139, 0.1);
+    /* 叶绿色阶：品牌渐变 / 状态点缀 / 图标主色共用 */
+    --color-leaf: #46c98b;
+    --color-leaf-strong: #5bd69c;
+    --color-leaf-deep: #1c7a52;
+    --color-leaf-bright: #a4e8c6;
+    --color-leaf-contrast: #04160d;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 18px;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.3);
+    --shadow-leaf: 0 6px 22px rgba(28, 122, 82, 0.28);
+    /* 首页底纹：低透明度叶片图案，深浅主题共用 */
+    --bg-leaf-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='%2346c98b' fill-opacity='0.045'%3E%3Cpath d='M30 36c10-8 22-7 28 2 6 9 1 20-9 24-11 5-23 0-26-10-2-6 1-12 7-16z'/%3E%3Cpath d='M108 98c9-4 17-1 19 7 2 8-4 16-13 15-9 0-14-8-11-16 1-3 3-5 5-6z'/%3E%3Cpath d='M78 22c6-3 11-1 12 4 2 5-2 10-8 10-6 0-9-6-6-11 0-1 1-2 2-3z'/%3E%3C/g%3E%3C/svg%3E");
     --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
     --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
     --duration-fast: 120ms;
@@ -106,78 +117,86 @@
   .light {
     color-scheme: light;
 
-    --background: 0 0% 100%;
-    --foreground: 210 13% 14%;
+    /* Botanical light — 晨光苗圃：纸白偏绿，森林绿交互 */
+    --background: 140 20% 99%;
+    --foreground: 152 15% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 210 13% 14%;
+    --card-foreground: 152 15% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 13% 14%;
-    --primary: 210 13% 14%;
+    --popover-foreground: 152 15% 12%;
+    --primary: 152 55% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 17% 97%;
-    --secondary-foreground: 210 13% 14%;
-    --muted: 210 17% 97%;
-    --muted-foreground: 215 10% 42%;
-    --accent: 210 17% 97%;
-    --accent-foreground: 210 13% 14%;
+    --secondary: 140 14% 96%;
+    --secondary-foreground: 152 15% 12%;
+    --muted: 140 14% 96%;
+    --muted-foreground: 150 7% 40%;
+    --accent: 140 14% 96%;
+    --accent-foreground: 152 15% 12%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 89%;
-    --input: 210 14% 89%;
-    --popover-border: 210 13% 14% / 0.1;
-    --dialog-border: 210 13% 14% / 0.08;
-    --ring: 213 92% 45%;
+    --border: 140 10% 91%;
+    --input: 140 10% 88%;
+    --popover-border: 152 15% 12% / 0.1;
+    --dialog-border: 152 15% 12% / 0.08;
+    --ring: 152 50% 34%;
 
     --color-bg-base: #ffffff;
     --color-bg-panel: #ffffff;
-    --color-bg-subtle: #f6f8fa;
+    --color-bg-subtle: #f4f7f4;
     --color-bg-elevated: #ffffff;
-    --color-bg-hover: rgba(31, 35, 40, 0.04);
-    --color-bg-canvas: #f3f4f6;
-    --color-bg-shell: #f3f4f6;
-    --color-bg-shell-gradient: #f3f4f6;
+    --color-bg-hover: rgba(28, 56, 40, 0.05);
+    --color-bg-canvas: #eef2ee;
+    --color-bg-shell: #eef2ee;
+    --color-bg-shell-gradient: linear-gradient(180deg, #f2f6f1 0%, #eef2ee 100%);
     --color-bg-content: #ffffff;
-    --color-chrome-bg: #f3f4f6;
-    --color-chrome-border: rgba(31, 35, 40, 0.06);
-    --color-border: #d0d7de;
-    --color-border-subtle: #d8dee4;
-    --color-product-card-border: rgba(31, 35, 40, 0.08);
-    --color-product-card-hover-bg: #f3f4f6;
-    --color-popover-border: rgba(31, 35, 40, 0.1);
-    --color-dialog-border: rgba(31, 35, 40, 0.08);
-    --color-border-strong: #afb8c1;
-    --color-text-primary: #1f2328;
-    --color-text-secondary: #656d76;
-    --color-text-tertiary: #8c959f;
-    --color-text-muted: #8c959f;
-    --color-accent: #0969da;
-    --color-accent-hover: #0860ca;
-    --color-accent-pressed: #0757ba;
-    --color-accent-light: rgba(9, 105, 218, 0.12);
-    --color-accent-subtle: rgba(9, 105, 218, 0.08);
-    --color-accent-border: rgba(9, 105, 218, 0.28);
-    --color-brand-accent: #0d99ff;
+    --color-chrome-bg: #edf2ec;
+    --color-tab-selected: #eef0ee;
+    --color-chrome-border: rgba(28, 56, 40, 0.07);
+    --color-border: #e1e7e0;
+    --color-border-subtle: rgba(28, 56, 40, 0.07);
+    --color-product-card-border: rgba(28, 56, 40, 0.08);
+    --color-product-card-hover-bg: #eef3ec;
+    --color-popover-border: rgba(28, 56, 40, 0.1);
+    --color-dialog-border: rgba(28, 56, 40, 0.08);
+    --color-border-strong: #c6d2c7;
+    --color-text-primary: #1c2a20;
+    --color-text-secondary: #5b6b5f;
+    --color-text-tertiary: #859288;
+    --color-text-muted: #859288;
+    --color-accent: #1e8e5a;
+    --color-accent-hover: #17794b;
+    --color-accent-pressed: #136a42;
+    --color-accent-light: rgba(30, 142, 90, 0.12);
+    --color-accent-subtle: rgba(30, 142, 90, 0.08);
+    --color-accent-border: rgba(30, 142, 90, 0.28);
+    --color-brand-accent: #1e8e5a;
     --color-text-onbrand: #ffffff;
-    --color-button-bg: #1f2328;
+    --color-button-bg: #1e8e5a;
     --color-button-fg: #ffffff;
-    --color-button-bg-hover: #373b41;
-    --color-button-bg-pressed: #2b2f36;
+    --color-button-bg-hover: #25a067;
+    --color-button-bg-pressed: #17794b;
     --product-workbench-bar-height: 48px;
     --product-workbench-control-height: 32px;
     --product-workbench-icon-btn-width: 32px;
     --product-workbench-icon-size: 14px;
     --color-button-outline-bg: #ffffff;
-    --color-button-outline-fg: #1f2328;
-    --color-button-outline-hover: #f6f8fa;
+    --color-button-outline-fg: #1c2a20;
+    --color-button-outline-hover: #f4f7f4;
     --color-success: #1a7f37;
     --color-success-subtle: rgba(26, 127, 55, 0.12);
     --color-warning: hsl(38 92% 50%);
     --color-warning-subtle: hsl(38 92% 50% / 0.12);
     --color-error-subtle: hsl(var(--destructive) / 0.12);
-    --color-info: #0969da;
-    --color-info-subtle: rgba(9, 105, 218, 0.12);
-    --shadow-sm: 0 1px 3px rgba(31, 35, 40, 0.08);
-    --shadow-md: 0 4px 16px rgba(31, 35, 40, 0.1);
+    --color-info: #1e8e5a;
+    --color-info-subtle: rgba(30, 142, 90, 0.12);
+    --color-leaf: #1e8e5a;
+    --color-leaf-strong: #25a067;
+    --color-leaf-deep: #0f5c3c;
+    --color-leaf-bright: #6fd0a0;
+    --color-leaf-contrast: #ffffff;
+    --shadow-sm: 0 2px 8px rgba(28, 56, 40, 0.035);
+    --shadow-md: 0 8px 28px rgba(28, 56, 40, 0.065);
+    --shadow-leaf: 0 6px 22px rgba(30, 142, 90, 0.22);
   }
 }
 
@@ -224,7 +243,6 @@
   min-height: var(--product-workbench-bar-height, 50px);
   flex-shrink: 0;
   padding: 0 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
 }
 
@@ -233,8 +251,8 @@
   min-height: var(--product-workbench-control-height, 32px) !important;
   padding-left: 12px !important;
   padding-right: 12px !important;
-  border-radius: 6px !important;
-  border: 1px solid var(--color-border-strong) !important;
+  border-radius: var(--radius-button) !important;
+  border: 1px solid var(--color-border) !important;
   background: var(--color-bg-elevated) !important;
   color: var(--color-text-primary) !important;
   font-size: 11px;
@@ -351,21 +369,22 @@
 .preview-viewport-stars {
   background-color: var(--color-bg-canvas);
   background-image:
-    radial-gradient(circle, rgb(255 255 255 / 0.09) 0 0.75px, transparent 1.25px);
+    radial-gradient(circle, rgb(190 226 203 / 0.1) 0 0.75px, transparent 1.25px);
   background-size: 40px 40px;
 }
 
 html.light .preview-viewport-stars {
   background-image:
-    radial-gradient(circle, rgb(31 35 40 / 0.08) 0 0.75px, transparent 1.25px);
-}
-
-html.light .build-hero__gradient-text {
-  color: #000;
+    radial-gradient(circle, rgb(28 56 40 / 0.08) 0 0.75px, transparent 1.25px);
 }
 
 html.light .build-hero__eyebrow-icon {
-  color: #000;
+  color: var(--color-leaf);
+}
+
+/* 浅色下纸白背景，渐变整体下探到深绿保证标题对比度 */
+html.light .build-hero__gradient-text {
+  background-image: linear-gradient(115deg, var(--color-leaf), var(--color-leaf-deep) 55%, #0a452c);
 }
 
 .product-card,
@@ -388,4 +407,10 @@ html.light .build-hero__eyebrow-icon {
 
 .product-card__preview-title-text {
   color: #000;
+}
+
+/* One action-button radius across components and teleported dialogs.
+   Project/recent cards retain their surface shape. Preview iframes are isolated. */
+:is(#app, body) button:not(.product-card):not(.project-card):not(.recent-project) {
+  border-radius: var(--radius-button) !important;
 }

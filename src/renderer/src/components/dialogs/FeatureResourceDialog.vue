@@ -88,7 +88,7 @@ function save(): void {
         <div v-if="props.resources.length === 0" class="feature-resource-empty">
           <PackageOpen :size="24" aria-hidden="true" />
           <strong>还没有可关联的资源</strong>
-          <span>请先到资源包页面安装知识库或 UX 资产。</span>
+          <span>请先到知识库页面安装知识库或 UX 资产。</span>
         </div>
 
         <div v-else class="feature-resource-sections">
