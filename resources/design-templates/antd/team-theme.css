@@ -1,0 +1,11 @@
+/* Plant-authored HTML reference; partial Seed mapping, not the Ant Design theme engine. */
+:root {
+  --design-primary: #28775b;
+  --design-success: #52c41a;
+  --design-warning: #faad14;
+  --design-error: #ff4d4f;
+  --design-font-size: 14px;
+  --design-radius: 6px;
+  --design-control-height: 32px;
+  --design-space-unit: 4px;
+}

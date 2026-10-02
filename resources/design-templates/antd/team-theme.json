@@ -1,0 +1,8 @@
+{
+  "token": {
+    "colorPrimary": "#28775b",
+    "borderRadius": 6,
+    "fontSize": 14,
+    "controlHeight": 32
+  }
+}

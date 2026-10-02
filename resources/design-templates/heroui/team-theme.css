@@ -1,0 +1,13 @@
+/* Plant-authored override example. Import AFTER official HeroUI v3 styles. */
+:root, .light, [data-theme="light"] {
+  --accent: oklch(0.53 0.09 160);
+  --accent-foreground: oklch(0.99 0 0);
+  --radius: 0.5rem;
+  --field-radius: 0.5rem;
+}
+.dark, [data-theme="dark"] {
+  --accent: oklch(0.74 0.11 160);
+  --accent-foreground: oklch(0.2 0.02 160);
+  --radius: 0.5rem;
+  --field-radius: 0.5rem;
+}
