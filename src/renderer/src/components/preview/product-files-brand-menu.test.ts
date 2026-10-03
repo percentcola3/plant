@@ -25,13 +25,10 @@ describe('ProductFilesBrandMenu', () => {
     expect(brandMenuSource).toContain('product-brand-dropdown__item--danger')
   })
 
-  it('replaces workbench title/path blocks with the brand menu trigger', () => {
-    expect(productFilesSource).toContain("import ProductFilesBrandMenu from './ProductFilesBrandMenu.vue'")
-    expect(productFilesSource).toContain('<ProductFilesBrandMenu')
-    expect(productFilesSource).toContain(':title="headerBrandTitle"')
-    expect(productFilesSource).toContain('resolveWorkbenchBrandTitle')
-    expect(productFilesSource).not.toContain('product-files__editor-path">{{ textSession.relPath }}')
-    expect(productFilesSource).not.toContain('>预览</div>')
-    expect(productFilesSource).not.toContain('@click="deleteSelectedFile"')
+  it('keeps project actions on the outer card and a single tab strip in the editor', () => {
+    expect(productFilesSource).not.toContain('<ProductFilesBrandMenu')
+    expect(productFilesSource).toContain('<ProjectBrowserTabs')
+    expect(productFilesSource).toContain('<ProjectGitSyncControl')
+    expect(productFilesSource).not.toContain('product-files__editor-actions')
   })
 })

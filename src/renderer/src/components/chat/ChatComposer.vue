@@ -537,7 +537,7 @@ defineExpose({
 .chat-composer {
   flex-shrink: 0;
   padding: 12px 16px 16px;
-  background: var(--color-bg-panel, #fff);
+  background: transparent;
 }
 .chat-composer__surface {
   display: flex;
@@ -545,7 +545,7 @@ defineExpose({
   overflow: hidden;
   border: 1px solid var(--color-popover-border);
   border-radius: 12px;
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-panel);
   transition: border-color 120ms;
 }
 .chat-composer__surface:focus-within {

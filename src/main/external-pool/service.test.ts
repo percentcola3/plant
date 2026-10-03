@@ -77,6 +77,7 @@ import { readRefs } from '../workspaces/refs'
 import { readExternalManifest, writeExternalManifest } from '../workspaces/external-manifest'
 import { UIClientError } from '../ipc/errors'
 import { prepareZgIndexWorkspace } from '../zg/zg-search'
+import { installDesignTemplate } from '../design-templates/service'
 
 let wsDir: string
 let wsStore: WorkspacesStore
@@ -111,6 +112,7 @@ beforeEach(async () => {
   await fs.rm(indexFile(), { force: true })
   await fs.rm(workspacesJsonPath(), { force: true })
   await fs.rm(poolRoot(), { recursive: true, force: true })
+  await fs.writeFile(indexFile(), JSON.stringify({ externalRefs: [], schemaVersion: 1 }))
   resetPool()
   resetWs()
   gitApi.checkout.mockReset()
@@ -149,6 +151,19 @@ afterEach(async () => {
 })
 
 describe('addExternalRef - local', () => {
+  it('mounts a built-in template as real project design context and reuses the same binding', async () => {
+    const ref = await installDesignTemplate('antd')
+    await attachExternalRef('ws-1', ref.id)
+    await attachExternalRef('ws-1', ref.id)
+    const bindings = await readRefs(wsDir)
+    expect(bindings.filter(binding => binding.externalRefId === ref.id)).toHaveLength(1)
+    const mount = join(externalDir(wsDir), ref.alias)
+    expect((await fs.lstat(mount)).isSymbolicLink()).toBe(true)
+    expect(await fs.readFile(join(mount, 'AI_USAGE.md'), 'utf8')).toContain('Ant Design')
+    expect(await fs.readFile(join(mount, 'team-theme.json'), 'utf8')).toContain('colorPrimary')
+    await detachExternalRef('ws-1', ref.id)
+    expect(await fs.readFile(join(ref.poolPath, 'README.md'), 'utf8')).toContain('模板目录怎么写')
+  })
   it('正常添加本地目录 → poolPath = source', async () => {
     const src = mkdtempSync(join(tmpdir(), 'local-src-'))
     const ref = await addExternalRef({

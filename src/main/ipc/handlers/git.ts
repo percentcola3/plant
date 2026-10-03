@@ -12,6 +12,7 @@ import { isAppManagedPath } from '@shared/app-managed-paths'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { bindGitRepository, unbindGitRepository, listRemoteGitBranches, readGitCapability } from '../../git/capability'
+import { bindAutoSave, catchUpPush, readAutoSyncStatus, unbindAutoSave } from '../../saga/auto-save'
 
 const store = new WorkspacesStore()
 const MAX_DIFF_CHARS = 24_000
@@ -180,16 +181,23 @@ export async function readWorkspaceFileDiff(workspaceId: string, relPath: string
   return limitDiff(safeRelPath, content)
 }
 
-export async function readWorkspaceHistory(workspaceId: string, limit?: number): Promise<GitCommitSummary[]> {
+export async function readWorkspaceHistory(workspaceId: string, limit?: number, relPath?: string, offset = 0): Promise<GitCommitSummary[]> {
   const ws = await store.findById(workspaceId)
   if (!ws) throw new UIClientError('NOT_FOUND', `工作区 ${workspaceId} 不存在`)
   const count = limitedHistoryCount(limit)
+  const safeRelPath = relPath ? assertSafeRelPath(relPath) : null
   const output = await gitFor(ws.path).raw([
     'log',
     `-${count}`,
+    `--skip=${Number.isFinite(offset) ? Math.max(0, Math.trunc(offset)) : 0}`,
+    '--date-order',
     '--date=iso-strict',
-    '--format=%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s'
-  ])
+    '--format=%H%x1f%h%x1f%an%x1f%ae%x1f%cI%x1f%s',
+    ...(safeRelPath ? ['--', `:(literal)${safeRelPath}`] : [])
+  ]).catch((error: unknown) => {
+    if (/does not have any commits|bad default revision 'HEAD'/.test(gitMessage(error))) return ''
+    throw error
+  })
   return output
     .split('\n')
     .map((line) => parseHistoryLine(line.trim()))
@@ -276,6 +284,7 @@ export async function revertWorkspaceToCommit(workspaceId: string, targetSha: st
 }
 
 export function registerGitHandlers(): void {
+  registerIpcHandler('git.autoSyncStatus', async ({ workspaceId }) => readAutoSyncStatus(workspaceId))
   registerIpcHandler('git.capability', async ({ workspaceId }) => {
     if (!workspaceId) throw new UIClientError('VALIDATION', '缺少 workspaceId')
     const ws = await store.findById(workspaceId)
@@ -294,7 +303,10 @@ export function registerGitHandlers(): void {
     if (!workspaceId) throw new UIClientError('VALIDATION', '缺少 workspaceId')
     const ws = await store.findById(workspaceId)
     if (!ws) throw new UIClientError('NOT_FOUND', `工作区 ${workspaceId} 不存在`)
-    return bindGitRepository(ws.path, { remoteUrl, branch })
+    const result = await bindGitRepository(ws.path, { remoteUrl, branch })
+    bindAutoSave(ws.id)
+    void catchUpPush(ws.id)
+    return result
   })
 
   registerIpcHandler('git.unbind', async ({ workspaceId }) => {
@@ -302,6 +314,7 @@ export function registerGitHandlers(): void {
     const ws = await store.findById(workspaceId)
     if (!ws) throw new UIClientError('NOT_FOUND', `工作区 ${workspaceId} 不存在`)
     const result = await unbindGitRepository(ws.path)
+    unbindAutoSave(ws.id)
     await store.updateWorkspace(ws.id, { remoteUrl: undefined })
     return result
   })
@@ -352,9 +365,9 @@ export function registerGitHandlers(): void {
     })
   })
 
-  registerIpcHandler('git.history', async ({ workspaceId, limit }) => {
+  registerIpcHandler('git.history', async ({ workspaceId, limit, relPath, offset }) => {
     if (!workspaceId) throw new UIClientError('VALIDATION', '缺少 workspaceId')
-    return readWorkspaceHistory(workspaceId, limit)
+    return readWorkspaceHistory(workspaceId, limit, relPath, offset)
   })
 
   registerIpcHandler('git.revertTo', async ({ workspaceId, targetSha }) => {

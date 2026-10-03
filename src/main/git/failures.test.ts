@@ -23,9 +23,9 @@ describe('classifyError', () => {
   })
 
   it('CONFLICT infers during from message when ctx missing', () => {
-    expect(classifyError(err('CONFLICT (content): Merge conflict in a.ts\nrebase failed')).during).toBe('rebase')
-    expect(classifyError(err('CONFLICT in a.ts during cherry-pick')).during).toBe('cherry-pick')
-    expect(classifyError(err('CONFLICT (content): Merge conflict in a.ts')).during).toBe('merge')
+    expect(classifyError(err('CONFLICT (content): Merge conflict in a.ts\nrebase failed'))).toMatchObject({ kind: 'CONFLICT', during: 'rebase' })
+    expect(classifyError(err('CONFLICT in a.ts during cherry-pick'))).toMatchObject({ kind: 'CONFLICT', during: 'cherry-pick' })
+    expect(classifyError(err('CONFLICT (content): Merge conflict in a.ts'))).toMatchObject({ kind: 'CONFLICT', during: 'merge' })
   })
 
   it('UNCOMMITTED extracts file list', () => {

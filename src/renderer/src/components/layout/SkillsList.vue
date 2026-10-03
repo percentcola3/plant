@@ -7,8 +7,15 @@ import { storeToRefs } from 'pinia'
 import { useWorkspacesStore } from '@/stores/workspaces'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
-import { Sparkles, Folder, Palette, ScanSearch, ClipboardCheck } from 'lucide-vue-next'
+import { Sparkles, Folder, Palette, ScanSearch, ClipboardCheck, Ellipsis, Plus } from 'lucide-vue-next'
 import PlantIllustration from '@/components/brand/PlantIllustration.vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import AddSkillForm from './AddSkillForm.vue'
 import type { SkillSummary } from '@shared/types'
 
@@ -79,7 +86,7 @@ function skillLabel(skill: SkillSummary): string {
 }
 
 function sourceLabel(source: 'app' | 'project'): string {
-  if (source === 'app') return 'App 内置'
+  if (source === 'app') return '内置'
   return '项目自带'
 }
 
@@ -118,7 +125,7 @@ watch(() => editor.isOpen, (open) => {
             class="skills-list__head-btn"
             :class="{ 'is-active': addOpen }"
             @click="addOpen = !addOpen"
-          >{{ addOpen ? '收起' : '+ 添加' }}</button>
+          ><Plus v-if="!addOpen" :size="14" aria-hidden="true" />{{ addOpen ? '收起' : '添加' }}</button>
         </div>
       </div>
       <p class="skills-list__desc">每个 Skill 都是一个文件夹，SKILL.md 是入口；说明、脚本和资源文件会一起安装和使用。</p>
@@ -141,20 +148,32 @@ watch(() => editor.isOpen, (open) => {
           :class="{ 'is-disabled': skill.disabled }"
         >
           <div class="skills-list__card-head">
-            <span
-              class="skills-list__badge"
-              :data-source="skill.source"
-              :title="skill.source === 'app' ? 'App 内置模板同步' : '项目自带，模板未声明'"
-            >{{ sourceLabel(skill.source) }}</span>
-            <div class="skills-list__statuses">
-              <span v-if="skill.quickInvocation" class="skills-list__quick-status">快捷调用</span>
-              <span v-if="skill.disabled" class="skills-list__status">已禁用</span>
-              <span v-else-if="skill.hasUserEdits" class="skills-list__status">已修改</span>
+            <span class="skills-list__symbol" aria-hidden="true"><component :is="skill.name === 'ux-design' ? Palette : skill.name === 'knowledge-search' ? ScanSearch : skill.name === 'prd-tech-review' ? ClipboardCheck : Sparkles" :size="16" /></span>
+            <div class="skills-list__heading">
+              <span class="skills-list__name">{{ skillLabel(skill) }}</span>
+              <span class="skills-list__code" :title="skill.skillDirRelPath"><Folder :size="11" aria-hidden="true" />{{ skill.skillDirRelPath }}</span>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button type="button" class="skills-list__more" data-icon-button aria-label="更多操作" title="更多操作">
+                  <Ellipsis :size="15" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" class="min-w-[168px] text-xs">
+                <DropdownMenuItem class="text-xs" @select="openSkillEditor(skill.skillRelPath)">编辑文件夹</DropdownMenuItem>
+                <DropdownMenuItem
+                  class="text-xs"
+                  :disabled="skill.source !== 'app' || !skill.hasUserEdits"
+                  @select="restoreSkill(skill.name)"
+                >{{ skill.source === 'app' && !skill.hasUserEdits ? '恢复模板（与模板一致）' : '恢复模板' }}</DropdownMenuItem>
+                <template v-if="!isBuiltinSkill(skill.name)">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem class="text-xs text-destructive focus:text-destructive" @select="deleteSkillRow(skill)">删除</DropdownMenuItem>
+                </template>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div class="skills-list__main">
-            <span class="skills-list__name"><span class="skills-list__symbol" aria-hidden="true"><component :is="skill.name === 'ux-design' ? Palette : skill.name === 'knowledge-search' ? ScanSearch : skill.name === 'prd-tech-review' ? ClipboardCheck : Sparkles" :size="16" /></span>{{ skillLabel(skill) }}</span>
-            <span class="skills-list__code" :title="skill.skillDirRelPath"><Folder :size="12" aria-hidden="true" /> {{ skill.skillDirRelPath }}</span>
             <span class="skills-list__sub">
               <template v-if="skill.description">{{ skill.description }}</template>
               <template v-else><em>未填 description</em></template>
@@ -163,33 +182,30 @@ watch(() => editor.isOpen, (open) => {
               默认提示词：{{ skill.defaultPrompt }}
             </span>
           </div>
-          <div class="skills-list__actions">
-            <button
-              type="button"
-              class="skills-list__action"
-              title="打开 Skill 文件夹并编辑其中的文件"
-              @click="openSkillEditor(skill.skillRelPath)"
-            >编辑文件夹</button>
-            <button
-              type="button"
-              class="skills-list__action"
-              :disabled="skill.source !== 'app' || !skill.hasUserEdits"
-              :title="skill.source !== 'app' ? '只有 App 内置 skill 才能恢复模板' : skill.hasUserEdits ? '把改动覆盖回模板版本' : '当前与模板一致，无需恢复'"
-              @click="restoreSkill(skill.name)"
-            >恢复模板</button>
-            <button
-              type="button"
-              class="skills-list__action"
-              :title="skill.disabled ? '启用后 AI 会重新加载这个 skill' : 'AI 将不再加载这个 skill，可随时启用'"
-              @click="toggleSkillDisabled(skill.name, skill.disabled)"
-            >{{ skill.disabled ? '启用' : '禁用' }}</button>
-            <button
-              v-if="!isBuiltinSkill(skill.name)"
-              type="button"
-              class="skills-list__action skills-list__action--danger"
-              title="从工作区移除此 skill，硬删两份目录"
-              @click="deleteSkillRow(skill)"
-            >删除</button>
+          <div class="skills-list__foot">
+            <div class="skills-list__meta">
+              <span :title="skill.source === 'app' ? 'App 内置模板同步' : '项目自带，模板未声明'">{{ sourceLabel(skill.source) }}</span>
+              <span v-if="skill.quickInvocation">快捷调用</span>
+              <span v-if="!skill.disabled && skill.hasUserEdits" class="skills-list__status">已修改</span>
+            </div>
+            <div class="skills-list__actions">
+              <button
+                type="button"
+                class="skills-list__action"
+                title="打开 Skill 文件夹并编辑其中的文件"
+                @click="openSkillEditor(skill.skillRelPath)"
+              >编辑</button>
+              <button
+                type="button"
+                role="switch"
+                class="skills-list__switch"
+                data-icon-button
+                :aria-checked="!skill.disabled"
+                :aria-label="skill.disabled ? `启用 ${skillLabel(skill)}` : `禁用 ${skillLabel(skill)}`"
+                :title="skill.disabled ? '已禁用；启用后 AI 会重新加载这个 skill' : '已启用；禁用后 AI 不再加载这个 skill'"
+                @click="toggleSkillDisabled(skill.name, skill.disabled)"
+              ><span class="skills-list__switch-thumb" /></button>
+            </div>
           </div>
         </li>
       </ul>
@@ -216,71 +232,76 @@ watch(() => editor.isOpen, (open) => {
 }
 .skills-list__head-actions { display: flex; gap: 6px; }
 .skills-list__head-btn {
-  height: 26px; padding: 0 10px;
-  border: 1px solid var(--color-accent-border); border-radius: 6px;
-  background: var(--color-accent-light); font-size: 12px; color: var(--color-accent-pressed);
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 12px;
+  border: 0;
+  background: var(--color-button-bg); color: var(--color-button-fg);
+  font-size: 12px; font-weight: 600;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
-.skills-list__head-btn:hover { background: var(--color-accent-subtle); }
-.skills-list__head-btn.is-active { background: var(--color-accent-subtle); border-color: var(--color-accent); color: var(--color-accent-pressed); }
+.skills-list__head-btn:hover { background: var(--color-button-bg-hover); }
+.skills-list__head-btn:active { background: var(--color-button-bg-pressed); }
+.skills-list__head-btn.is-active {
+  background: transparent; color: var(--color-text-secondary);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
 .skills-list__desc { margin: 0; font-size: 12px; color: var(--color-text-secondary); }
 
-
-.skills-list__group { display: flex; flex-direction: column; gap: 8px; }
-.skills-list__group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.skills-list__group-head h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--color-text-primary); }
-.skills-list__group-head span { font-size: 11px; color: var(--color-text-tertiary); }
+.skills-list__group { display: flex; flex-direction: column; gap: 10px; }
+.skills-list__group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.skills-list__group-head h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--color-text-secondary); }
+.skills-list__group-head span { font-size: 11px; color: var(--color-text-tertiary); font-variant-numeric: tabular-nums; }
 .skills-list__cards {
   list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(264px, 1fr)); gap: 12px;
 }
 .skills-list__card {
   min-width: 0;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-bg-base);
-  transition: border-color 160ms ease, background-color 160ms ease;
+  border-radius: 12px;
+  background: var(--color-bg-elevated);
+  transition: border-color var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
 }
-.skills-list__card:hover { border-color: var(--color-accent-border); }
-.skills-list__card.is-disabled { opacity: 0.65; }
-.skills-list__card.is-disabled .skills-list__name { text-decoration: line-through; }
-.skills-list__card-head { min-height: 26px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.skills-list__statuses { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.skills-list__card:hover { border-color: var(--color-accent-border); box-shadow: var(--shadow-card-hover); }
+.skills-list__card.is-disabled .skills-list__card-head,
+.skills-list__card.is-disabled .skills-list__main { opacity: 0.55; }
 
-.skills-list__badge {
-  flex: 0 0 auto;
-  display: inline-flex; align-items: center; justify-content: center;
-  height: 22px; padding: 0 8px;
-  border-radius: 4px;
-  font-size: 11px; font-weight: 600; white-space: nowrap;
+.skills-list__card-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.skills-list__symbol {
+  display: grid; place-items: center; flex: none;
+  width: 32px; height: 32px; border-radius: 9px;
+  background: var(--color-accent-light); color: var(--color-leaf);
 }
-.skills-list__badge[data-source='app'] { background: var(--color-accent-subtle); color: var(--color-accent-pressed); }
-.skills-list__badge[data-source='project'] { background: var(--color-bg-elevated); color: var(--color-text-secondary); }
-.skills-list__main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.skills-list__heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .skills-list__name {
-  font-size: 14px; font-weight: 600; color: var(--color-text-primary);
+  font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .skills-list__code {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
   font-family: SF Mono, Menlo, Consolas, monospace;
-  font-size: 11px; color: var(--color-text-tertiary);
+  font-size: 11px; line-height: 16px; color: var(--color-text-tertiary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.skills-list__sub {
-  min-height: 34px;
-  font-size: 12px; line-height: 1.45; color: var(--color-text-secondary);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+.skills-list__code svg { flex: none; }
+.skills-list__more {
+  display: grid; place-items: center; flex: none;
+  width: 28px; height: 28px; margin: -4px -6px 0 0;
+  border: 0; background: transparent; color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
-.skills-list__status { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--color-warning); }
-.skills-list__quick-status {
-  border-radius: 999px;
-  background: var(--color-accent-light);
-  padding: 2px 7px;
-  color: var(--color-accent-pressed);
-  font-size: 10px;
-  font-weight: 600;
+.skills-list__more:hover,
+.skills-list__more[data-state='open'] { background: var(--color-bg-hover); color: var(--color-text-primary); }
+
+.skills-list__main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.skills-list__sub {
+  min-height: 36px;
+  font-size: 12px; line-height: 18px; color: var(--color-text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .skills-list__prompt {
   overflow: hidden;
@@ -290,31 +311,51 @@ watch(() => editor.isOpen, (open) => {
   white-space: nowrap;
 }
 
-.skills-list__actions {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding-top: 10px; border-top: 1px solid var(--color-border-subtle);
+.skills-list__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.skills-list__meta {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;
 }
+.skills-list__meta > span + span::before { content: '·'; margin-right: 6px; color: var(--color-border-strong); }
+.skills-list__status { color: var(--color-warning); font-weight: 600; }
+.skills-list__actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .skills-list__action {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg-base);
-  padding: 4px 10px;
-  font-size: 12px; color: var(--color-text-primary);
+  height: 26px; padding: 0 10px;
+  border: 0; background: transparent;
+  font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
-.skills-list__action:hover:not(:disabled) { background: var(--color-bg-elevated); }
-.skills-list__action:disabled { color: var(--color-text-tertiary); cursor: not-allowed; background: var(--color-bg-subtle); }
-.skills-list__action--danger { color: #d92d20; border-color: #f4cdc9; }
-.skills-list__action--danger:hover:not(:disabled) { background: #fef0ee; }
+.skills-list__action:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+
+.skills-list__switch {
+  position: relative; flex: none;
+  width: 30px; height: 18px; padding: 0;
+  border: 0; background: var(--color-border-strong);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) var(--ease-out);
+}
+.skills-list__switch[aria-checked='true'] { background: var(--color-accent); }
+.skills-list__switch-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 999px;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+.skills-list__switch[aria-checked='true'] .skills-list__switch-thumb { transform: translateX(12px); }
+.skills-list__switch:focus-visible,
+.skills-list__more:focus-visible,
+.skills-list__action:focus-visible,
+.skills-list__head-btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
 .skills-list__loading {
-  padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: 8px;
+  padding: 12px; border: 0; border-radius: 12px;
   background: var(--color-bg-subtle); color: var(--color-text-secondary);
   font-size: 12px; text-align: center;
 }
 
 .skills-list__empty {
   display: flex; flex-direction: column; gap: 8px; align-items: center;
-  padding: 24px; border: 1px dashed var(--color-accent-border); border-radius: 8px;
+  padding: 24px; border: 0; border-radius: 12px;
   background: var(--color-bg-subtle); color: var(--color-text-secondary);
   font-size: 13px; text-align: center;
 }
@@ -322,10 +363,9 @@ watch(() => editor.isOpen, (open) => {
 .skills-list__empty-actions { display: flex; gap: 8px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .skills-list__card { transition: none; }
+  .skills-list__card,
+  .skills-list__switch,
+  .skills-list__switch-thumb { transition: none; }
 }
 .skills-list__title svg { color: var(--color-leaf); }
-.skills-list__name { display: flex; align-items: center; gap: 8px; }
-.skills-list__symbol { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; background: var(--color-accent-light); color: var(--color-leaf); flex: none; }
-.skills-list__code svg { display: inline; vertical-align: -2px; margin-right: 4px; }
 </style>

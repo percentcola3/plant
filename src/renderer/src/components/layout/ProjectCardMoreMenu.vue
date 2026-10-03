@@ -7,7 +7,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+defineProps<{ gitAvailable?: boolean }>()
 const emit = defineEmits<{
+  history: []
   rename: []
   move: []
   copy: []
@@ -32,6 +34,8 @@ const emit = defineEmits<{
       </button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="min-w-36 text-xs">
+      <DropdownMenuItem v-if="gitAvailable" class="text-xs" @select="emit('history')">变更记录</DropdownMenuItem>
+      <DropdownMenuSeparator v-if="gitAvailable" />
       <DropdownMenuItem class="text-xs" @select="emit('rename')">重命名</DropdownMenuItem>
       <DropdownMenuItem class="text-xs" @select="emit('move')">移动</DropdownMenuItem>
       <DropdownMenuItem class="text-xs" @select="emit('copy')">复制</DropdownMenuItem>

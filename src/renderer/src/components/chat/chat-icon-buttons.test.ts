@@ -36,9 +36,10 @@ describe('chat icon buttons', () => {
     expect(composerSource).not.toContain(">重启</button>")
   })
 
-  it('keeps the Claude status compact and moves new conversation into the header', () => {
-    expect(conversationSource).toContain('class="cv-status-indicator"')
-    expect(conversationSource).toContain(':aria-label="statusIndicatorLabel"')
+  it('keeps new conversation in the header without a status light', () => {
+    expect(conversationSource).not.toContain('cv-status-indicator')
+    expect(conversationSource).not.toContain('cv-status-dot')
+    expect(conversationSource).not.toContain('statusIndicatorLabel')
     expect(conversationSource).toContain('class="cv-new-session"')
     expect(conversationSource).toContain('aria-label="新建对话"')
     expect(conversationSource).toContain('<Plus')

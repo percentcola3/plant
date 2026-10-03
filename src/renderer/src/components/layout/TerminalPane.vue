@@ -964,7 +964,7 @@ function onEditorDocumentOpened(event: Event): void {
 
 <template>
   <aside
-    class="relative flex flex-col bg-card"
+    class="terminal-pane relative flex flex-col"
     :style="{ width: uiStore.terminalWidth + 'px' }"
   >
     <div class="terminal-divider" aria-hidden="true" />
@@ -1047,7 +1047,7 @@ function onEditorDocumentOpened(event: Event): void {
     </div>
 
     <!-- 内容区：TUI / UI 模式切换 -->
-    <div class="relative flex-1 min-h-0">
+    <div class="terminal-pane__content relative flex-1 min-h-0">
       <!-- TUI: xterm -->
       <div
         v-show="currentMode === 'tui'"
@@ -1091,6 +1091,9 @@ function onEditorDocumentOpened(event: Event): void {
 </template>
 
 <style scoped>
+.terminal-pane { background: var(--color-bg-panel); border-radius: 12px; min-width: 280px; }
+.terminal-pane__content { border-radius: inherit; overflow: hidden; }
+
 :deep(.xterm) { height: 100%; }
 :deep(.xterm-viewport)::-webkit-scrollbar { width: 8px; }
 :deep(.xterm-viewport)::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 4px; }
@@ -1108,20 +1111,19 @@ function onEditorDocumentOpened(event: Event): void {
 
 .terminal-resize-handle {
   position: absolute;
-  top: 8px;
+  top: 50%;
   left: 0;
   z-index: 11;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 28px;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
-  background: var(--color-bg-panel, #fff);
-  color: var(--color-text-tertiary, #94a3b8);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
-  transform: translateX(-50%);
+  width: 12px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--color-border);
+  transform: translate(-50%, -50%);
+  transition: color var(--duration-fast) var(--ease-out);
   /* 外层框只作视觉提示，鼠标穿透；真正的拖动 hit-area 是内部 grip span。
      鼠标离开 grip 视觉立即不再有 col-resize 光标、不能 mousedown 启动 drag。 */
   pointer-events: none;
@@ -1131,15 +1133,17 @@ function onEditorDocumentOpened(event: Event): void {
 /* hover / 拖动中视觉提示用 :has 上抬到外层框 */
 .terminal-resize-handle:has(.terminal-resize-grip:hover),
 .terminal-resize-handle:has(.terminal-resize-grip:active) {
-  border-color: rgba(37, 99, 235, 0.35);
-  color: var(--color-accent, #2563eb);
+  color: var(--color-accent);
 }
 
 .terminal-resize-grip {
-  width: 6px;
-  height: 14px;
-  border-left: 2px solid currentColor;
-  border-right: 2px solid currentColor;
+  box-sizing: content-box;
+  width: 4px;
+  height: 28px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: currentColor;
+  background-clip: content-box;
   /* 唯一的拖动 hit-area：跟视觉精确一致 */
   pointer-events: auto;
   cursor: col-resize;
@@ -1147,26 +1151,27 @@ function onEditorDocumentOpened(event: Event): void {
 
 .mode-toggle {
   display: inline-flex;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 4px;
-  overflow: hidden;
+  gap: 2px;
+  --radius-button: 6px;
 }
 .mode-btn {
-  padding: 1px 8px;
+  height: 22px;
+  padding: 0 8px;
   font-size: 11px;
   font-weight: 500;
   border: none;
   background: transparent;
-  color: var(--color-text-tertiary, #94a3b8);
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 .mode-btn--active {
-  background: var(--color-accent, #2563eb);
-  color: #fff;
+  background: var(--color-tab-selected);
+  color: var(--color-text-primary);
 }
 .mode-btn:hover:not(.mode-btn--active) {
-  background: var(--color-bg-secondary, #f1f5f9);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 .scope-label {
   display: inline-flex;
@@ -1175,9 +1180,9 @@ function onEditorDocumentOpened(event: Event): void {
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 500;
-  border-radius: 4px;
-  background: var(--color-bg-base, #f8fafc);
-  color: var(--color-text-secondary, #475569);
+  border-radius: 6px;
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1191,14 +1196,14 @@ function onEditorDocumentOpened(event: Event): void {
   gap: 6px;
   font-size: 11px;
   font-weight: 650;
-  color: var(--color-text-primary, #0f172a);
+  color: var(--color-text-primary);
 }
 .project-context-dot {
   width: 7px;
   height: 7px;
   flex: none;
   border-radius: 999px;
-  background: var(--color-accent, #2563eb);
+  background: var(--color-accent);
 }
 .status-dot {
   display: inline-block;
@@ -1207,25 +1212,24 @@ function onEditorDocumentOpened(event: Event): void {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.status-dot--idle { background: #cbd5e1; }
-.status-dot--ok   { background: #22c55e; }
-.status-dot--err  { background: #ef4444; }
+.status-dot--idle { background: var(--color-border-strong); }
+.status-dot--ok   { background: var(--color-success); }
+.status-dot--err  { background: var(--color-error); }
 .terminal-close-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  border: 0;
   background: transparent;
-  color: var(--color-text-tertiary, #94a3b8);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
 }
 .terminal-close-btn:hover {
-  background: var(--color-bg-secondary, #f1f5f9);
-  color: var(--color-text-primary, #0f172a);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 </style>

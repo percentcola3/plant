@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ExternalRef } from '@shared/types'
-import { BookOpen, Boxes, ChevronDown, PackageOpen } from 'lucide-vue-next'
+import { BookOpen, Boxes, ChevronDown, Library } from 'lucide-vue-next'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
@@ -48,8 +48,8 @@ function indexLabel(resource: ExternalRef): string {
         aria-haspopup="listbox"
         :aria-expanded="undefined"
       >
-        <PackageOpen :size="15" aria-hidden="true" />
-        <span>关联资源</span>
+        <Library :size="15" aria-hidden="true" />
+        <span>关联知识库</span>
         <strong>{{ selectedCount }}</strong>
         <ChevronDown class="feature-resource-dropdown__chevron" :size="14" aria-hidden="true" />
       </button>
@@ -61,7 +61,7 @@ function indexLabel(resource: ExternalRef): string {
       class="feature-resource-dropdown__panel z-50 !rounded-[14px] border border-popover-border bg-popover p-0 shadow-md outline-none"
     >
       <div v-if="props.resources.length === 0" class="feature-resource-dropdown__empty">
-        <PackageOpen :size="20" aria-hidden="true" />
+        <Library :size="20" aria-hidden="true" />
         <strong>还没有可关联的资源</strong>
         <span>请先到知识库页面安装知识库或 UX 资产。</span>
       </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import PushHistoryPanel from './PushHistoryPanel.vue'
+import ProjectHistoryDrawer from './ProjectHistoryDrawer.vue'
 import type { GitCommitSummary } from '@shared/types'
 import { call } from '@/lib/api'
 import { useUiStore } from '@/stores/ui'
@@ -48,6 +49,7 @@ const open = computed({
 
 watch(request, (next) => {
   if (next) {
+    if (next.relPath) return
     view.value = next.initialView ?? 'pushes'
     if (view.value === 'commits') void loadHistory()
   }
@@ -160,7 +162,8 @@ function openRepairPrompt(
 </script>
 
 <template>
-  <Dialog v-model:open="open">
+  <ProjectHistoryDrawer v-if="request?.relPath" :workspace-id="request.workspaceId" :rel-path="request.relPath" :name="request.workspaceName" @close="close" />
+  <Dialog v-else v-model:open="open">
     <DialogContent class="flex max-h-[78vh] flex-col sm:max-w-[760px] p-0 gap-0">
       <DialogHeader class="flex flex-row items-start justify-between gap-4 border-b border-dialog-border p-4 space-y-0">
         <div>

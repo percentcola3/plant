@@ -15,16 +15,11 @@ import { shouldRequestWorkspaceGitStatus } from '@/lib/workspace-capabilities'
 import { isProjectToolWorkspaceKind } from '@/lib/project-tool-menu'
 import { isOutputsFirstUxProject } from '@/lib/fixed-ux-space'
 import {
-  isTopBarHomeActive,
-  isTopBarTabClosable,
-  resolveTopBarAddAction,
   resolveTopBarTabTitle,
-  shouldShowTopBarContextTab,
 } from '@/lib/topbar-navigation'
 import OpenWithMenu from '@/components/layout/OpenWithMenu.vue'
 import TopBarSettingsButton from '@/components/layout/TopBarSettingsButton.vue'
-import OpenProjectDialog from '@/components/preview/OpenProjectDialog.vue'
-import { FolderKanban, ListTodo, PenTool, Plus, X } from 'lucide-vue-next'
+import { FolderKanban, ListTodo, PencilLine, X } from 'lucide-vue-next'
 
 const ws = useWorkspacesStore()
 const ui = useUiStore()
@@ -39,7 +34,6 @@ const {
   viewingExternalAlias,
 } = storeToRefs(ui)
 
-const projectDialogOpen = ref(false)
 
 const outputsFirstProject = computed(() =>
   isOutputsFirstUxProject(active.value, active.value?.id === ws.activeId ? scan.value : null)
@@ -60,28 +54,7 @@ const currentTabTitle = computed(() => resolveTopBarTabTitle({
   externalAlias: viewingExternalAlias.value,
 }))
 
-const homeActive = computed(() => isTopBarHomeActive({
-  previewActive: previewStore.isPreviewActive,
-  editorOpen: editorStore.isOpen,
-  currentView: currentView.value,
-  uxActiveNode: uxActiveNode.value,
-  outputsFirstProject: outputsFirstProject.value,
-}))
-
-const tabClosable = computed(() => isTopBarTabClosable({
-  previewActive: previewStore.isPreviewActive,
-  editorOpen: editorStore.isOpen,
-  currentView: currentView.value,
-  uxActiveNode: uxActiveNode.value,
-  outputsFirstProject: outputsFirstProject.value,
-  workspaceKind: active.value?.kind ?? null,
-}))
-
-const showContextTab = computed(() => shouldShowTopBarContextTab({
-  homeActive: homeActive.value,
-  previewActive: previewStore.isPreviewActive,
-  editorOpen: editorStore.isOpen,
-}))
+const homeActive = computed(() => !previewStore.isPreviewActive && !editorStore.isOpen)
 
 const previewProjectTabs = computed(() => openProjects.value)
 
@@ -90,21 +63,6 @@ const showPreviewFallbackTab = computed(() =>
 )
 
 const previewFallbackTitle = computed(() => activeTab.value?.title ?? '预览')
-
-const addAction = computed(() => resolveTopBarAddAction({
-  previewActive: previewStore.isPreviewActive,
-  hasOpenProjectTabs: previewProjectTabs.value.length > 0,
-  workspaceKind: active.value?.kind ?? null,
-  currentView: currentView.value,
-  uxActiveNode: uxActiveNode.value,
-  outputsFirstProject: outputsFirstProject.value,
-}))
-
-const addLabel = computed(() => {
-  if (addAction.value === 'open-project') return '打开项目'
-  if (addAction.value === 'create-product') return '新增项目'
-  return '新建项目'
-})
 
 const aiTaskBadgeCount = computed(() => aiTasks.activeCount + aiTasks.waitingCount)
 const aiTaskBadgeLabel = computed(() =>
@@ -212,20 +170,6 @@ function closeCurrentTab(): void {
   }
 }
 
-function onAdd(): void {
-  if (addAction.value === 'open-project') {
-    projectDialogOpen.value = true
-    return
-  }
-  if (addAction.value === 'create-product') {
-    ui.requestCreateProduct()
-    return
-  }
-  previewStore.hideCanvas()
-  editorStore.hide()
-  if (active.value) ui.requestCreateFeatureProject(active.value.id)
-}
-
 watch(() => active.value?.id, () => { void refreshGitStatus() }, { immediate: true })
 
 onMounted(() => {
@@ -263,7 +207,7 @@ watch(
         <FolderKanban class="app-tabbar__glyph app-tabbar__glyph--md" aria-hidden="true" />
       </button>
 
-      <div class="app-tabbar__tabs" role="tablist" aria-label="Open files">
+      <div v-if="!homeActive" class="app-tabbar__tabs" role="tablist" aria-label="Open files">
         <template v-if="previewProjectTabs.length > 0">
           <button
             v-for="project in previewProjectTabs"
@@ -277,7 +221,7 @@ watch(
             @click="activateProjectTab(project.key)"
           >
             <span class="app-tab__icon" aria-hidden="true">
-              <PenTool class="app-tabbar__glyph app-tabbar__glyph--sm" />
+              <PencilLine class="app-tabbar__glyph app-tabbar__glyph--sm" />
             </span>
             <span class="app-tab__title">{{ project.name }}</span>
             <span
@@ -302,7 +246,7 @@ watch(
           :title="previewFallbackTitle"
         >
           <span class="app-tab__icon" aria-hidden="true">
-            <PenTool class="app-tabbar__glyph app-tabbar__glyph--sm" />
+            <PencilLine class="app-tabbar__glyph app-tabbar__glyph--sm" />
           </span>
           <span class="app-tab__title">{{ previewFallbackTitle }}</span>
           <button
@@ -325,7 +269,7 @@ watch(
           :title="currentTabTitle"
         >
           <span class="app-tab__icon" aria-hidden="true">
-            <PenTool class="app-tabbar__glyph app-tabbar__glyph--sm" />
+            <PencilLine class="app-tabbar__glyph app-tabbar__glyph--sm" />
           </span>
           <span class="app-tab__title">{{ currentTabTitle }}</span>
           <button
@@ -339,39 +283,6 @@ watch(
           </button>
         </div>
 
-        <div
-          v-else-if="showContextTab"
-          class="app-tab app-tab--active"
-          role="tab"
-          tabindex="0"
-          aria-selected="true"
-          :title="currentTabTitle"
-        >
-          <span class="app-tab__icon" aria-hidden="true">
-            <PenTool class="app-tabbar__glyph app-tabbar__glyph--sm" />
-          </span>
-          <span class="app-tab__title">{{ currentTabTitle }}</span>
-          <button
-            v-if="tabClosable"
-            type="button"
-            class="app-tab__close"
-            aria-label="Close tab"
-            title="关闭"
-            @click.stop="closeCurrentTab"
-          >
-            <X class="app-tabbar__glyph app-tabbar__glyph--xs" aria-hidden="true" />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          class="app-tabbar__add"
-          :aria-label="addLabel"
-          :title="addLabel"
-          @click="onAdd"
-        >
-          <Plus class="app-tabbar__glyph app-tabbar__glyph--md" aria-hidden="true" />
-        </button>
       </div>
     </nav>
 
@@ -401,7 +312,6 @@ watch(
       <TopBarSettingsButton />
     </div>
 
-    <OpenProjectDialog v-model:open="projectDialogOpen" />
   </header>
 </template>
 
@@ -412,7 +322,7 @@ watch(
   min-height: 36px;
   height: 36px;
   width: 100%;
-  border-bottom: 1px solid var(--color-chrome-border);
+  border-bottom: 0;
   color: var(--color-text-primary);
   font-size: 12px;
   user-select: none;
@@ -425,14 +335,15 @@ watch(
 }
 .app-tabbar__nav {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
   flex: 1 1 auto;
 }
-.app-tabbar__home,
-.app-tabbar__add {
-  flex: 0 0 36px;
-  width: 36px;
+.app-tabbar__home {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -445,12 +356,7 @@ watch(
     background var(--duration-fast, 120ms) var(--ease-out, ease),
     color var(--duration-fast, 120ms) var(--ease-out, ease);
 }
-.app-tabbar__home {
-}
-.app-tabbar__add {
-}
-.app-tabbar__home:hover,
-.app-tabbar__add:hover {
+.app-tabbar__home:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
@@ -478,7 +384,9 @@ watch(
 }
 .app-tabbar__tabs {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
   min-width: 0;
   flex: 1 1 auto;
   overflow-x: auto;
@@ -502,7 +410,9 @@ watch(
   cursor: pointer;
   font: inherit;
 }
-.app-tab { margin: 4px 2px; border-radius: 8px; }
+.app-tab { height: 28px; margin: 0; border-radius: 8px; }
+.app-tabbar__home, .app-tab { box-shadow: none; }
+.app-tabbar__home:focus-visible, .app-tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
 .app-tab--active {
   background: var(--color-tab-selected);
   color: var(--color-text-primary);

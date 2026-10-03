@@ -1,0 +1,9 @@
+/* Plant 编写的视觉参考；官方资料见 upstream/，不是完整组件实现。 */
+:root {
+  --asset-primary: #28775b;
+  --asset-success: #52c41a;
+  --asset-warning: #faad14;
+  --asset-error: #ff4d4f;
+  --asset-radius: 12px;
+  --asset-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}

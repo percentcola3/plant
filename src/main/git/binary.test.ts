@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 
 const execSyncMock = vi.hoisted(() => vi.fn())
-const existsSyncMock = vi.hoisted(() => vi.fn(() => false))
+const existsSyncMock = vi.hoisted(() => vi.fn((_path: string) => false))
 const requireResolveMock = vi.hoisted(() => vi.fn())
 
 vi.mock('node:child_process', () => ({ execSync: execSyncMock }))

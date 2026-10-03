@@ -30,7 +30,7 @@ describe('app shell theme tokens', () => {
     expect(css).toContain('--color-button-fg: #04160d;')
     // 叶绿色阶在暗/亮两套主题中成对定义
     expect(css).toContain('--color-leaf: #46c98b;')
-    expect(css).toContain('--color-leaf: #1e8e5a;')
+    expect(css).toContain('--color-leaf: #20764f;')
 
     expect(css).not.toContain('#0d1117')
     expect(css).not.toContain('#58a6ff')

@@ -20,6 +20,8 @@ vi.mock('./client', () => ({
 }))
 
 const probeInvalidate = vi.hoisted(() => vi.fn())
+const syncIncoming = vi.hoisted(() => vi.fn(async () => undefined))
+vi.mock('../saga/auto-save', () => ({ syncIncomingChanges: syncIncoming }))
 vi.mock('./probe', () => ({
   getSharedProbe: () => ({ invalidate: probeInvalidate })
 }))
@@ -47,6 +49,7 @@ beforeEach(() => {
   gitApi.fetch.mockReset()
   gitApi.fetch.mockResolvedValue(undefined)
   probeInvalidate.mockReset()
+  syncIncoming.mockClear()
   winSend.mockReset()
 })
 
@@ -80,6 +83,7 @@ describe('background-fetch', () => {
 
     expect(gitApi.fetch).toHaveBeenCalledWith(['--all', '--prune'])
     expect(probeInvalidate).toHaveBeenCalledWith('/repo/demo')
+    expect(syncIncoming).toHaveBeenCalledWith('ws-1')
     expect(winSend).toHaveBeenCalledWith('git.remote-updated:ws-1', { workspaceId: 'ws-1' })
   })
 
@@ -90,6 +94,7 @@ describe('background-fetch', () => {
     await vi.advanceTimersByTimeAsync(10_000)
 
     expect(probeInvalidate).not.toHaveBeenCalled()
+    expect(syncIncoming).not.toHaveBeenCalled()
     expect(winSend).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()

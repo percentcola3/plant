@@ -6,6 +6,7 @@ import { gitForWithAskpass } from '../git/client'
 import { getSharedProbe } from '../git/probe'
 import { pushOp } from '../git/ops'
 import { dispatchSaga } from '../saga/service'
+import { setAutoSyncStatus } from '../saga/auto-save'
 import type { SagaJournal, SagaStep } from '../saga/types'
 import type { GitFailure } from '../git/failures'
 import { UIClientError } from '../ipc/errors'
@@ -151,6 +152,7 @@ export async function syncWorkspace(workspaceId: string, opts: SyncOptions = {})
   })
 
   if (journal.status === 'done') {
+    setAutoSyncStatus(workspaceId, { state: 'idle', lastSyncedAt: new Date().toISOString() })
     const pushStep = journal.steps.find((s) => s.op === 'push')
     const remoteIsNone = pre.remote.kind === 'no-remote'
     const pushed = !remoteIsNone && pushStep?.status === 'done'
@@ -159,6 +161,7 @@ export async function syncWorkspace(workspaceId: string, opts: SyncOptions = {})
   }
 
   const failed = journal.steps[journal.currentStep]
+  setAutoSyncStatus(workspaceId, { state: 'error', message: failed?.failure ? failureMessage(failed.failure) : '同步未完成' })
   if (!failed?.failure) {
     return { ok: false, phase: 'fetch', code: 'OTHER', message: '同步未完成' }
   }

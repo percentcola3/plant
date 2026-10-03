@@ -10,7 +10,6 @@ import HtmlViewModeToggle from './HtmlViewModeToggle.vue'
 import PreviewCanvasSizeToggle from './PreviewCanvasSizeToggle.vue'
 import PreviewInspectorTools from './PreviewInspectorTools.vue'
 import ProductFilesReloadButton from './ProductFilesReloadButton.vue'
-import ProductFilesTreeToggle from './ProductFilesTreeToggle.vue'
 
 const previewStore = usePreviewStore()
 const props = withDefaults(defineProps<{
@@ -18,8 +17,6 @@ const props = withDefaults(defineProps<{
   elementSelecting?: boolean
   elementEditing?: boolean
   remarksVisible?: boolean
-  showTreeToggle?: boolean
-  treeOpen?: boolean
   showHtmlViewMode?: boolean
   htmlMode?: 'preview' | 'source'
   showReload?: boolean
@@ -32,8 +29,6 @@ const props = withDefaults(defineProps<{
   elementSelecting: false,
   elementEditing: false,
   remarksVisible: false,
-  showTreeToggle: false,
-  treeOpen: false,
   showHtmlViewMode: false,
   htmlMode: 'preview',
   showReload: false,
@@ -51,7 +46,6 @@ const emit = defineEmits<{
   (e: 'pick-element'): void
   (e: 'toggle-element-edit'): void
   (e: 'toggle-remarks'): void
-  (e: 'toggle-tree'): void
   (e: 'update:htmlMode', mode: 'preview' | 'source'): void
   (e: 'reload'): void
 }>()
@@ -86,12 +80,7 @@ watch(() => tab.value?.id, ensureCanvasPreset)
     v-if="tab?.productMeta"
     class="product-workbench-bar preview-size-bar flex items-center gap-2 text-xs text-muted-foreground"
   >
-    <div v-if="showTreeToggle || showReload || showHtmlViewMode" class="flex items-center gap-0.5 shrink-0">
-      <ProductFilesTreeToggle
-        v-if="showTreeToggle"
-        :open="treeOpen"
-        @toggle="emit('toggle-tree')"
-      />
+    <div v-if="showReload || showHtmlViewMode" class="flex items-center gap-0.5 shrink-0">
       <ProductFilesReloadButton
         v-if="showReload"
         :loading="reloading"

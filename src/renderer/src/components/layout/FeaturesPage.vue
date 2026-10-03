@@ -2,7 +2,7 @@
 // 项目管理：集中处理项目的创建、导入、重命名、分组和删除。
 
 import { computed, onMounted, ref, watch } from 'vue'
-import { ArrowRight, Ellipsis, FolderDown, FolderKanban, FolderPlus, GitBranch, Plus, RefreshCw } from 'lucide-vue-next'
+import { ArrowRight, Ellipsis, FolderPlus, GitBranch, Plus, RefreshCw } from 'lucide-vue-next'
 import type { FeatureCard, GitCapability, GitStatus, PersonalSpace } from '@shared/types'
 import { isSimpleWorkspace, supportsPersonalSpaces } from '@shared/workspace-policy'
 import { useWorkspacesStore } from '@/stores/workspaces'
@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import ProjectCardMoreMenu from '@/components/layout/ProjectCardMoreMenu.vue'
-import PlantIllustration from '@/components/brand/PlantIllustration.vue'
 import FeatureResourceDialog from '@/components/dialogs/FeatureResourceDialog.vue'
 
 const props = defineProps<{ workspaceId?: string; searchQuery?: string; actionsTarget?: string }>()
@@ -100,6 +99,7 @@ const groupedFeatures = computed<FeatureSection[]>(() => {
     arr.push(f)
     map.set(f.group, arr)
   }
+  if (map.size === 0) map.set(DEFAULT_FEATURE_GROUP, [])
   const sections: FeatureSection[] = []
   for (const g of [...map.keys()].filter((k): k is string => k !== null).sort()) {
     sections.push({ group: g, items: sortFeatures(map.get(g) ?? []) })
@@ -401,10 +401,28 @@ async function confirmCreateFeature(payload: { externalRefIds: string[]; setAsDe
   }
 }
 
-async function importFeatureProject(): Promise<void> {
+async function addProject(group: string): Promise<void> {
+  const mode = await ui.askPrompt({ title: '新增项目', message: `添加到「${group}」`, defaultValue: 'blank', options: [{ label: '新建空白项目', value: 'blank' }, { label: '导入已有项目', value: 'import' }], confirmLabel: '继续' })
+  if (mode === 'blank') await createFeature(group)
+  else if (mode === 'import') await importFeatureProject(group)
+}
+
+function unbindGit(): void {
+  const workspaceId = active.value?.id
+  if (!workspaceId) return
+  ui.askConfirm({ title: '解绑 Git', message: '解除远端绑定，保留本地目录、文件和提交历史。', confirmLabel: '解绑', onConfirm: async () => {
+    const result = await call('git.unbind', { workspaceId })
+    if (!result.ok) { ui.showToast('error', result.message); return }
+    await refreshGitStatus()
+    emit('changed')
+    ui.showToast('success', 'Git 已解绑')
+  } })
+}
+
+async function importFeatureProject(targetGroup?: string): Promise<void> {
   if (!active.value) return
   const workspaceId = active.value.id
-  const group = !featureGroups.value.length ? DEFAULT_FEATURE_GROUP : await ui.askPrompt({ title: '选择项目分组', message: '把项目导入当前目录的项目分组。', defaultValue: featureGroups.value[0], options: featureGroups.value.map(value => ({ label: value, value })), confirmLabel: '选择项目目录' })
+  const group = targetGroup ?? (!featureGroups.value.length ? DEFAULT_FEATURE_GROUP : await ui.askPrompt({ title: '选择项目分组', message: '把项目导入当前目录的项目分组。', defaultValue: featureGroups.value[0], options: featureGroups.value.map(value => ({ label: value, value })), confirmLabel: '选择项目目录' }))
   if (!group) return
   const picked = await call('system.selectDirectory', {
     title: '选择要导入的项目目录',
@@ -888,15 +906,16 @@ function displayFeatureDocPath(card: FeatureCard): string {
   <main class="directory-projects min-w-0">
     <Teleport :to="props.actionsTarget ?? 'body'" :disabled="!props.actionsTarget" defer>
       <div class="home-header__actions">
-        <Button v-if="isGitUnbound" variant="outline" size="sm" :disabled="gitBinding" @click="bindGit">{{ gitBinding ? '绑定中…' : '绑定远端 Git' }}</Button>
+        <Button variant="ghost" size="icon-sm" class="directory-icon-action" title="新建分组" aria-label="新建分组" @click="createGroup"><FolderPlus :size="16" aria-hidden="true" /></Button>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="outline" size="sm" class="text-xs">
-              <Ellipsis aria-hidden="true" />
-              更多操作
+            <Button variant="ghost" size="icon-sm" class="directory-icon-action" title="更多操作" aria-label="更多操作">
+              <Ellipsis :size="16" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="min-w-36 text-xs">
+            <DropdownMenuItem v-if="isGitUnbound" :disabled="gitBinding" @select="bindGit">{{ gitBinding ? '绑定中…' : '绑定 Git' }}</DropdownMenuItem>
+            <DropdownMenuItem v-if="gitCapability?.state === 'remote'" @select="unbindGit">解绑 Git</DropdownMenuItem>
             <slot name="directory-menu" />
             <DropdownMenuSeparator v-if="$slots['directory-menu']" />
             <DropdownMenuItem
@@ -917,18 +936,9 @@ function displayFeatureDocPath(card: FeatureCard): string {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" size="sm" class="text-xs" @click="importFeatureProject">
-          <FolderDown aria-hidden="true" />
-          导入项目
-        </Button>
-        <Button variant="outline" size="sm" class="text-xs" @click="createGroup"><FolderPlus aria-hidden="true" />新建项目分组</Button>
-        <Button size="sm" class="text-xs" :disabled="loading || creatingFeature" @click="createFeature()">
-          <Plus aria-hidden="true" />
-          新建项目
-        </Button>
       </div>
     </Teleport>
-    <section class="flex-1 px-5 py-4">
+    <section class="flex-1 px-3 pb-3 pt-0">
       <div
         v-if="!props.actionsTarget && gitCapability?.state === 'remote'"
         class="git-notice git-notice--success"
@@ -974,11 +984,6 @@ function displayFeatureDocPath(card: FeatureCard): string {
       </div>
       <div v-if="loading && features.length === 0 && featureGroups.length === 0" class="text-sm text-muted-foreground">加载中…</div>
       <div v-else-if="error" class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{{ error }}</div>
-      <div v-else-if="features.length === 0 && featureGroups.length === 0" class="flex items-center justify-center text-xs text-muted-foreground" :class="props.actionsTarget ? 'min-h-16' : 'min-h-32'">
-        <PlantIllustration kind="plant" class="directory-empty-art" />
-        <span>此目录还没有项目。可直接新建项目，自动归入默认分组。</span>
-      </div>
-
       <div v-else-if="hasFeatureSearchQuery && filteredGroupedFeatures.length === 0" class="flex items-center justify-center text-xs text-muted-foreground" :class="props.actionsTarget ? 'min-h-16' : 'min-h-32'">
         没有匹配「{{ featureSearchQuery.trim() }}」的项目
       </div>
@@ -1015,7 +1020,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
               <h2 class="feature-group-header__title">{{ section.group ?? '未分组项目' }}</h2>
               <span class="feature-group-header__count">{{ section.items.length }}</span>
             </button>
-            <Button v-if="section.group" variant="ghost" size="sm" @click="createFeature(section.group)"><Plus :size="14" />新建项目</Button>
+            <Button v-if="section.group" variant="ghost" size="icon-sm" class="directory-icon-action" :title="`新增项目到 ${section.group}`" :aria-label="`新增项目到 ${section.group}`" @click="addProject(section.group)"><Plus :size="16" /></Button>
             <DropdownMenu v-if="section.group">
               <DropdownMenuTrigger as-child>
                 <button
@@ -1043,7 +1048,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
           </header>
           <div
             v-if="!isFeatureGroupCollapsed(section.group) && section.items.length === 0"
-            class="feature-group-body rounded-md border border-dashed border-border/80 px-4 py-3 text-xs text-muted-foreground"
+            class="feature-group-body rounded-xl bg-[var(--color-card-surface)] px-4 py-3 text-xs text-muted-foreground"
           >
             暂无项目，可用项目卡片里的「移动」放入这个分组。
           </div>
@@ -1067,7 +1072,6 @@ function displayFeatureDocPath(card: FeatureCard): string {
                 :class="{ 'product-card__preview--active': isFeatureActive(card) }"
               >
                 <div class="product-card__preview-cover">
-                  <span class="product-card__preview-icon" aria-hidden="true"><FolderKanban :size="18" :stroke-width="1.5" /></span>
                   <div class="product-card__preview-body">
                     <h3 class="product-card__title">
                       <span class="product-card__preview-title-text">{{ card.name }}</span>
@@ -1080,6 +1084,8 @@ function displayFeatureDocPath(card: FeatureCard): string {
                       <span class="product-card__time">{{ formatFeatureModifiedAt(card.modifiedAt) }}</span>
                       <span v-if="isFeatureActive(card)" class="product-card__editing">编辑中</span>
                       <ProjectCardMoreMenu
+                        :git-available="gitCapability?.state === 'local' || gitCapability?.state === 'remote'"
+                        @history="ui.openBranchHistory({ workspaceId: active!.id, workspaceName: card.name, relPath: card.relPath, initialView: 'commits' })"
                         @rename="renameFeature(card)"
                         @move="moveFeatureToGroup(card)"
                         @copy="copyFeature(card)"
@@ -1109,6 +1115,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
 </template>
 
 <style scoped>
+.directory-icon-action { width: 28px; height: 28px; padding: 0; flex: none; }
 .home-header__actions { display: inline-flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .home-header__action-icon--spinning { animation: home-header-action-spin 0.8s linear infinite; }
 @keyframes home-header-action-spin {
@@ -1254,8 +1261,8 @@ function displayFeatureDocPath(card: FeatureCard): string {
   white-space: nowrap;
   user-select: text;
 }
-.feature-groups { display: flex; flex-direction: column; gap: 24px; }
-.feature-group-section { display: flex; flex-direction: column; gap: 16px; }
+.feature-groups { display: flex; flex-direction: column; gap: 14px; }
+.feature-group-section { display: flex; flex-direction: column; gap: 8px; }
 .feature-group-header { display: flex; min-height: 32px; max-width: 100%; align-items: center; gap: 6px; }
 .feature-group-header__toggle {
   display: flex;
@@ -1352,11 +1359,12 @@ function displayFeatureDocPath(card: FeatureCard): string {
 .product-card__preview {
   position: relative;
   width: 100%;
-  height: 164px;
+  height: 148px;
   overflow: hidden;
-  border: 1px solid var(--color-product-card-border, var(--color-border-subtle));
-  border-radius: 8px;
-  background: var(--color-bg-base);
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-card-surface);
+  box-shadow: var(--shadow-card);
 }
 .product-card__preview-cover {
   display: flex;
@@ -1364,11 +1372,11 @@ function displayFeatureDocPath(card: FeatureCard): string {
   height: 100%;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
-  padding: 14px 16px 10px;
-  background-color: var(--color-bg-elevated);
-  background-image: url('@/assets/project-placeholder.svg'), linear-gradient(135deg, color-mix(in srgb, var(--color-leaf) 10%, var(--color-bg-elevated)), var(--color-bg-elevated) 75%);
+  padding: 14px 16px 12px;
+  background-color: var(--color-card-surface);
+  background-image: url('@/assets/project-placeholder.svg'), radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--color-leaf) 23%, var(--color-bg-elevated)) 0%, color-mix(in srgb, var(--color-leaf-bright) 12%, var(--color-bg-elevated)) 48%, var(--color-bg-elevated) 100%);
   background-size: cover;
   background-position: center;
 }
@@ -1380,7 +1388,7 @@ function displayFeatureDocPath(card: FeatureCard): string {
   flex-shrink: 0;
   border-radius: 8px;
   color: var(--color-leaf);
-  background: color-mix(in srgb, var(--color-leaf) 9%, var(--color-bg-elevated));
+  background: color-mix(in srgb, var(--color-leaf) 4%, var(--color-bg-elevated));
 }
 .product-card__preview-body {
   display: flex;
@@ -1421,8 +1429,10 @@ function displayFeatureDocPath(card: FeatureCard): string {
 }
 .product-card__preview--active,
 .product-card--active .product-card__preview {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  box-shadow: var(--shadow-card-hover);
+}
+.product-card--active .product-card__preview-cover {
+  background-color: var(--color-card-hover);
 }
 .product-card__meta { display: flex; width: 100%; align-items: center; gap: 6px; margin-top: 7px; }
 .product-card__meta :deep(.project-card-more-menu__trigger) { margin-left: auto; opacity: 1; }

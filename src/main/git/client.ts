@@ -20,6 +20,8 @@ function sanitizedProcessEnv(): NodeJS.ProcessEnv {
   delete safe.EDITOR
   delete safe.GIT_EDITOR
   delete safe.VISUAL
+  delete safe.PAGER
+  delete safe.GIT_PAGER
   return safe
 }
 
@@ -171,4 +173,3 @@ function classifyError(e: unknown, _kind: 'pull'): PullResult {
   }
   return { ok: false, code: 'OTHER', message: msg }
 }
-

@@ -29,31 +29,22 @@ import {
   parseSketchDocument,
   type SketchItem
 } from '@/lib/preview/sketch-model'
-import {
-  loadUiProductCardMeta,
-  resolveWorkbenchBrandTitle,
-  saveUiProductCardMeta,
-} from '@/lib/preview/ui-product-card-meta'
-import { outputGroupOfRelPath } from '@/lib/preview/ui-products'
-import type { SourceProjectInfo, UiProductCardMeta } from '@shared/types'
 import { usePreviewStore } from '@/stores/preview'
 import { useThemeStore } from '@/stores/theme'
 import { useUiStore } from '@/stores/ui'
 import { useExternalRefsStore } from '@/stores/external-refs'
 import HtmlPreviewSurface from './HtmlPreviewSurface.vue'
 import PreviewSizeBar from './PreviewSizeBar.vue'
-import ProductFilesBrandMenu from './ProductFilesBrandMenu.vue'
-import ProductFilesTreeToggle from './ProductFilesTreeToggle.vue'
 import ProjectBrowserPane from './ProjectBrowserPane.vue'
 import ProjectBrowserTabs from './ProjectBrowserTabs.vue'
 import { useProjectBrowserStore } from '@/stores/project-browser'
 import type { WebPageDesign } from '@shared/project-browser'
 import { WORKBENCH_CUSTOM_DEVICE_PRESET } from '@/lib/preview/product-preview'
-import FeatureGitSubmitButton from './FeatureGitSubmitButton.vue'
+import ProjectGitSyncControl from './ProjectGitSyncControl.vue'
 import SketchEditor from './SketchEditor.vue'
 import { Button } from '@/components/ui/button'
 import FeatureResourceDialog from '@/components/dialogs/FeatureResourceDialog.vue'
-import { BookOpen, ChevronDown, ChevronRight, Folder, FolderOpen, GitBranch, PackageOpen } from 'lucide-vue-next'
+import { BookOpen, ChevronDown, ChevronRight, FilePlus2, Folder, FolderOpen, Library, Upload } from 'lucide-vue-next'
 
 const props = defineProps<{
   tabId: string
@@ -161,16 +152,6 @@ const error = ref<string | null>(null)
 const resourceDialogOpen = ref(false)
 const resourceSaving = ref(false)
 const selectedExternalRefIds = ref<string[]>([])
-const sourceProject = ref<SourceProjectInfo>({
-  binding: null,
-  state: 'unlinked',
-  dirty: false,
-  launch: { state: 'stopped' }
-})
-const sourceLoading = ref(false)
-const sourceAssociating = ref(false)
-const sourceCommitting = ref(false)
-const sourceLaunching = ref(false)
 let markdownRenderSeq = 0
 
 const selectedFile = computed(() =>
@@ -188,21 +169,7 @@ const previewFile = computed(() => {
     ?? null
   )
 })
-const activeTargetFile = computed(() =>
-  (detailMode.value === 'edit' && selectedFile.value) ? selectedFile.value : previewFile.value
-)
 const previewDisplayPath = computed(() => previewFile.value?.relPath ?? props.rootRelPath)
-const productCardMeta = ref<UiProductCardMeta | null>(null)
-const headerBrandTitle = computed(() =>
-  resolveWorkbenchBrandTitle(productCardMeta.value, props.rootRelPath)
-)
-const canManageProject = computed(() =>
-  !deleting.value && !saving.value && !uploading.value && !creating.value
-)
-const canRenameHeader = computed(() => canManageProject.value)
-const canDeleteHeader = computed(() => canManageProject.value)
-const sourceProjectLabel = computed(() => sourceProject.value.binding?.runtime.name ?? '源码')
-const sourceLaunchUrl = computed(() => sourceProject.value.launch.url ?? sourceProject.value.binding?.runtime.readyUrl ?? '')
 const fileTree = computed(() => buildProductFileTree(files.value, props.rootRelPath))
 const fileTreeRows = computed(() => visibleProductFileTreeRows(fileTree.value, expandedDirs.value))
 const textDirty = computed(() =>
@@ -248,103 +215,10 @@ async function saveFeatureResources(payload: { externalRefIds: string[]; setAsDe
   }
 }
 
-async function loadSourceProject(): Promise<void> {
-  sourceLoading.value = true
-  try {
-    const result = await call('sourceProject.get', {
-      workspaceId: props.workspaceId,
-      projectRelPath: props.rootRelPath
-    })
-    if (result.ok) sourceProject.value = result.data
-  } finally {
-    sourceLoading.value = false
-  }
-}
-
-async function associateSourceProject(): Promise<void> {
-  if (sourceAssociating.value) return
-  const picked = await call('system.selectDirectory', {
-    title: '选择要关联的前端源码目录',
-    buttonLabel: '关联源码'
-  })
-  if (!picked.ok) {
-    ui.showToast('error', `选择目录失败：${picked.message}`)
-    return
-  }
-  if (!picked.data) return
-  sourceAssociating.value = true
-  try {
-    const result = await call('sourceProject.associate', {
-      workspaceId: props.workspaceId,
-      projectRelPath: props.rootRelPath,
-      sourcePath: picked.data.path
-    })
-    if (!result.ok) {
-      ui.showToast('error', `关联源码失败：${result.message}`, 5000)
-      return
-    }
-    sourceProject.value = result.data
-    ui.showToast('success', `${result.data.binding?.runtime.name ?? '源码'} 已关联`)
-  } finally {
-    sourceAssociating.value = false
-  }
-}
-
-async function commitSourceProject(): Promise<void> {
-  if (!sourceProject.value.binding || sourceCommitting.value) return
-  const message = await ui.askPrompt({
-    title: '提交源码',
-    message: '只会提交当前项目的私有源码副本，不会提交 PRD、设计稿或 Mock 运行文件。',
-    placeholder: '例如：feat: 调整订单列表布局',
-    confirmLabel: '提交'
-  })
-  if (!message?.trim()) return
-  sourceCommitting.value = true
-  try {
-    const result = await call('sourceProject.commit', {
-      workspaceId: props.workspaceId,
-      projectRelPath: props.rootRelPath,
-      message
-    })
-    if (!result.ok) {
-      ui.showToast('error', `提交源码失败：${result.message}`, 5000)
-      return
-    }
-    sourceProject.value = result.data
-    ui.showToast('success', '源码已提交')
-  } finally {
-    sourceCommitting.value = false
-  }
-}
-
-async function toggleSourcePreview(): Promise<void> {
-  if (!sourceProject.value.binding || sourceLaunching.value) return
-  sourceLaunching.value = true
-  try {
-    const running = sourceProject.value.launch.state === 'running'
-    const result = await call(running ? 'sourceProject.stop' : 'sourceProject.start', {
-      workspaceId: props.workspaceId,
-      projectRelPath: props.rootRelPath
-    })
-    if (!result.ok) {
-      ui.showToast('error', `${running ? '停止' : '启动'}源码失败：${result.message}`, 5000)
-      return
-    }
-    sourceProject.value = result.data
-    if (!running && sourceLaunchUrl.value) {
-      previewUrl.value = sourceLaunchUrl.value
-      detailMode.value = 'preview'
-    }
-    ui.showToast('success', running ? '源码预览已停止' : '源码 Mock 预览已启动')
-  } finally {
-    sourceLaunching.value = false
-  }
-}
 const sketchDirty = computed(() =>
   !!selectedFile.value && isSketchJsonFileName(selectedFile.value.relPath) && sketchContent.value !== sketchSavedContent.value
 )
 const isDirty = computed(() => textDirty.value || sketchDirty.value)
-const canSave = computed(() => isDirty.value && !saving.value)
 const selectedKind = computed<'empty' | 'sketch' | 'text' | 'image' | 'unsupported'>(() => {
   const file = selectedFile.value
   if (!file) return 'empty'
@@ -568,17 +442,6 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
-async function reloadProductCardMeta(): Promise<void> {
-  const workspaceId = props.workspaceId
-  const rootRelPath = props.rootRelPath
-  if (!rootRelPath.replace(/\\/g, '/').startsWith('outputs/')) {
-    productCardMeta.value = null
-    return
-  }
-  const meta = await loadUiProductCardMeta(workspaceId, rootRelPath)
-  if (!disposed && props.workspaceId === workspaceId && props.rootRelPath === rootRelPath) productCardMeta.value = meta
-}
-
 async function reloadTree(keepSelection = true): Promise<void> {
   const workspaceId = props.workspaceId
   const rootRelPath = props.rootRelPath
@@ -594,11 +457,9 @@ async function reloadTree(keepSelection = true): Promise<void> {
   if (!r.ok) {
     error.value = r.message
     files.value = []
-    productCardMeta.value = null
     return
   }
   files.value = flattenProductFiles(r.data)
-  await reloadProductCardMeta()
   if (disposed || props.workspaceId !== workspaceId || props.rootRelPath !== rootRelPath) return
   void refreshGitChangeMarks()
   ensureDefaultExpandedFolders()
@@ -883,64 +744,85 @@ async function handleMarkdownImageFiles(files: File[]): Promise<string | null> {
   return snippets.join('\n\n')
 }
 
-async function saveCurrent(): Promise<void> {
-  const file = selectedFile.value
-  if (!file || !canSave.value) return
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+let savePromise: Promise<void> | null = null
+const hasUnsavedFiles = computed(() => isDirty.value || Object.values(fileDrafts.value).some(draft => draft.dirty))
+
+function scheduleAutoSave(): void {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+  autoSaveTimer = setTimeout(() => {
+    autoSaveTimer = null
+    void saveIfDirty().catch(() => undefined)
+  }, 800)
+}
+
+async function flushFiles(): Promise<void> {
+  cacheFile(selectedRelPath.value)
+  const workspaceId = props.workspaceId
+  const drafts = Object.entries(fileDrafts.value).filter(([, draft]) => draft.dirty)
   saving.value = true
-  let saved = false
   try {
-    if (isSketchJsonFileName(file.relPath)) {
-      const content = sketchContent.value
-      const r = await call('editor.writeTextFile', {
-        workspaceId: props.workspaceId,
-        relPath: file.relPath,
-        content,
-        expectedMtime: sketchMtime.value,
-        scope: 'project'
+    for (const [relPath, draft] of drafts) {
+      const writtenContent = draft.text ? draft.text.content : JSON.stringify(buildSketchDocument(draft.sketch), null, 2) + '\n'
+      const result = await call('editor.writeTextFile', {
+        workspaceId, relPath, content: writtenContent,
+        expectedMtime: draft.text?.mtime ?? draft.sketchMtime, scope: 'project'
       })
-      if (!r.ok) {
-        ui.showToast('error', `保存失败：${r.message}`)
-        return
+      if (!result.ok) {
+        ui.showToast('error', `自动保存失败：${result.message}，改动已保留，可按 ⌘/Ctrl+S 重试`, 5000)
+        throw new Error(result.message)
       }
-      sketchMtime.value = r.data.mtime
-      sketchSavedContent.value = content
-      saved = true
-      ui.showToast('success', `已保存 ${file.name}`, 1600)
-      return
+      if (workspaceId !== props.workspaceId) continue
+      if (selectedRelPath.value === relPath) {
+        if (textSession.value?.relPath === relPath) {
+          textSession.value = { ...textSession.value, mtime: result.data.mtime, savedContent: writtenContent }
+        } else if (isSketchJsonFileName(relPath)) {
+          sketchMtime.value = result.data.mtime
+          sketchSavedContent.value = writtenContent
+        }
+        cacheFile(relPath)
+      } else {
+        const latest = fileDrafts.value[relPath]
+        if (!latest) continue
+        if (latest.text) {
+          latest.text = { ...latest.text, mtime: result.data.mtime, savedContent: writtenContent }
+          latest.dirty = latest.text.content !== writtenContent
+        } else {
+          latest.sketchMtime = result.data.mtime
+          latest.savedSketch = writtenContent
+          latest.dirty = JSON.stringify(buildSketchDocument(latest.sketch), null, 2) + '\n' !== writtenContent
+        }
+        if (!latest.dirty) delete fileDrafts.value[relPath]
+      }
     }
-    const current = textSession.value
-    if (!current) return
-    const r = await call('editor.writeTextFile', {
-      workspaceId: props.workspaceId,
-      relPath: current.relPath,
-      content: current.content,
-      expectedMtime: current.mtime,
-      scope: 'project'
-    })
-    if (!r.ok) {
-      ui.showToast('error', `保存失败：${r.message}`)
-      return
+    if (!disposed && drafts.length) {
+      void refreshGitChangeMarks(true)
+      if (isSelectedHtml.value) void loadPreviewUrl(true)
     }
-    textSession.value = {
-      ...(textSession.value ?? current),
-      mtime: r.data.mtime,
-      savedContent: current.content
-    }
-    saved = true
-    ui.showToast('success', `已保存 ${file.name}`, 1600)
   } finally {
     saving.value = false
-    if (saved) {
-      previewStore.reloadAllProductTabs()
-      await reloadTree(true)
-      if (isSelectedHtml.value) await loadPreviewUrl(true)
-    }
   }
 }
 
 async function saveIfDirty(): Promise<void> {
-  if (canSave.value) await saveCurrent()
+  if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null }
+  if (savePromise) { await savePromise; return saveIfDirty() }
+  if (!hasUnsavedFiles.value) return
+  savePromise = flushFiles()
+  try { await savePromise } finally { savePromise = null }
+  if (hasUnsavedFiles.value) await saveIfDirty()
 }
+
+async function saveCurrent(): Promise<void> {
+  await saveIfDirty().catch(() => undefined)
+}
+
+watch(() => textSession.value?.content, () => {
+  if (textDirty.value) scheduleAutoSave()
+})
+watch(sketchContent, () => {
+  if (sketchDirty.value) scheduleAutoSave()
+})
 
 function openUploadPicker(): void {
   fileInputRef.value?.click()
@@ -1060,7 +942,7 @@ async function uploadFiles(event: Event): Promise<void> {
         originalName: file.name
       })
       if (!r.ok) {
-        ui.showToast('error', `上传失败：${r.message}`)
+        ui.showToast('error', `导入失败：${r.message}`)
         return
       }
       lastUploaded = r.data.relPath
@@ -1072,7 +954,7 @@ async function uploadFiles(event: Event): Promise<void> {
     await reloadTree(true)
     await loadSelectedFile()
     previewStore.reloadAllProductTabs()
-    ui.showToast('success', `已上传 ${picked.length} 个文件`, 1600)
+    ui.showToast('success', `已导入 ${picked.length} 个文件`, 1600)
   } finally {
     uploading.value = false
   }
@@ -1100,156 +982,6 @@ function normalizeProductSlug(input: string): string {
     .filter(Boolean)
   if (segments.length === 0) throw new Error('请输入有效的项目名称')
   return segments.join('/')
-}
-
-function normalizeFeatureSlug(input: string): string {
-  let rel = input.trim().replace(/\\/g, '/').replace(/^\/+/, '')
-  if (!rel) throw new Error('请输入项目名称')
-  if (rel.includes('..')) throw new Error('项目路径不能包含 ..')
-  if (rel.startsWith('features/')) rel = rel.slice('features/'.length)
-  rel = rel.replace(/\/index\.html?$/i, '').replace(/\.html?$/i, '')
-  const segments = rel
-    .split('/')
-    .map((part) => part.trim().replace(/\s+/g, '-').replace(/[<>:"|?*]+/g, ''))
-    .filter(Boolean)
-  if (segments.length === 0) throw new Error('请输入有效的项目名称')
-  return segments.join('/')
-}
-
-function featureGroupOfRelPath(relPath: string): string | null {
-  const stripped = relPath.replace(/^features\//, '')
-  const segments = stripped.split('/').filter(Boolean)
-  if (segments.length <= 1) return null
-  return segments.slice(0, -1).join('/')
-}
-
-async function renameHeaderFile(): Promise<void> {
-  if (!canRenameHeader.value) return
-  const rootRelPath = props.rootRelPath.replace(/\\/g, '/').replace(/\/+$/, '')
-
-  if (rootRelPath.startsWith('outputs/')) {
-    const input = await ui.askUiProductRename({
-      title: '编辑 UX 项目',
-      message: '修改项目名称，或在高级设置里配置封面标签与 UX / PM 负责人。',
-      productName: productCardMeta.value?.title ?? headerBrandTitle.value,
-      coverTag: productCardMeta.value?.coverTag ?? '',
-      uxName: productCardMeta.value?.uxName ?? '',
-      pmName: productCardMeta.value?.pmName ?? '',
-      confirmLabel: '保存',
-    })
-    if (!input) return
-    let newName: string
-    try {
-      const normalized = normalizeProductSlug(input.name)
-      if (normalized.includes('/')) {
-        ui.showToast('error', '项目名称不能包含 /，如需改分组请在工作区列表操作')
-        return
-      }
-      newName = normalized
-    } catch (e) {
-      ui.showToast('error', e instanceof Error ? e.message : String(e))
-      return
-    }
-    const group = outputGroupOfRelPath(rootRelPath)
-    const targetRelPath = group ? `outputs/${group}/${newName}` : `outputs/${newName}`
-    if (targetRelPath !== rootRelPath) {
-      const r = await call('editor.moveEntry', {
-        workspaceId: props.workspaceId,
-        sourceRelPath: rootRelPath,
-        targetRelPath,
-        scope: 'project',
-      })
-      if (!r.ok) {
-        ui.showToast('error', `重命名失败：${r.message}`)
-        return
-      }
-      previewStore.relocateProjectRoot(rootRelPath, targetRelPath, newName)
-    }
-    const saved = await saveUiProductCardMeta(props.workspaceId, targetRelPath, {
-      title: input.name.trim(),
-      coverTag: input.coverTag,
-      uxName: input.uxName,
-      pmName: input.pmName,
-    })
-    if (!saved.ok) {
-      ui.showToast('error', `保存项目信息失败：${saved.message}`)
-      return
-    }
-    productCardMeta.value = saved.card
-    await reloadTree(true)
-    if (detailMode.value === 'preview') await loadPreviewUrl(true)
-    previewStore.reloadAllProductTabs()
-    ui.showToast('success', targetRelPath !== rootRelPath ? '项目已更新' : '项目信息已保存')
-    return
-  }
-
-  if (rootRelPath.startsWith('features/')) {
-    const input = await ui.askPrompt({
-      title: '重命名 PM 项目',
-      message: `重命名 ${headerBrandTitle.value}。名称不能包含 / （如需改分组请在工作区列表操作）。`,
-      placeholder: '例如：login-page',
-      defaultValue: headerBrandTitle.value,
-      confirmLabel: '重命名',
-    })
-    if (input === null) return
-    let newSlug: string
-    try {
-      newSlug = normalizeFeatureSlug(input)
-      if (newSlug.includes('/')) {
-        ui.showToast('error', '重命名不支持包含 /')
-        return
-      }
-    } catch (e) {
-      ui.showToast('error', e instanceof Error ? e.message : String(e))
-      return
-    }
-    if (newSlug === rootRelPath.split('/').filter(Boolean).at(-1)) return
-    const r = await call('feature.rename', {
-      workspaceId: props.workspaceId,
-      relPath: rootRelPath,
-      newSlug,
-    })
-    if (!r.ok) {
-      ui.showToast('error', `重命名失败：${r.message}`)
-      return
-    }
-    const group = featureGroupOfRelPath(rootRelPath)
-    const targetRelPath = group ? `features/${group}/${newSlug}` : `features/${newSlug}`
-    previewStore.relocateProjectRoot(rootRelPath, targetRelPath, newSlug)
-    await reloadTree(true)
-    if (detailMode.value === 'preview') await loadPreviewUrl(true)
-    previewStore.reloadAllProductTabs()
-    ui.showToast('success', '项目已重命名')
-  }
-}
-
-function deleteHeaderFile(): void {
-  if (!canDeleteHeader.value) return
-  const rootRelPath = props.rootRelPath.replace(/\\/g, '/').replace(/\/+$/, '')
-  const dirtyHint = isDirty.value ? '\n当前未保存改动会一起丢弃。' : ''
-  const isFeature = rootRelPath.startsWith('features/')
-  ui.askConfirm({
-    title: isFeature ? '删除 PM 项目' : '删除 UX 项目',
-    message: `确定删除 ${headerBrandTitle.value}？这个操作会删除整个项目目录。${dirtyHint}`,
-    confirmLabel: '删除',
-    onConfirm: async () => {
-      deleting.value = true
-      const r = isFeature
-        ? await call('feature.delete', { workspaceId: props.workspaceId, relPath: rootRelPath })
-        : await call('editor.deleteEntry', {
-            workspaceId: props.workspaceId,
-            relPath: rootRelPath,
-            scope: 'project',
-          })
-      deleting.value = false
-      if (!r.ok) {
-        ui.showToast('error', `删除失败：${r.message}`)
-        return
-      }
-      previewStore.forceCloseTabsForRootRelPath(rootRelPath)
-      ui.showToast('success', '项目已删除')
-    },
-  })
 }
 
 watch(selectedRelPath, (relPath, previous) => {
@@ -1283,7 +1015,6 @@ watch(() => props.rootRelPath, async () => {
   detailMode.value = selectedRelPath.value ? 'edit' : 'preview'
   resetLoadedContent()
   await loadFeatureResources()
-  await loadSourceProject()
   await reloadTree(false)
   if (detailMode.value === 'preview') await loadPreviewUrl()
   else await loadSelectedFile()
@@ -1334,6 +1065,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+  void saveIfDirty().catch(() => undefined)
   disposed = true
   fileLoadSeq++
   previewLoadSeq++
@@ -1360,7 +1093,6 @@ onMounted(async () => {
   void browser.initialize()
   previewStore.setTabLoaded(props.tabId)
   void loadFeatureResources()
-  void loadSourceProject()
   if (props.activeRelPath) {
     detailMode.value = 'edit'
     selectedRelPath.value = props.activeRelPath
@@ -1378,223 +1110,47 @@ onMounted(async () => {
     <div v-if="error" class="product-files__error">{{ error }}</div>
 
     <Teleport v-if="showWorkbenchTopbar" to="#product-workbench-topbar">
-      <ProjectBrowserTabs v-model:order="workbenchTabOrder" :scope="browserScope" :files="fileTabs" :active-file="detailMode === 'edit' ? selectedRelPath : null" :close-file="closeFileTab" @select-file="activateFileTab" @select-overview="showProjectOverview" />
-      <div v-if="activeWebPage" class="product-files__workbench-topbar flex items-center gap-3 px-3">
-        <ProductFilesBrandMenu :title="headerBrandTitle" :rename-disabled="!canRenameHeader" :delete-disabled="!canDeleteHeader" @rename="renameHeaderFile" @delete="deleteHeaderFile" />
-      </div>
-      <div v-else-if="detailMode === 'preview'" class="product-files__preview-head product-files__workbench-topbar product-workbench-bar">
-        <ProductFilesBrandMenu
-          :title="headerBrandTitle"
-          :rename-disabled="!canRenameHeader"
-          :delete-disabled="!canDeleteHeader"
-          @rename="renameHeaderFile"
-          @delete="deleteHeaderFile"
-        />
-        <div class="product-files__editor-actions">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-7 gap-1.5 px-2 text-xxs"
-            @click="openResourceDialog"
-          >
-            <PackageOpen :size="13" aria-hidden="true" />
-            关联资源
-            <span class="product-files__resource-count">{{ selectedExternalRefIds.length }}</span>
-          </Button>
-          <Button
-            v-if="sourceProject.state === 'unlinked'"
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-7 gap-1.5 px-2 text-xxs"
-            :disabled="sourceLoading || sourceAssociating"
-            @click="associateSourceProject"
-          >
-            <GitBranch :size="13" aria-hidden="true" />
-            {{ sourceAssociating ? '关联中…' : '关联源码' }}
-          </Button>
-          <span v-else-if="sourceProject.state === 'missing'" class="product-files__source-missing">源码副本缺失</span>
-          <template v-else>
-            <span class="product-files__source-state">{{ sourceProjectLabel }}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="h-7 gap-1.5 px-2 text-xxs"
-              :disabled="sourceLaunching"
-              @click="toggleSourcePreview"
-            >
-              {{ sourceLaunching ? '启动中…' : sourceProject.launch.state === 'running' ? '停止预览' : '运行 Mock' }}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="h-7 gap-1.5 px-2 text-xxs"
-              :disabled="!sourceProject.dirty || sourceCommitting"
-              @click="commitSourceProject"
-            >
-              <GitBranch :size="13" aria-hidden="true" />
-              {{ sourceCommitting ? '提交中…' : '提交源码' }}
-            </Button>
-          </template>
-          <Button variant="outline" size="sm" @click="ui.openBranchHistory({ workspaceId: props.workspaceId, relPath: activeTargetFile?.relPath ?? props.rootRelPath, initialView: 'pushes' })">变更记录</Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
-
-      <div
-        v-else-if="selectedKind === 'text' && textSession && selectedFile && isSelectedMarkdown"
-        class="product-files__md-header product-files__workbench-topbar"
-      >
-        <div class="product-files__md-title-block">
-          <div class="product-files__md-title-row">
-            <ProductFilesBrandMenu
-              :title="headerBrandTitle"
-              :rename-disabled="!canRenameHeader"
-              :delete-disabled="!canDeleteHeader"
-              @rename="renameHeaderFile"
-              @delete="deleteHeaderFile"
-            />
-            <span class="product-files__md-pill">MARKDOWN</span>
-                <span v-if="textDirty" class="product-files__dirty">未保存</span>
-          </div>
-        </div>
-        <div class="product-files__editor-actions">
-          <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="loadingContent" @click="reloadSelectedFile">重载</Button>
-          <Button type="button" variant="outline" size="sm" class="text-xs" :disabled="!canSave" @click="saveCurrent">
-            {{ saving ? '保存中…' : '保存' }}
-          </Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
-
-      <div
-        v-else-if="selectedKind === 'text' && textSession && selectedFile && isSelectedHtml"
-        class="product-files__editor-head product-files__workbench-topbar product-workbench-bar"
-      >
-        <ProductFilesBrandMenu
-          :title="headerBrandTitle"
-          :rename-disabled="!canRenameHeader"
-          :delete-disabled="!canDeleteHeader"
-          @rename="renameHeaderFile"
-          @delete="deleteHeaderFile"
-        />
-        <div class="product-files__editor-actions">
-          <span v-if="textDirty" class="product-files__dirty">未保存</span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="text-xs"
-            :disabled="!canSave"
-            @click="saveCurrent"
-          >
-            {{ saving ? '保存中…' : '保存' }}
-          </Button>
-          <Button variant="outline" size="sm" @click="ui.openBranchHistory({ workspaceId: props.workspaceId, relPath: activeTargetFile?.relPath ?? props.rootRelPath, initialView: 'pushes' })">变更记录</Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
-
-      <div
-        v-else-if="selectedKind === 'text' && textSession && selectedFile"
-        class="product-files__editor-head product-files__workbench-topbar"
-      >
-        <ProductFilesBrandMenu
-          :title="headerBrandTitle"
-          :rename-disabled="!canRenameHeader"
-          :delete-disabled="!canDeleteHeader"
-          @rename="renameHeaderFile"
-          @delete="deleteHeaderFile"
-        />
-        <div class="product-files__editor-actions">
-          <span v-if="textDirty" class="product-files__dirty">未保存</span>
-          <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="loadingContent" @click="reloadSelectedFile">重载</Button>
-          <Button type="button" variant="outline" size="sm" class="text-xs" :disabled="!canSave" @click="saveCurrent">
-            {{ saving ? '保存中…' : '保存' }}
-          </Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
-
-      <div v-else-if="selectedKind === 'image' && selectedFile" class="product-files__image-head product-files__workbench-topbar">
-        <ProductFilesBrandMenu
-          :title="headerBrandTitle"
-          :rename-disabled="!canRenameHeader"
-          :delete-disabled="!canDeleteHeader"
-          @rename="renameHeaderFile"
-          @delete="deleteHeaderFile"
-        />
-        <div class="product-files__editor-actions">
-          <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="loadingContent" @click="reloadSelectedFile">重载</Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
-
-      <div v-else-if="selectedFile" class="product-files__editor-head product-files__workbench-topbar">
-        <ProductFilesBrandMenu
-          :title="headerBrandTitle"
-          :rename-disabled="!canRenameHeader"
-          :delete-disabled="!canDeleteHeader"
-          @rename="renameHeaderFile"
-          @delete="deleteHeaderFile"
-        />
-        <div class="product-files__editor-actions">
-          <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="loadingContent" @click="reloadSelectedFile">重载</Button>
-          <FeatureGitSubmitButton
-            :workspace-id="props.workspaceId"
-            :rel-dir="props.rootRelPath"
-            :prepare="saveIfDirty"
-            @done="refreshGitChangeMarks"
-          />
-        </div>
-      </div>
+      <ProjectBrowserTabs v-model:order="workbenchTabOrder" :scope="browserScope" :files="fileTabs" :active-file="detailMode === 'edit' ? selectedRelPath : null" :close-file="closeFileTab" :tree-open="treeOpen" @toggle-tree="toggleTreeOpen" @select-file="activateFileTab" @select-overview="showProjectOverview">
+        <template #actions>
+          <span class="product-files__save-status" role="status">{{ saving ? '保存中…' : hasUnsavedFiles ? '未保存' : '已自动保存' }}</span>
+          <ProjectGitSyncControl :workspace-id="props.workspaceId" :prepare="saveIfDirty" />
+        </template>
+      </ProjectBrowserTabs>
     </Teleport>
 
     <div class="product-files__body">
-      <aside v-show="treeOpen && !activeWebPage" class="product-files__list">
+      <aside v-show="treeOpen" class="product-files__list">
         <div class="product-files__tree-toolbar">
-          <span class="product-files__tree-title">目录树</span>
+          <Button type="button" variant="outline" size="sm" class="product-files__tool-btn product-files__knowledge-button" @click="openResourceDialog">
+            <Library :size="14" aria-hidden="true" />
+            <span class="product-files__tool-label">关联知识库</span>
+            <span v-if="selectedExternalRefIds.length" class="product-files__resource-count">{{ selectedExternalRefIds.length }}</span>
+          </Button>
           <div class="product-files__tree-actions">
             <div class="product-files__create-menu-wrap">
-              <Button type="button" variant="outline" size="sm" class="h-6 px-2 text-xxs" :disabled="creating" @click="createMenuOpen = !createMenuOpen">
-                {{ creating ? '新建中…' : '新建文件' }}
-              </Button>
+              <button
+                type="button"
+                class="product-files__tool-icon"
+                data-icon-button
+                :disabled="creating"
+                :title="creating ? '新建中…' : '新建文件或草图'"
+                :aria-label="creating ? '新建中…' : '新建文件或草图'"
+                @click="createMenuOpen = !createMenuOpen"
+              ><FilePlus2 :size="15" aria-hidden="true" /></button>
               <div v-if="createMenuOpen" class="product-files__create-menu">
                 <button type="button" @click="createMenuOpen = false; createFileInTree()">新建文件</button>
                 <button type="button" @click="createSketchInTree">新建草图</button>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" class="h-6 px-2 text-xxs" :disabled="uploading" @click="openUploadPicker">
-              {{ uploading ? '上传中…' : '上传' }}
-            </Button>
+            <button
+              type="button"
+              class="product-files__tool-icon"
+              data-icon-button
+              :disabled="uploading"
+              :title="uploading ? '导入中…' : '导入文件'"
+              :aria-label="uploading ? '导入中…' : '导入文件'"
+              @click="openUploadPicker"
+            ><Upload :size="15" aria-hidden="true" /></button>
           </div>
           <input ref="fileInputRef" type="file" multiple class="hidden" @change="uploadFiles">
         </div>
@@ -1673,12 +1229,6 @@ onMounted(async () => {
           <ProjectBrowserPane :scope="browserScope" :page-id="activeWebPage.id" :visible="previewStore.activeTabId === props.tabId" @design-created="onDesignCreated" />
         </template>
         <template v-else>
-        <div
-          v-if="!isSelectedMarkdown && !(isSelectedHtml && htmlWorkbenchTabMeta) && !(detailMode === 'preview' && previewUrl)"
-          class="flex shrink-0 items-center border-b border-border px-2 py-1"
-        >
-          <ProductFilesTreeToggle :open="treeOpen" @toggle="toggleTreeOpen" />
-        </div>
         <template v-if="detailMode === 'preview'">
           <div class="product-files__preview-wrap">
             <div v-if="loadingPreview" class="product-files__center">加载预览中…</div>
@@ -1689,12 +1239,9 @@ onMounted(async () => {
               :rel-path="previewFile?.relPath ?? previewDisplayPath"
               :editable-root-path="props.rootRelPath"
               :url="previewUrl"
-              show-tree-toggle
               show-reload
-              :tree-open="treeOpen"
               :reloading="previewBarReloading"
               :reload-disabled="previewBarReloadDisabled"
-              @toggle-tree="toggleTreeOpen"
               @reload="reloadSelectedFile"
             />
             <div v-else class="product-files__center">当前目录没有可预览的 HTML 文件。</div>
@@ -1708,13 +1255,13 @@ onMounted(async () => {
             :file-name="productFileDisplayName(selectedFile, files)"
             :dirty="sketchDirty"
             :saving="saving"
+            :show-save="false"
             @save="saveCurrent"
           />
         </template>
         <template v-else-if="selectedKind === 'text' && textSession && selectedFile && isSelectedMarkdown">
           <section class="product-files__md-pane">
             <div class="product-files__md-toolbar">
-              <ProductFilesTreeToggle :open="treeOpen" @toggle="toggleTreeOpen" />
               <span class="product-files__md-toolbar-label">查看模式</span>
               <div class="product-files__md-seg">
                 <button
@@ -1772,18 +1319,15 @@ onMounted(async () => {
               :element-editing="htmlElementEditing"
               :remarks-visible="htmlRemarksVisible"
               :show-preview-controls="htmlMode === 'preview'"
-              show-tree-toggle
               show-reload
               show-html-view-mode
               :html-mode="htmlMode"
-              :tree-open="treeOpen"
               :reloading="previewBarReloading"
               :reload-disabled="previewBarReloadDisabled"
               :preview-rel-path="textSession.relPath"
               @pick-element="onHtmlPickElement"
               @toggle-element-edit="onHtmlToggleElementEdit"
               @toggle-remarks="onHtmlToggleRemarks"
-              @toggle-tree="toggleTreeOpen"
               @update:html-mode="setHtmlMode"
               @reload="reloadSelectedFile"
             />
@@ -1799,9 +1343,6 @@ onMounted(async () => {
                   :rel-path="textSession.relPath"
                   :editable-root-path="props.rootRelPath"
                   :url="previewUrl"
-                  show-tree-toggle
-                  :tree-open="treeOpen"
-                  @toggle-tree="toggleTreeOpen"
                   @element-selecting-change="htmlElementSelecting = $event"
                   @element-editing-change="htmlElementEditing = $event"
                   @remarks-visible-change="htmlRemarksVisible = $event"
@@ -1850,7 +1391,7 @@ onMounted(async () => {
       :resources="externalRefs.pool"
       :selected-ids="selectedExternalRefIds"
       :busy="resourceSaving"
-      title="调整项目资源"
+      title="关联知识库"
       description="调整当前项目可使用的知识库和 UX 资产，不影响其他项目。"
       @save="saveFeatureResources"
     />
@@ -1865,46 +1406,13 @@ onMounted(async () => {
   min-height: 0;
   background: var(--color-bg-base);
 }
-.product-files__project-bar {
-  display: flex;
-  min-height: 38px;
-  flex: 0 0 38px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--color-bg-panel);
-  padding: 0 10px 0 12px;
-}
-.product-files__project-heading {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 7px;
-  color: var(--color-text-primary);
-  font-size: 12px;
-}
-.product-files__project-heading strong {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 650;
-}
-.product-files__project-label {
-  flex: 0 0 auto;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-.product-files__project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
-.product-files__resource-count { display: inline-flex; min-width: 17px; height: 17px; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-tab-selected); color: var(--color-text-primary); font-size: 9px; font-weight: 700; }
+.product-files__resource-count { display: inline-flex; flex: none; min-width: 18px; height: 18px; padding: 0 5px; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-accent-light); color: var(--color-accent); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .product-files__error {
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(220,38,38,0.18);
-  background: #fff1f2;
+  background: var(--color-error-subtle);
   padding: 7px 12px;
   font-size: 12px;
-  color: #be123c;
+  color: var(--color-error);
 }
 .product-files__body {
   display: flex;
@@ -1916,9 +1424,9 @@ onMounted(async () => {
   width: 240px;
   min-width: 0;
   overflow: auto;
-  border-right: 1px solid var(--color-border-subtle);
   background: var(--color-bg-panel);
-  padding: 6px;
+  border-right: 1px solid var(--color-border-subtle);
+  padding: 8px;
 }
 .product-files__tree-toolbar {
   position: sticky;
@@ -1926,26 +1434,38 @@ onMounted(async () => {
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: -6px -6px 4px;
+  gap: 6px;
+  margin: -8px -8px 6px;
   background: var(--color-bg-panel);
-  padding: 6px;
+  padding: 8px;
 }
-.product-files__tree-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 650;
-  color: var(--color-text-muted, #64748b);
+.product-files__tool-btn {
+  height: 28px;
+  padding: 0 8px;
+  gap: 5px;
+  border-color: var(--color-border);
+  font-size: 12px;
+  font-weight: 500;
 }
+.product-files__tool-btn :deep(svg) { width: 14px; height: 14px; color: var(--color-text-secondary); }
+.product-files__knowledge-button { flex: 1 1 0; min-width: 0; justify-content: flex-start; }
+.product-files__tool-label { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.product-files__save-status { color: var(--color-text-muted); font-size: 10px; white-space: nowrap; }
+.product-files__tool-icon {
+  display: inline-grid; place-items: center; flex: none;
+  width: 28px; height: 28px;
+  border: 0; background: transparent; color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.product-files__tool-icon:hover:not(:disabled) { background: var(--color-bg-hover); color: var(--color-text-primary); }
+.product-files__tool-icon:disabled { opacity: 0.5; cursor: default; }
+.product-files__tool-icon:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
 .product-files__tree-actions {
   display: flex;
-  flex-shrink: 0;
+  flex: none;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 .product-files__create-menu-wrap {
   position: relative;
@@ -1955,25 +1475,26 @@ onMounted(async () => {
   top: calc(100% + 4px);
   right: 0;
   z-index: 20;
-  width: 112px;
+  width: 120px;
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 7px;
-  background: var(--color-bg-panel);
-  box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+  border: 1px solid var(--color-popover-border);
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-md);
   padding: 4px;
+  --radius-button: 6px;
 }
 .product-files__create-menu button {
   display: block;
   width: 100%;
-  border-radius: 5px;
   padding: 6px 8px;
   text-align: left;
-  font-size: 11px;
-  color: var(--color-text-secondary, #334155);
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 .product-files__create-menu button:hover {
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 .product-files__item {
   display: flex;
@@ -1981,19 +1502,26 @@ onMounted(async () => {
   height: 26px;
   align-items: center;
   gap: 3px;
-  border-radius: 5px;
-  padding: 0 4px;
+  border-radius: 8px;
+  margin-top: 2px;
+  padding: 0 6px;
   text-align: left;
-  color: var(--color-text-secondary, #334155);
+  color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 .product-files__item:hover {
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 .product-files__item.is-active {
-  background: var(--color-accent-light);
-  color: var(--color-accent-pressed);
+  background: var(--color-tab-selected);
+  color: var(--color-text-primary);
+}
+.product-files__item:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
 }
 .product-files__item.is-folder {
   font-weight: 600;
@@ -2004,19 +1532,9 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .product-files__tree-guide {
-  position: relative;
   width: 12px;
   height: 100%;
   flex-shrink: 0;
-  border-left: 1px solid color-mix(in srgb, var(--color-border-subtle) 78%, transparent);
-}
-.product-files__tree-guide:last-child::after {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 7px;
-  border-top: 1px solid color-mix(in srgb, var(--color-border-subtle) 78%, transparent);
-  content: '';
 }
 .product-files__twisty {
   display: inline-flex;
@@ -2039,9 +1557,11 @@ onMounted(async () => {
   font-weight: 700;
   line-height: 1;
 }
-.product-files__item.is-active .product-files__icon,
 .product-files__item.is-folder .product-files__icon {
   color: currentColor;
+}
+.product-files__item.is-active .product-files__icon {
+  color: var(--color-accent);
 }
 .product-files__item-main {
   display: flex;
@@ -2071,10 +1591,10 @@ onMounted(async () => {
   line-height: 1;
 }
 .product-files__change.is-added {
-  color: #16a34a;
+  color: var(--color-success);
 }
 .product-files__change.is-modified {
-  color: #d97706;
+  color: var(--color-warning);
 }
 .product-files__tree-delete {
   display: none;
@@ -2114,10 +1634,6 @@ onMounted(async () => {
   overflow: hidden;
   background: var(--color-bg-panel);
 }
-.product-files__workbench-topbar {
-  width: 100%;
-  box-sizing: border-box;
-}
 .product-files__center {
   display: flex;
   height: 100%;
@@ -2125,97 +1641,12 @@ onMounted(async () => {
   justify-content: center;
   text-align: center;
 }
-.product-files__editor-head,
-.product-files__image-head,
-.product-files__preview-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.product-files__editor-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 6px;
-}
-/* Header actions share one compact size, including save, history and Git submit. */
-.product-files__editor-actions :deep(button) {
-  height: 28px;
-  min-height: 28px;
-  border-radius: var(--radius-button);
-  padding: 0 10px;
-  font-size: 11px;
-  line-height: 1;
-}
-.product-files__editor-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 650;
-  color: var(--color-text-primary, #0f172a);
-}
-.product-files__editor-path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 2px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
-  color: var(--color-text-muted, #64748b);
-}
-.product-files__dirty {
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: #fef3c7;
-  padding: 2px 8px;
-  font-size: 10px;
-  color: #b45309;
-}
 .product-files__md-pane {
   display: flex;
   height: 100%;
   min-height: 0;
   flex-direction: column;
   background: var(--color-bg-panel);
-}
-.product-files__md-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--color-bg-panel);
-  padding: 14px 18px 10px;
-}
-.product-files__md-title-block {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.product-files__md-title-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-}
-.product-files__md-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text-primary, #0f172a);
-}
-.product-files__md-pill {
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--color-bg-subtle);
-  padding: 2px 10px;
-  font-size: 10px;
-  line-height: 16px;
-  color: var(--color-text-secondary);
 }
 .product-files__md-toolbar {
   display: flex;
@@ -2263,7 +1694,7 @@ onMounted(async () => {
 }
 .product-files__md-seg-btn:not(.is-active):hover,
 .product-files__md-tool-btn:hover {
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
 .product-files__md-body {
@@ -2293,8 +1724,8 @@ onMounted(async () => {
   right: 12px;
   z-index: 1;
   border-radius: 999px;
-  background: rgba(255,255,255,0.92);
-  box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
   padding: 4px 10px;
   font-size: 11px;
   color: var(--color-text-secondary);

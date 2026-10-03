@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Workspace } from '@shared/types'
 import { useEditorStore } from './editor'
@@ -18,6 +18,7 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
 }
 
 describe('editor store', () => {
+  afterEach(() => { vi.useRealTimers() })
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()
@@ -100,5 +101,55 @@ describe('editor store', () => {
     await editor.openProjectMarkdown('system.md')
     expect(editor.isOpen).toBe(true)
     expect(editor.session?.content).toBe('unsaved')
+  })
+
+  it('debounces keyed edits and writes only the latest content automatically', async () => {
+    vi.useFakeTimers()
+    const write = vi.fn(async (input: unknown) => ({ ok: true as const, data: { relPath: (input as { relPath: string }).relPath, mtime: 'saved' } }))
+    window.api['editor.writeTextFile'] = write
+    const editor = useEditorStore()
+    await editor.openInKey('tab', 'markdown', 'docs/a.md', 'workspace-a')
+    editor.updateContentByKey('tab', 'first')
+    await vi.advanceTimersByTimeAsync(500)
+    editor.updateContentByKey('tab', 'latest')
+    await vi.advanceTimersByTimeAsync(799)
+    expect(write).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(write).toHaveBeenCalledTimes(1)
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ content: 'latest' }))
+    expect(editor.tabIsDirty('tab').value).toBe(false)
+  })
+
+  it('preserves edits made during saving and flushes them before closing the tab', async () => {
+    vi.useFakeTimers()
+    let complete!: (result: { ok: true; data: { relPath: string; mtime: string } }) => void
+    const write = vi.fn()
+      .mockImplementationOnce(() => new Promise(resolve => { complete = resolve }))
+      .mockResolvedValue({ ok: true, data: { relPath: 'docs/a.md', mtime: 'second' } })
+    window.api['editor.writeTextFile'] = write
+    const editor = useEditorStore()
+    await editor.openInKey('tab', 'markdown', 'docs/a.md', 'workspace-a')
+    editor.updateContentByKey('tab', 'first')
+    const saving = editor.saveByKey('tab', true)
+    editor.updateContentByKey('tab', 'newer')
+    const closing = editor.closeKey('tab')
+    complete({ ok: true, data: { relPath: 'docs/a.md', mtime: 'first' } })
+    await saving
+    await closing
+    expect(write).toHaveBeenCalledTimes(2)
+    expect(write.mock.calls[1][0]).toMatchObject({ content: 'newer', expectedMtime: 'first' })
+    expect(editor.tabSession('tab').value).toBeNull()
+  })
+
+  it('retains the dirty session when a write fails', async () => {
+    vi.useFakeTimers()
+    window.api['editor.writeTextFile'] = vi.fn(async () => ({ ok: false, code: 'MTIME_CONFLICT', message: '外部修改' }))
+    const editor = useEditorStore()
+    await editor.openInKey('tab', 'markdown', 'docs/a.md', 'workspace-a')
+    editor.updateContentByKey('tab', 'draft')
+    await editor.closeKey('tab')
+    expect(editor.tabSession('tab').value?.content).toBe('draft')
+    expect(editor.tabIsDirty('tab').value).toBe(true)
+    expect(editor.tabIsSaving('tab').value).toBe(false)
   })
 })

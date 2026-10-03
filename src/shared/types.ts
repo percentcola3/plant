@@ -124,6 +124,7 @@ export type ExternalRef = {
   source: string                      // git URL 或本地路径
   poolPath: string                    // git: ~/.ui-client/external-pool/<id>/；local: 同 source
   instructionFile?: string            // 资源包根目录内的 AI 使用说明，当前约定为 AI_USAGE.md
+  builtinTemplateId?: import('./design-templates').DesignTemplateId
   addedAt: string
   lastSyncedAt?: string
   checkout?: ExternalRefCheckout

@@ -2,6 +2,7 @@ import type { AiProvider } from './ai-provider'
 import type { BrowserScope, BrowserBounds, ProjectWebPage, WebPageText, WebPageDesign } from './project-browser'
 import type { GitPushHistory } from './git-push-summary'
 import type { PlantConnection } from './plant'
+import type { DesignTemplateId, DesignTemplateFileContent } from './design-templates'
 // IPC 通讯单一事实源。main 与 renderer 都从这里取类型。
 // 新增 channel = 加一行到 IpcContract + 把 channel 名加进 IPC_CHANNELS。
 
@@ -397,8 +398,12 @@ export interface IpcContract {
     output: { committed: boolean; pushed: boolean; fileCount: number; warning?: string; summary?: string }
   }
   'git.history': {
-    input: { workspaceId: string; limit?: number }
+    input: { workspaceId: string; limit?: number; offset?: number; relPath?: string }
     output: GitCommitSummary[]
+  }
+  'git.autoSyncStatus': {
+    input: { workspaceId: string }
+    output: { state: 'idle' | 'syncing' | 'error'; message?: string; lastSyncedAt?: string }
   }
   'git.revertTo': {
     input: { workspaceId: string; targetSha: string }
@@ -741,6 +746,9 @@ export interface IpcContract {
 
   // ──── External（外部资源池 + 工作区引用） ────
   'external.list': { input: void; output: ExternalRef[] }
+  'external.readTemplate': { input: { templateId: DesignTemplateId }; output: DesignTemplateFileContent[] }
+  'external.installTemplate': { input: { templateId: DesignTemplateId }; output: ExternalRef }
+  'external.copyTemplate': { input: { templateId: DesignTemplateId; parentPath: string }; output: { path: string } }
   'external.refs': { input: { workspaceId: string }; output: ExternalRefBinding[] }
   'external.add': {
     input:
@@ -911,6 +919,7 @@ export const IPC_CHANNELS = [
   'git.restoreFile',
   'git.fileDiff',
   'git.history',
+  'git.autoSyncStatus',
   'git.pushHistory',
   'git.submitFeature',
   'git.revertTo',
@@ -977,6 +986,9 @@ export const IPC_CHANNELS = [
   'personalSpace.switch',
   'personalSpace.remove',
   'external.list',
+  'external.readTemplate',
+  'external.installTemplate',
+  'external.copyTemplate',
   'external.refs',
   'external.add',
   'external.remove',
@@ -1025,6 +1037,7 @@ export const EVENT_PREFIXES = [
   'conflict.aiResolve.done:',
   'saga.fs-change-pushed:',
   'git.remote-updated:',
+  'git.auto-sync-status:',
 ] as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[number]

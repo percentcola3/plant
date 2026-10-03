@@ -68,7 +68,7 @@ const showTerminal = computed(() => shouldShowTerminalPane({
 <template>
   <div class="app-shell h-full flex flex-col">
     <TopBar />
-    <div class="app-shell__workspace flex flex-1 min-h-0 flex-col">
+    <div class="app-shell__workspace flex flex-1 min-h-0 flex-col" :class="{ 'app-shell__workspace--editing': isPreviewActive }">
       <div
         v-if="suppressTerminalHeader"
         id="product-workbench-topbar"
@@ -110,3 +110,16 @@ const showTerminal = computed(() => shouldShowTerminalPane({
     <IdeLaunchIndicator />
   </div>
 </template>
+
+<style scoped>
+.app-shell__workspace--editing {
+  --color-bg-base: var(--color-bg-panel);
+  --color-bg-content: var(--color-bg-panel);
+  --radius-button: 8px;
+  --radius-control: 8px;
+  margin: 0 8px 8px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--color-bg-panel);
+}
+</style>

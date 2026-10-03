@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { FolderKanban, BookOpen, Sparkles } from 'lucide-vue-next'
+import KnowledgeIcon from '@/components/brand/KnowledgeIcon.vue'
+import { FolderKanban, Sparkles } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
 import { useEditorStore } from '@/stores/editor'
 
@@ -51,7 +52,7 @@ function openSkills(): void {
         data-tooltip="知识库"
         @click="openResources"
       >
-        <BookOpen :size="18" aria-hidden="true" />
+        <KnowledgeIcon :size="18" aria-hidden="true" />
       </button>
 
       <button
@@ -113,8 +114,8 @@ function openSkills(): void {
 
 .workspace-rail__button.is-active {
   border-color: transparent;
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  background: var(--color-accent-light);
+  color: var(--color-leaf);
 }
 
 .workspace-rail__button:focus-visible {

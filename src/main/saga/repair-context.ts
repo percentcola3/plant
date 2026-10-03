@@ -94,7 +94,7 @@ const STEP_LABEL: Record<string, string> = {
 // 把 RepairContext 渲染成给用户复制的中文 prompt。
 // 比旧 buildGitRepairPrompt 多出：已完成步骤、剩余步骤、failure 结构化摘要、工作树/远端状态快照。
 export function renderRepairPrompt(ctx: RepairContext): string {
-  const lines: string[] = [
+  const lines: (string | null)[] = [
     '请帮我修复当前项目的 Git 工作流失败。',
     '',
     `动作：${SAGA_LABEL[ctx.saga] ?? ctx.saga}`,

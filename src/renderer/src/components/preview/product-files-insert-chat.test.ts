@@ -33,7 +33,7 @@ describe('product files insert to chat', () => {
   it('keeps file operations with the file area and supports creating files in the tree', () => {
     expect(productFilesSource).toContain('新建文件')
     expect(productFilesSource).toContain('createFileInTree')
-    expect(productFilesSource).toContain('product-files__editor-actions')
+    expect(productFilesSource).toContain('product-files__tree-actions')
     expect(productFilesSource).toContain('editor.writeTextFile')
   })
 
@@ -43,7 +43,7 @@ describe('product files insert to chat', () => {
     expect(productFilesSource).toContain("preview.fileUrl")
     expect(productFilesSource).toContain('function backToPreview')
     expect(productFilesSource).toContain('const treeOpen = ref(true)')
-    expect(productFilesSource).toContain('<ProductFilesTreeToggle :open="treeOpen" @toggle="toggleTreeOpen" />')
+    expect(productFilesSource).toContain(':tree-open="treeOpen" @toggle-tree="toggleTreeOpen"')
     expect(productFilesSource).not.toContain('@click="backToPreview"')
     expect(productFilesSource).not.toContain('show-back')
   })

@@ -8,6 +8,11 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --color-card-surface: #1e2822;
+    --color-card-hover: #26342b;
+    --color-card-group: #18201b;
+    --shadow-card: 0 3px 12px rgba(0, 0, 0, 0.12);
+    --shadow-card-hover: 0 6px 18px rgba(0, 0, 0, 0.18);
 
     /* Botanical dark — 叶绿基调的夜间花园，中性面绿倾向、主色叶绿 */
     --background: 152 12% 7%;
@@ -41,7 +46,8 @@
     --ring: 152 40% 60%;
 
     --radius: 0.75rem;
-    --radius-button: 6px;
+    --radius-button: 14px;
+    --radius-control: 14px;
 
     --color-bg-base: #101512;
     --color-bg-panel: #151b17;
@@ -117,86 +123,91 @@
   .light {
     color-scheme: light;
 
-    /* Botanical light — 晨光苗圃：纸白偏绿，森林绿交互 */
-    --background: 140 20% 99%;
-    --foreground: 152 15% 12%;
+    /* Paper white surfaces, neutral ink, botanical accents. */
+    --background: 0 0% 100%;
+    --foreground: 150 3% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 152 15% 12%;
+    --card-foreground: 150 3% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 152 15% 12%;
-    --primary: 152 55% 30%;
+    --popover-foreground: 150 3% 14%;
+    --primary: 153 57% 29%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 140 14% 96%;
-    --secondary-foreground: 152 15% 12%;
-    --muted: 140 14% 96%;
-    --muted-foreground: 150 7% 40%;
-    --accent: 140 14% 96%;
-    --accent-foreground: 152 15% 12%;
+    --secondary: 80 20% 98%;
+    --secondary-foreground: 150 3% 14%;
+    --muted: 80 20% 98%;
+    --muted-foreground: 150 2% 42%;
+    --accent: 135 24% 96%;
+    --accent-foreground: 150 3% 14%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 140 10% 91%;
-    --input: 140 10% 88%;
-    --popover-border: 152 15% 12% / 0.1;
-    --dialog-border: 152 15% 12% / 0.08;
+    --border: 60 2% 90%;
+    --input: 60 2% 86%;
+    --popover-border: 150 3% 14% / 0.1;
+    --dialog-border: 150 3% 14% / 0.08;
     --ring: 152 50% 34%;
 
+    --color-card-surface: #f8f9f6;
+    --color-card-hover: #f0f5ef;
+    --color-card-group: #fdfdfb;
+    --shadow-card: 0 3px 12px rgba(32, 36, 32, 0.025);
+    --shadow-card-hover: 0 6px 18px rgba(32, 36, 32, 0.06);
     --color-bg-base: #ffffff;
     --color-bg-panel: #ffffff;
-    --color-bg-subtle: #f4f7f4;
+    --color-bg-subtle: #fafbf8;
     --color-bg-elevated: #ffffff;
-    --color-bg-hover: rgba(28, 56, 40, 0.05);
-    --color-bg-canvas: #eef2ee;
-    --color-bg-shell: #eef2ee;
-    --color-bg-shell-gradient: linear-gradient(180deg, #f2f6f1 0%, #eef2ee 100%);
+    --color-bg-hover: rgba(32, 36, 32, 0.05);
+    --color-bg-canvas: #f8f9f6;
+    --color-bg-shell: #f8f9f6;
+    --color-bg-shell-gradient: linear-gradient(180deg, #fdfdfb 0%, #f8f9f6 100%);
     --color-bg-content: #ffffff;
-    --color-chrome-bg: #edf2ec;
-    --color-tab-selected: #eef0ee;
-    --color-chrome-border: rgba(28, 56, 40, 0.07);
-    --color-border: #e1e7e0;
-    --color-border-subtle: rgba(28, 56, 40, 0.07);
-    --color-product-card-border: rgba(28, 56, 40, 0.08);
-    --color-product-card-hover-bg: #eef3ec;
-    --color-popover-border: rgba(28, 56, 40, 0.1);
-    --color-dialog-border: rgba(28, 56, 40, 0.08);
-    --color-border-strong: #c6d2c7;
-    --color-text-primary: #1c2a20;
-    --color-text-secondary: #5b6b5f;
-    --color-text-tertiary: #859288;
-    --color-text-muted: #859288;
-    --color-accent: #1e8e5a;
-    --color-accent-hover: #17794b;
-    --color-accent-pressed: #136a42;
-    --color-accent-light: rgba(30, 142, 90, 0.12);
-    --color-accent-subtle: rgba(30, 142, 90, 0.08);
-    --color-accent-border: rgba(30, 142, 90, 0.28);
-    --color-brand-accent: #1e8e5a;
+    --color-chrome-bg: #fdfdfb;
+    --color-tab-selected: #edf4ee;
+    --color-chrome-border: rgba(32, 36, 32, 0.07);
+    --color-border: #e5e5e2;
+    --color-border-subtle: rgba(32, 36, 32, 0.07);
+    --color-product-card-border: rgba(32, 36, 32, 0.08);
+    --color-product-card-hover-bg: #f3f7f1;
+    --color-popover-border: rgba(32, 36, 32, 0.1);
+    --color-dialog-border: rgba(32, 36, 32, 0.08);
+    --color-border-strong: #d0d2cd;
+    --color-text-primary: #202c25;
+    --color-text-secondary: #536158;
+    --color-text-tertiary: #78847c;
+    --color-text-muted: #78847c;
+    --color-accent: #20764f;
+    --color-accent-hover: #196340;
+    --color-accent-pressed: #145335;
+    --color-accent-light: rgba(32, 118, 79, 0.07);
+    --color-accent-subtle: rgba(32, 118, 79, 0.05);
+    --color-accent-border: rgba(32, 118, 79, 0.28);
+    --color-brand-accent: #20764f;
     --color-text-onbrand: #ffffff;
-    --color-button-bg: #1e8e5a;
+    --color-button-bg: #20764f;
     --color-button-fg: #ffffff;
-    --color-button-bg-hover: #25a067;
-    --color-button-bg-pressed: #17794b;
+    --color-button-bg-hover: #29865d;
+    --color-button-bg-pressed: #196340;
     --product-workbench-bar-height: 48px;
     --product-workbench-control-height: 32px;
     --product-workbench-icon-btn-width: 32px;
     --product-workbench-icon-size: 14px;
     --color-button-outline-bg: #ffffff;
-    --color-button-outline-fg: #1c2a20;
-    --color-button-outline-hover: #f4f7f4;
+    --color-button-outline-fg: #202c25;
+    --color-button-outline-hover: #fafbf8;
     --color-success: #1a7f37;
     --color-success-subtle: rgba(26, 127, 55, 0.12);
     --color-warning: hsl(38 92% 50%);
     --color-warning-subtle: hsl(38 92% 50% / 0.12);
     --color-error-subtle: hsl(var(--destructive) / 0.12);
-    --color-info: #1e8e5a;
-    --color-info-subtle: rgba(30, 142, 90, 0.12);
-    --color-leaf: #1e8e5a;
-    --color-leaf-strong: #25a067;
+    --color-info: #20764f;
+    --color-info-subtle: rgba(32, 118, 79, 0.07);
+    --color-leaf: #20764f;
+    --color-leaf-strong: #29865d;
     --color-leaf-deep: #0f5c3c;
     --color-leaf-bright: #6fd0a0;
     --color-leaf-contrast: #ffffff;
-    --shadow-sm: 0 2px 8px rgba(28, 56, 40, 0.035);
-    --shadow-md: 0 8px 28px rgba(28, 56, 40, 0.065);
-    --shadow-leaf: 0 6px 22px rgba(30, 142, 90, 0.22);
+    --shadow-sm: 0 2px 8px rgba(32, 36, 32, 0.035);
+    --shadow-md: 0 8px 28px rgba(32, 36, 32, 0.065);
+    --shadow-leaf: 0 6px 22px rgba(32, 118, 79, 0.22);
   }
 }
 
@@ -219,7 +230,7 @@
 .app-shell {
   position: relative;
   overflow: hidden;
-  background: var(--color-bg-shell, var(--color-bg-canvas));
+  background: var(--color-chrome-bg, var(--color-bg-subtle));
 }
 
 .app-shell__workspace {
@@ -232,6 +243,8 @@
 }
 
 .app-content-surface {
+  border-radius: 14px;
+  margin: 0 8px 8px 0;
   background: var(--color-bg-content, var(--color-bg-base));
 }
 
@@ -288,7 +301,7 @@
   flex-shrink: 0;
   padding: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-button);
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: pointer;
@@ -305,7 +318,7 @@
 
 .product-workbench-icon-btn.is-active,
 .product-workbench-icon-btn[aria-expanded='true'] {
-  background: var(--color-bg-hover);
+  background: var(--color-tab-selected);
   color: var(--color-text-primary);
   box-shadow: none;
 }
@@ -394,14 +407,11 @@ html.light .build-hero__gradient-text {
   margin: -8px;
   transition:
     background var(--duration-normal, 180ms) var(--ease-out, ease),
-    padding var(--duration-normal, 180ms) var(--ease-out, ease),
-    margin var(--duration-normal, 180ms) var(--ease-out, ease);
+    box-shadow var(--duration-normal, 180ms) var(--ease-out, ease);
 }
 
 .product-card:hover,
 .project-card:hover {
-  padding: 5px 6px 8px;
-  margin: -5px -6px -8px;
   background: var(--color-product-card-hover-bg);
 }
 
@@ -411,6 +421,13 @@ html.light .build-hero__gradient-text {
 
 /* One action-button radius across components and teleported dialogs.
    Project/recent cards retain their surface shape. Preview iframes are isolated. */
-:is(#app, body) button:not(.product-card):not(.project-card):not(.recent-project) {
+:is(#app, body) button:not(.product-card):not(.project-card):not(.recent-project):not(.ai-task-card):not(.component-card) {
   border-radius: var(--radius-button) !important;
+}
+
+/* Icon controls keep their existing hit area with a circular silhouette. */
+[data-icon-button],
+.workspace-rail__button {
+  --radius-button: 999px;
+  border-radius: 999px !important;
 }

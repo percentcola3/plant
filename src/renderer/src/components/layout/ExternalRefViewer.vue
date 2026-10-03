@@ -513,14 +513,16 @@ async function renderMarkdownFile(seq: number, workspaceId: string, relPath: str
 }
 
 .component-card {
-  background: var(--color-bg-panel);
-  border-color: color-mix(in srgb, var(--color-border) 76%, transparent);
+  background: var(--color-card-surface);
+  border: 0;
+  border-radius: 12px;
   color: var(--color-text-primary);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .component-card[aria-disabled="false"]:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  background: var(--color-card-hover);
+  box-shadow: var(--shadow-card-hover);
   transform: translateY(-1px);
 }
 
@@ -528,8 +530,8 @@ async function renderMarkdownFile(seq: number, workspaceId: string, relPath: str
   position: relative;
   height: 148px;
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 7px;
+  border: 0;
+  border-radius: 10px;
   background: var(--color-bg-subtle);
 }
 

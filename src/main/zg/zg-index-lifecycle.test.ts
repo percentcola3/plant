@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('./zg-runtime', () => mocks)
 
-import { ensureZgIndex, resetZgSearchStateForTests, zgIndexBuild, zgIndexError, zgIndexState } from './zg-search'
+import { ensureZgIndex, resetZgSearchStateForTests, summarizeZgIndexError, zgIndexBuild, zgIndexError, zgIndexState } from './zg-search'
 
 describe('zg index failure state', () => {
   let root: string
@@ -45,5 +45,18 @@ describe('zg index failure state', () => {
     await expect(ensureZgIndex(root)).resolves.toBe(false)
     expect(zgIndexError(root)).toContain('ENOENT')
     expect(zgIndexState(root)).toBe('error')
+  })
+
+  it('keeps the missing module error instead of the trailing Node version', async () => {
+    const stderr = "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'zod' imported from /app/zg/schemas.js\n    at packageResolve (node:internal/modules/esm/resolve:778:12)\n}\nNode.js v22.22.3"
+    mocks.runZgStream.mockResolvedValue({ code: 1, stdout: '', stderr, killed: false })
+    await expect(ensureZgIndex(root)).resolves.toBe(false)
+    expect(zgIndexError(root)).toContain("Cannot find package 'zod'")
+    expect(zgIndexError(root)).not.toContain('Node.js v22')
+  })
+
+  it('explains Node 20 module resolution assertions and killed index builds', () => {
+    expect(summarizeZgIndexError('Error [ERR_INTERNAL_ASSERTION]: Code: ERR_MODULE_NOT_FOUND;\n}\nNode.js v20.18.1', 1)).toContain('依赖模块缺失')
+    expect(summarizeZgIndexError('Scanning files...', 1, true)).toContain('超时')
   })
 })

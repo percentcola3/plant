@@ -1,28 +1,23 @@
 <script setup lang="ts">
-import { BookOpen, Layers, Sparkles, Sprout } from 'lucide-vue-next'
+import KnowledgeIcon from './KnowledgeIcon.vue'
+import { FolderKanban, Layers, Sparkles, Sprout } from 'lucide-vue-next'
 
-withDefaults(defineProps<{ kind?: 'knowledge' | 'assets' | 'skills' | 'plant' }>(), { kind: 'plant' })
-const icons = { knowledge: BookOpen, assets: Layers, skills: Sparkles, plant: Sprout }
+withDefaults(defineProps<{ kind?: 'knowledge' | 'assets' | 'skills' | 'plant' | 'workbench' }>(), { kind: 'plant' })
+const icons = { knowledge: KnowledgeIcon, assets: Layers, skills: Sparkles, plant: Sprout, workbench: FolderKanban }
 </script>
 
 <template>
   <div class="plant-illustration" aria-hidden="true">
-    <span class="plant-illustration__halo" />
-    <span class="plant-illustration__sheet plant-illustration__sheet--back" />
-    <span class="plant-illustration__sheet plant-illustration__sheet--front">
-      <component :is="icons[kind]" :size="27" :stroke-width="1.4" />
-      <span class="plant-illustration__line" /><span class="plant-illustration__line plant-illustration__line--short" />
+    <span class="plant-illustration__paper plant-illustration__paper--back" />
+    <span class="plant-illustration__symbol">
+      <component :is="icons[kind]" :size="30" :stroke-width="1.6" />
     </span>
   </div>
 </template>
 
 <style scoped>
-.plant-illustration { position: relative; width: 140px; height: 78px; flex: none; pointer-events: none; background: url('@/assets/project-placeholder.svg') right center / cover no-repeat; }
-.plant-illustration__halo { position: absolute; inset: 8px 26px 3px 15px; border-radius: 50%; background: color-mix(in srgb, var(--color-leaf) 7%, transparent); }
-.plant-illustration__sheet { position: absolute; width: 48px; height: 57px; border: 1px solid color-mix(in srgb, var(--color-leaf) 25%, var(--color-border)); border-radius: 9px; }
-.plant-illustration__sheet--back { top: 9px; left: 32px; transform: rotate(-14deg); background: color-mix(in srgb, var(--color-leaf) 12%, var(--color-bg-elevated)); }
-.plant-illustration__sheet--front { top: 12px; left: 45px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transform: rotate(7deg); background: var(--color-bg-elevated); color: var(--color-leaf); box-shadow: 0 5px 12px color-mix(in srgb, var(--color-leaf) 8%, transparent); }
-.plant-illustration__line { width: 24px; height: 2px; border-radius: 2px; background: color-mix(in srgb, var(--color-leaf) 20%, transparent); }
-.plant-illustration__line--short { width: 16px; }
-@media (prefers-reduced-motion: no-preference) { .plant-illustration__sheet { transition: transform 180ms ease; } }
+.plant-illustration { position: relative; width: 140px; height: 78px; flex: none; pointer-events: none; }
+.plant-illustration__paper, .plant-illustration__symbol { position: absolute; top: 12px; left: 28%; width: 48px; height: 56px; border-radius: 10px; }
+.plant-illustration__paper--back { background: color-mix(in srgb, var(--color-leaf) 10%, var(--color-bg-subtle)); transform: translate(-7px, -4px) rotate(-10deg); }
+.plant-illustration__symbol { display: grid; place-items: center; background: var(--color-bg-panel); color: var(--color-leaf); box-shadow: 0 4px 14px rgba(24, 38, 28, .07); transform: rotate(5deg); }
 </style>

@@ -49,13 +49,13 @@ function setMode(mode: 'preview' | 'source'): void {
   flex-shrink: 0;
   padding: 3px 4px;
   border-radius: 8px;
-  background: var(--color-bg-canvas);
+  background: var(--color-tab-selected);
 }
 
 .html-view-mode-toggle :deep(.product-workbench-icon-btn) {
   width: 28px;
   height: 24px;
-  border-radius: 5px;
+  border-radius: 6px !important;
   background: transparent;
   color: var(--color-text-tertiary);
 }

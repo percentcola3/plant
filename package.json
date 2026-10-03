@@ -1,6 +1,6 @@
 {
   "name": "plant",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Plant：让想法生长为界面的 AI UI 设计工具",
   "private": true,
   "type": "module",

@@ -8,12 +8,12 @@ describe('HtmlViewModeToggle', () => {
     'utf8'
   )
 
-  it('uses a dark track with an active chip only on the selected mode', () => {
+  it('uses a neutral track with an active chip only on the selected mode', () => {
     expect(source).toContain('product-workbench-icon-btn')
     expect(source).toContain('is-active')
     expect(source).toContain('MonitorPlay')
     expect(source).toContain('CodeXml')
-    expect(source).toContain('background: var(--color-bg-canvas)')
+    expect(source).toContain('background: var(--color-tab-selected)')
     expect(source).toContain('background: transparent')
     expect(source).toContain('.product-workbench-icon-btn.is-active)')
     expect(source).toContain('background: var(--color-bg-hover)')

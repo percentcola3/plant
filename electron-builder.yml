@@ -15,7 +15,7 @@ files:
   - "!node_modules/**/{CHANGELOG.md,README.md,readme.md,PATENTS,LICENSE}"
   - "!**/{.eslintrc,.prettierrc,.editorconfig,.gitignore,.gitattributes}"
 
-# 把 inspector / skill-templates 这些运行时资源复制到
+# 把 inspector / skill-templates / design-templates 这些运行时资源复制到
 # process.resourcesPath/<...>，preview-server 的 resolveAppResource() 在
 # packaged 态从这里读。
 # 注：claude-code 二进制不内置——用户照内网指南自己装，App 仅做环境检查。

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KnowledgeIcon from '@/components/brand/KnowledgeIcon.vue'
 // 默认工作台的知识库 / 技能配置页。
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -28,7 +29,10 @@ import ProjectRulesPanel from '@/components/layout/ProjectRulesPanel.vue'
 import ResourceIndexStatus from '@/components/layout/ResourceIndexStatus.vue'
 import { Button } from '@/components/ui/button'
 import PlantIllustration from '@/components/brand/PlantIllustration.vue'
-import { BookOpen, Sparkles, Palette, TriangleAlert, Plus, RefreshCw } from 'lucide-vue-next'
+import PlantPageHeader from './PlantPageHeader.vue'
+import DesignAssetSourceDialog from '@/components/resources/DesignAssetSourceDialog.vue'
+import { DESIGN_TEMPLATES } from '@shared/design-templates'
+import { Palette, TriangleAlert, Plus, RefreshCw, Search, Loader2 } from 'lucide-vue-next'
 import {
   Dialog,
   DialogContent,
@@ -229,9 +233,37 @@ const projectResolvedBindings = computed(() =>
 const projectKnowledgeBindings = computed(() =>
   projectResolvedBindings.value.filter((item) => item.ref?.category === 'knowledge')
 )
-const projectUikitBindings = computed(() =>
-  projectResolvedBindings.value.filter((item) => item.ref?.category === 'uikit')
-)
+const projectUikitBindings = computed(() => {
+  const bound = projectResolvedBindings.value
+    .filter((item) => item.ref?.category === 'uikit')
+    .map(item => ({ ...item, isBound: true }))
+  const defaults = ext.pool
+    .filter(ref => ref.category === 'uikit' && ref.builtinTemplateId
+      && !bound.some(item => item.binding.externalRefId === ref.id))
+    .map(ref => ({ ref, isBound: false, binding: {
+      alias: ref.alias, externalRefId: ref.id, addedAt: ref.addedAt
+    } }))
+  return [...bound, ...defaults]
+})
+const designAssetSource = ref<InstanceType<typeof DesignAssetSourceDialog> | null>(null)
+const attachingExternal = ref<Record<string, boolean>>({})
+
+function assetName(ref: ExternalRef | null, alias: string): string {
+  return DESIGN_TEMPLATES.find(template => template.id === ref?.builtinTemplateId)?.name ?? alias
+}
+
+async function attachAsset(ref: ExternalRef): Promise<void> {
+  const workspaceId = active.value?.kind === 'project' ? active.value.id : null
+  if (!workspaceId || attachingExternal.value[ref.id]) return
+  attachingExternal.value = { ...attachingExternal.value, [ref.id]: true }
+  try {
+    await ext.attach(workspaceId, ref.id)
+    await ws.refreshScan(workspaceId)
+    ui.showToast('success', `${assetName(ref, ref.alias)} 已关联当前项目`)
+  } catch (error) {
+    ui.showToast('error', error instanceof Error ? error.message : String(error), 4500)
+  } finally { attachingExternal.value = { ...attachingExternal.value, [ref.id]: false } }
+}
 const hasExternalUpdates = computed(() =>
   projectResolvedBindings.value.some((item) =>
     !!item.ref && ext.syncStatusById[item.ref.id]?.hasUpdates === true
@@ -321,13 +353,10 @@ function externalMetaText(
   status: ExternalRefSyncStatus | null | undefined,
   checking: boolean
 ): string {
-  const parts = [externalSyncStatusText(ref?.kind, status, checking)]
+  const parts = [ref?.builtinTemplateId ? '内置' : externalSyncStatusText(ref?.kind, status, checking)]
+  const template = DESIGN_TEMPLATES.find(item => item.id === ref?.builtinTemplateId)
+  if (template) parts.push(template.version)
   if (ref?.kind === 'git') parts.push(formatExternalCheckout(ref.checkout))
-  if (ref?.indexStatus?.state === 'queued') parts.push('索引排队中')
-  else if (ref?.indexStatus?.state === 'building') parts.push('索引构建中')
-  else if (ref?.indexStatus?.state === 'ready') parts.push(`索引 ${ref.indexStatus.fileCount ?? 0} 文件`)
-  else if (ref?.indexStatus?.state === 'error') parts.push('索引失败')
-  else parts.push('待构建索引')
   parts.push('只读')
   return parts.join(' · ')
 }
@@ -489,8 +518,8 @@ async function refreshOutdatedExternalRefs(): Promise<void> {
 }
 
 async function loadProjectExternalRefs(): Promise<void> {
-  if (!active.value || active.value.kind !== 'project') return
   await ext.refreshPool()
+  if (!active.value || active.value.kind !== 'project') return
   await ext.refreshBindings(active.value.id)
   await checkProjectExternalStatuses()
 }
@@ -509,7 +538,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => projectResolvedBindings.value.some(({ ref }) =>
+  () => [...projectResolvedBindings.value, ...projectUikitBindings.value].some(({ ref }) =>
     !!ref && (
       !ref.indexStatus
       || ref.indexStatus.state === 'missing'
@@ -539,17 +568,34 @@ watch(() => active.value?.id, () => {
 
 <template>
   <main :class="embedded ? 'flex min-w-0 flex-col' : 'flex h-full min-w-0 flex-1 flex-col overflow-hidden'">
-    <header v-if="!embedded" class="config-page-header border-b border-[var(--color-border-subtle)] px-6 py-5">
-      <div class="config-page-header__icon" aria-hidden="true">
-        <Sparkles v-if="props.section === 'skills'" :size="20" />
-        <BookOpen v-else :size="20" />
-      </div>
-      <div>
-        <h1>{{ pageTitle }}</h1>
-        <p>{{ pageDescription }}</p>
-      </div>
-      <PlantIllustration class="config-page-header__art" :kind="props.section === 'skills' ? 'skills' : 'knowledge'" />
-    </header>
+    <PlantPageHeader v-if="!embedded" :title="pageTitle" :description="pageDescription" :kind="props.section === 'skills' ? 'skills' : 'knowledge'">
+      <template v-if="showResources" #actions>
+        <form class="search-form" role="search" @submit.prevent="runProjectSearch">
+          <label class="search-field">
+            <Search :size="16" aria-hidden="true" />
+            <input
+              v-model="searchQuery"
+              class="search-input"
+              type="search"
+              placeholder="全项目 + 知识库 语义搜索…"
+              aria-label="搜索项目文件和知识库"
+              autocomplete="off"
+            />
+          </label>
+          <Button
+            type="submit"
+            size="icon"
+            class="search-button"
+            :disabled="searchLoading || !searchQuery.trim()"
+            :aria-label="searchLoading ? '搜索中' : '搜索'"
+            :title="searchLoading ? '搜索中' : '搜索'"
+          >
+            <Loader2 v-if="searchLoading" class="animate-spin" :size="16" aria-hidden="true" />
+            <Search v-else :size="18" aria-hidden="true" />
+          </Button>
+        </form>
+      </template>
+    </PlantPageHeader>
 
     <div v-if="showResources && warnings.length > 0" :class="embedded ? 'warning-strip mb-3' : 'warning-strip mx-5 mt-3'">
       <TriangleAlert class="warning-dot" :size="14" aria-hidden="true" />
@@ -564,23 +610,31 @@ watch(() => active.value?.id, () => {
       >{{ hydratingExternal ? '更新中…' : '更新外联' }}</button>
     </div>
 
-    <section :class="embedded ? 'space-y-4' : 'min-h-0 flex-1 overflow-y-auto p-5 space-y-4'">
-      <!-- 全项目 + 知识库 文本搜索（独立顶部条；结果走弹窗，不内嵌占用版面） -->
-      <div v-if="showResources" class="search-form">
-        <input
-          v-model="searchQuery"
-          class="search-input"
-          type="search"
-          placeholder="全项目 + 知识库 语义搜索…"
-          @keydown.enter.prevent="runProjectSearch"
-        />
-        <Button size="sm" :disabled="searchLoading || !searchQuery.trim()" @click="runProjectSearch">
-          {{ searchLoading ? '搜索中…' : '搜索' }}
+    <section :class="embedded ? 'space-y-4' : 'min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-4'">
+      <form v-if="embedded && showResources" class="search-form" role="search" @submit.prevent="runProjectSearch">
+        <label class="search-field">
+          <Search :size="16" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            class="search-input"
+            type="search"
+            placeholder="全项目 + 知识库 语义搜索…"
+            aria-label="搜索项目文件和知识库"
+            autocomplete="off"
+          />
+        </label>
+        <Button
+          type="submit"
+          size="icon"
+          class="search-button"
+          :disabled="searchLoading || !searchQuery.trim()"
+          :aria-label="searchLoading ? '搜索中' : '搜索'"
+          :title="searchLoading ? '搜索中' : '搜索'"
+        >
+          <Loader2 v-if="searchLoading" class="animate-spin" :size="16" aria-hidden="true" />
+          <Search v-else :size="18" aria-hidden="true" />
         </Button>
-      </div>
-      <p v-if="showResources" class="text-xxs text-muted-foreground/60 -mt-2">
-        由 zg 本地混合检索驱动（代码符号 + 文档语义，无需 AI）；索引未就绪时自动回退文本匹配
-      </p>
+      </form>
 
       <!-- 4 张卡片 2 列网格 -->
       <div v-if="showResources" class="config-grid">
@@ -604,15 +658,15 @@ watch(() => active.value?.id, () => {
           <li v-for="item in projectUikitBindings" :key="item.binding.externalRefId" class="knowledge-resource-card">
             <span class="type-badge type-badge--ui">UX</span>
             <div class="row-main">
-              <span class="row-title font-mono">{{ item.binding.alias }}</span>
+              <span class="row-title" :class="{ 'font-mono': !item.ref?.builtinTemplateId }">{{ assetName(item.ref, item.binding.alias) }}</span>
               <span class="row-sub">{{ externalMetaText(item.ref, item.ref ? ext.syncStatusById[item.ref.id] : null, item.ref ? checkingExternalStatus[item.ref.id] === true : false) }}</span>
-              <ResourceIndexStatus
-                :status="item.ref?.indexStatus"
-                :buildable="!!item.ref"
-                :busy="item.ref ? buildingExternalIndex[item.ref.id] === true : false"
-                @build="item.ref && buildExternalIndex(item.ref)"
-              />
             </div>
+            <ResourceIndexStatus
+              :status="item.ref?.indexStatus"
+              :buildable="!!item.ref"
+              :busy="item.ref ? buildingExternalIndex[item.ref.id] === true : false"
+              @build="item.ref && buildExternalIndex(item.ref)"
+            />
             <div class="row-actions knowledge-resource-actions">
             <button
               v-if="item.ref?.kind === 'git' && ext.syncStatusById[item.ref.id]?.hasUpdates"
@@ -672,8 +726,10 @@ watch(() => active.value?.id, () => {
                 </button>
               </div>
               </div>
-              <button type="button" class="row-action" @click="openExternal(item.binding.alias)">打开</button>
-              <button type="button" class="row-action row-action--danger" @click="detachExternal(item.binding.externalRefId)">移除</button>
+              <button v-if="item.ref?.builtinTemplateId" type="button" class="row-action" @click="designAssetSource?.show(item.ref.builtinTemplateId)">查看文件</button>
+              <button v-if="item.isBound" type="button" class="row-action" @click="openExternal(item.binding.alias)">打开</button>
+              <button v-if="!item.isBound && item.ref && active?.kind === 'project'" type="button" class="row-action row-action--primary" :disabled="attachingExternal[item.ref.id]" @click="attachAsset(item.ref)">{{ attachingExternal[item.ref.id] ? '关联中' : '关联项目' }}</button>
+              <button v-if="item.isBound" type="button" class="row-action row-action--danger" @click="detachExternal(item.binding.externalRefId)">移除</button>
             </div>
           </li>
         </ul>
@@ -681,13 +737,14 @@ watch(() => active.value?.id, () => {
           <PlantIllustration kind="assets" />
           <div><p>还没有 UX 资产库</p><span>添加后即可关联项目，复用组件、Token 和图片。</span></div>
         </div>
+        <DesignAssetSourceDialog ref="designAssetSource" />
       </section>
 
       <!-- 知识库 -->
       <section class="section-block project-section-card">
         <div class="section-head">
           <div>
-            <h3><BookOpen :size="16" aria-hidden="true" /> 知识资源</h3>
+            <h3><KnowledgeIcon :size="16" aria-hidden="true" /> 知识资源</h3>
             <p>本地资料和外部文档库统一作为只读知识资源包。</p>
           </div>
           <div class="section-actions">
@@ -710,13 +767,13 @@ watch(() => active.value?.id, () => {
             <div class="row-main">
               <span class="row-title font-mono">{{ x.binding.alias }}</span>
               <span class="row-sub">{{ externalMetaText(x.ref, x.ref ? ext.syncStatusById[x.ref.id] : null, x.ref ? checkingExternalStatus[x.ref.id] === true : false) }}</span>
-              <ResourceIndexStatus
-                :status="x.ref?.indexStatus"
-                :buildable="!!x.ref"
-                :busy="x.ref ? buildingExternalIndex[x.ref.id] === true : false"
-                @build="x.ref && buildExternalIndex(x.ref)"
-              />
             </div>
+            <ResourceIndexStatus
+              :status="x.ref?.indexStatus"
+              :buildable="!!x.ref"
+              :busy="x.ref ? buildingExternalIndex[x.ref.id] === true : false"
+              @build="x.ref && buildExternalIndex(x.ref)"
+            />
             <div class="row-actions knowledge-resource-actions">
               <button
                 v-if="x.ref?.kind === 'git' && ext.syncStatusById[x.ref.id]?.hasUpdates"
@@ -790,11 +847,11 @@ watch(() => active.value?.id, () => {
       </div>
 
       <div v-if="showSkills" class="config-grid config-grid--single">
-        <section class="section-block project-section-card">
+        <section class="section-block project-section-card project-section-card--flat">
           <SkillsList />
         </section>
 
-        <section class="section-block project-section-card">
+        <section class="section-block project-section-card project-section-card--flat">
           <ProjectRulesPanel />
         </section>
       </div>
@@ -854,11 +911,6 @@ watch(() => active.value?.id, () => {
 
 <style scoped>
 .project-hero { display: flex; flex-direction: column; gap: 8px; }
-.config-page-header { position: relative; display: flex; align-items: center; gap: 12px; min-height: 94px; padding-top: 10px; padding-bottom: 10px; background: linear-gradient(110deg, color-mix(in srgb, var(--color-leaf) 5%, var(--color-bg-panel)), var(--color-bg-panel) 60%); }
-.config-page-header__icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid var(--color-accent-border); border-radius: 10px; background: var(--color-accent-light); color: var(--color-accent); }
-.config-page-header__art { margin-left: auto; }
-.config-page-header h1 { margin: 0; color: var(--color-text-primary); font-size: 20px; font-weight: 700; }
-.config-page-header p { margin: 3px 0 0; color: var(--color-text-muted); font-size: 12px; }
 .hero-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
 .hero-emoji {
   display: inline-flex; width: 36px; height: 36px; flex: 0 0 auto; align-items: center; justify-content: center;
@@ -910,10 +962,11 @@ watch(() => active.value?.id, () => {
 
 .section-block { border: 0; padding-bottom: 18px; }
 .project-section-card {
-  border: 1px solid var(--color-popover-border); border-radius: 8px; background: var(--color-bg-base);
-  padding: 14px 16px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+  border: 0; border-radius: 16px; background: var(--color-card-group);
+  padding: 14px 16px;
 }
-.config-grid--single { grid-template-columns: minmax(0, 1fr); }
+.config-grid.config-grid--single { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.project-section-card--flat { background: transparent; padding: 0; }
 .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 0 0 12px; }
 .section-head > div { min-width: 0; }
 .section-head > div:first-child { flex: 1 1 auto; }
@@ -925,15 +978,16 @@ watch(() => active.value?.id, () => {
 .row-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
 .knowledge-resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .knowledge-resource-card {
-  display: grid; min-width: 0; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px;
-  border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg-base); padding: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); transition: border-color 160ms ease, box-shadow 160ms ease;
+  display: grid; min-width: 0; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 10px;
+  border: 0; border-radius: 12px; background: var(--color-card-surface); padding: 14px;
+  box-shadow: var(--shadow-card); transition: background-color 160ms ease, box-shadow 160ms ease;
 }
-.knowledge-resource-card:hover { border-color: var(--color-accent-border); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07); }
-.knowledge-resource-card > .type-badge { width: 34px; height: 34px; border: 1px solid var(--color-accent-border); border-radius: 8px; }
+.knowledge-resource-card:hover { background: var(--color-card-hover); box-shadow: var(--shadow-card-hover); }
+.knowledge-resource-card > :deep(.resource-index-status) { grid-column: 1 / -1; margin-top: 0; }
+.knowledge-resource-card > .type-badge { width: 34px; height: 34px; border: 0; border-radius: 8px; }
 .row-actions.knowledge-resource-actions {
   width: 100%; grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-start; margin-left: 0;
-  border-top: 1px solid var(--color-border); padding-top: 9px;
+  border-top: 1px solid var(--color-border); padding-top: 10px;
 }
 .data-row {
   display: flex; min-height: 44px; align-items: center; gap: 12px; border-radius: 6px;
@@ -1022,13 +1076,24 @@ watch(() => active.value?.id, () => {
   .knowledge-resource-grid { grid-template-columns: 1fr; }
 }
 
-.search-form { display: flex; gap: 10px; }
-.search-input {
-  min-width: 0; flex: 1; height: 34px; border: 1px solid var(--color-border);
-  border-radius: 6px; background: var(--color-bg-base); padding: 0 10px;
-  color: var(--color-text-primary); font-size: 13px; outline: none;
+.search-form { display: flex; align-items: center; gap: 10px; }
+.search-field {
+  display: flex; align-items: center; gap: 8px; width: clamp(180px, 28vw, 400px); height: 34px;
+  padding: 0 11px; border: 1px solid var(--color-border); border-radius: var(--radius-control);
+  background: var(--color-bg-elevated); color: var(--color-text-muted);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
-.search-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-info-subtle); }
+.search-field > svg { flex: none; }
+.search-field:focus-within { border-color: var(--color-leaf); box-shadow: 0 0 0 3px var(--color-accent-light); }
+.search-input {
+  min-width: 0; flex: 1; border: 0; background: transparent;
+  color: var(--color-text-primary); font-size: 12px; outline: none;
+}
+.search-button { width: 34px; height: 34px; padding: 0; flex: none; }
+@media (max-width: 760px) {
+  .search-form { width: 100%; }
+  .search-field { width: auto; flex: 1; min-width: 0; }
+}
 .search-results { }
 .search-empty, .search-group-empty {
   border-radius: 6px; background: var(--color-bg-subtle); padding: 14px;
@@ -1061,5 +1126,5 @@ watch(() => active.value?.id, () => {
   font-weight: 650;
 }
 .search-result-snippet { margin-top: 4px; color: var(--color-text-secondary); display: -webkit-box; font-size: 12px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-@media (max-width: 600px) { .config-page-header__art { display: none; } .empty-state--compact :deep(.plant-illustration) { width: 86px; } }
+@media (max-width: 600px) { .empty-state--compact :deep(.plant-illustration) { width: 86px; } }
 </style>

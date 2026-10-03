@@ -7,6 +7,7 @@ import { usePreviewStore } from '@/stores/preview'
 import { useUiStore } from '@/stores/ui'
 import { call } from '@/lib/api'
 import FeaturesPage from './FeaturesPage.vue'
+import PlantPageHeader from './PlantPageHeader.vue'
 import { createPreviewProjectContext } from '@/lib/preview/preview-project'
 import { formatDateTimeMinute } from '@/lib/date-format'
 import { fuzzyMatch } from '@/lib/feature-search'
@@ -45,6 +46,10 @@ async function load(): Promise<void> {
   if (sequence !== loadSequence) return
   capabilities.value = Object.fromEntries(results.filter((entry): entry is readonly [string, GitCapability] => entry[1] !== null))
 }
+async function chooseDirectory(): Promise<void> {
+  const mode = await ui.askPrompt({ title: '添加目录', message: '关联本地目录，或克隆 Git 仓库。', defaultValue: 'local', options: [{ label: '本地目录', value: 'local' }, { label: 'Git 仓库', value: 'remote' }], confirmLabel: '继续' })
+  if (mode === 'local' || mode === 'remote') await add(mode)
+}
 async function add(mode: 'local' | 'remote'): Promise<void> {
   if (busy.value) return
   busy.value = true
@@ -73,6 +78,11 @@ async function add(mode: 'local' | 'remote'): Promise<void> {
     await load()
 
     if (mode === 'remote') await setEntry(result.data)
+    const existing = await call('editor.entryKind', { workspaceId: result.data.id, relPath: 'features/默认分组' })
+    if (existing.ok && existing.data.kind === 'missing') {
+      const created = await call('editor.writeTextFile', { workspaceId: result.data.id, relPath: 'features/默认分组/.gitkeep', content: '', scope: 'project' })
+      if (!created.ok) ui.showToast('error', `默认分组创建失败：${created.message}`)
+    }
     await loadRecent()
     ui.showToast('success', '目录已添加')
   } catch (e) {
@@ -117,10 +127,6 @@ function isGitDirectory(id: string): boolean {
   const capability = capabilities.value[id]
   return !!capability && capability.state !== 'unbound'
 }
-function remoteUrl(id: string): string {
-  const capability = capabilities.value[id]
-  return capability?.state === 'remote' ? capability.remoteUrl : ''
-}
 const recent = ref<Array<{ workspace: Workspace; card: FeatureCard }>>([])
 let recentSequence = 0
 async function loadRecent(): Promise<void> {
@@ -134,7 +140,7 @@ async function loadRecent(): Promise<void> {
 let recentReloadTimer: ReturnType<typeof setTimeout> | undefined
 function scheduleRecentReload(): void {
   clearTimeout(recentReloadTimer)
-  recentReloadTimer = setTimeout(() => void loadRecent(), 150)
+  recentReloadTimer = setTimeout(() => { void loadRecent(); void load() }, 150)
 }
 onBeforeUnmount(() => clearTimeout(recentReloadTimer))
 async function openRecent(item: { workspace: Workspace; card: FeatureCard }): Promise<void> {
@@ -176,68 +182,67 @@ watch(() => ws.list.map(w => `${w.id}:${w.path}`).join(','), () => { void load()
 
 <template>
   <main class="workbench-page">
-    <header class="workbench-heading">
-      <div><h1>工作台</h1><p>按目录整理项目，在项目分组内开始工作。</p></div>
-      <div class="workbench-actions"><Button variant="outline" :disabled="busy" @click="add('local')"><FolderOpen :size="16" />添加本地目录</Button><Button :disabled="busy" @click="add('remote')"><Loader2 v-if="busy" class="animate-spin" :size="16" /><Plus v-else :size="16" />添加 Git 目录</Button></div>
-    </header>
-    <label class="workbench-search"><Search :size="16" aria-hidden="true" /><input v-model="searchQuery" type="search" placeholder="搜索所有目录、项目分组和项目…" aria-label="搜索工作台所有目录和项目" autocomplete="off" /></label>
-    <p v-if="error" role="alert" class="workbench-error">{{ error }}</p>
-    <section v-if="!searchQuery.trim()" class="workbench-recent" aria-labelledby="recent-title">
-      <h2 id="recent-title">最近编辑</h2>
-      <p v-if="!recent.length" class="recent-empty">暂无最近编辑的项目。在目录内新建项目后，会显示在这里。</p>
-      <div v-else class="workbench-recent__grid">
-        <button v-for="item in recent" :key="`${item.workspace.id}:${item.card.relPath}`" class="recent-project" :title="`${item.card.name} · ${item.workspace.isDefault ? '本地项目' : item.workspace.name} / ${item.card.group ?? '未分组'}\n编辑于 ${formatDateTimeMinute(item.card.modifiedAt, '未记录编辑时间')}`" @click="openRecent(item)">
-          <FolderKanban class="recent-project__icon" :size="16" aria-hidden="true" />
-          <strong>{{ item.card.name }}</strong>
-          <span>{{ item.workspace.isDefault ? '本地项目' : item.workspace.name }}</span>
-        </button>
-      </div>
-    </section>
-    <section class="workbench-directories" aria-label="工作台目录">
-      <div class="directory-list-heading"><h2>项目目录</h2><span>{{ visibleDirectoryCount }} 个目录</span></div>
-      <p v-if="searchQuery.trim() && !visibleDirectoryCount" class="recent-empty">没有匹配「{{ searchQuery.trim() }}」的目录、项目分组或项目。</p>
-      <article v-for="directory in repositories" v-show="showDirectory(directory)" :key="`${directory.id}:${directory.path}`" class="workbench-directory">
-        <header class="directory-heading">
-          <button class="directory-toggle" :aria-expanded="!!searchQuery.trim() || !collapsed.has(directory.id)" @click="toggleDirectory(directory.id)"><ChevronDown :size="14" :class="{ 'is-collapsed': !searchQuery.trim() && collapsed.has(directory.id) }" /><GitBranch v-if="isGitDirectory(directory.id)" :size="16" /><FolderOpen v-else :size="16" /><strong>{{ directory.isDefault ? '本地项目' : directory.name }}</strong></button>
-          <span class="directory-path" :title="directory.path">{{ directory.path }}</span>
-          <div class="directory-actions">
-            <div :id="`directory-actions-${directory.id}`" class="directory-project-actions" />
-          </div>
-        </header>
-        <div v-show="!!searchQuery.trim() || !collapsed.has(directory.id)">
-          <FeaturesPage :workspace-id="directory.id" :search-query="directorySearch(directory)" :actions-target="`#directory-actions-${directory.id}`" @search-match="searchMatches[directory.id] = $event" @changed="scheduleRecentReload">
-            <template v-if="isGitDirectory(directory.id) || !directory.isDefault" #directory-menu>
-              <DropdownMenuItem v-if="isGitDirectory(directory.id)" :disabled="busy" @select="setEntry(directory)">设置入口</DropdownMenuItem>
-              <DropdownMenuItem v-if="!directory.isDefault" :disabled="busy" @select="rename(directory)">重命名目录</DropdownMenuItem>
-              <DropdownMenuItem v-if="!directory.isDefault || remoteUrl(directory.id)" :disabled="busy" @select="unbind(directory)">解绑目录</DropdownMenuItem>
-            </template>
-          </FeaturesPage>
+    <PlantPageHeader title="工作台" description="按目录整理项目，在项目分组内开始工作。" kind="workbench">
+      <template #actions><div class="workbench-actions"><label class="workbench-search"><Search :size="16" aria-hidden="true" /><input v-model="searchQuery" type="search" placeholder="搜索目录、分组和项目…" aria-label="搜索工作台所有目录和项目" autocomplete="off" /></label><Button size="icon" class="workbench-add" :disabled="busy" title="添加目录" aria-label="添加目录" @click="chooseDirectory"><Loader2 v-if="busy" class="animate-spin" :size="16" /><Plus v-else :size="18" /></Button></div></template>
+    </PlantPageHeader>
+    <div class="workbench-content">
+
+      <p v-if="error" role="alert" class="workbench-error">{{ error }}</p>
+      <section v-if="!searchQuery.trim()" class="workbench-recent" aria-labelledby="recent-title">
+        <h2 id="recent-title">最近编辑</h2>
+        <p v-if="!recent.length" class="recent-empty">暂无最近编辑的项目。在目录内新建项目后，会显示在这里。</p>
+        <div v-else class="workbench-recent__grid">
+          <button v-for="item in recent" :key="`${item.workspace.id}:${item.card.relPath}`" class="recent-project" :title="`${item.card.name} · ${item.workspace.isDefault ? '本地项目' : item.workspace.name} / ${item.card.group ?? '未分组'}\n编辑于 ${formatDateTimeMinute(item.card.modifiedAt, '未记录编辑时间')}`" @click="openRecent(item)">
+            <FolderKanban class="recent-project__icon" :size="16" aria-hidden="true" />
+            <strong>{{ item.card.name }}</strong>
+            <span>{{ item.workspace.isDefault ? '本地项目' : item.workspace.name }}</span>
+          </button>
         </div>
-      </article>
-    </section>
+      </section>
+      <section class="workbench-directories" aria-label="工作台目录">
+        <p v-if="searchQuery.trim() && !visibleDirectoryCount" class="recent-empty">没有匹配「{{ searchQuery.trim() }}」的目录、项目分组或项目。</p>
+        <article v-for="directory in repositories" v-show="showDirectory(directory)" :key="`${directory.id}:${directory.path}`" class="workbench-directory">
+          <header class="directory-heading">
+            <button class="directory-toggle" :aria-expanded="!!searchQuery.trim() || !collapsed.has(directory.id)" @click="toggleDirectory(directory.id)"><ChevronDown :size="14" :class="{ 'is-collapsed': !searchQuery.trim() && collapsed.has(directory.id) }" /><GitBranch v-if="isGitDirectory(directory.id)" :size="16" /><FolderOpen v-else :size="16" /><strong>{{ directory.isDefault ? '本地项目' : directory.name }}</strong></button>
+            <span class="directory-path" :title="directory.path">{{ directory.path }}</span>
+            <div class="directory-actions">
+              <div :id="`directory-actions-${directory.id}`" class="directory-project-actions" />
+            </div>
+          </header>
+          <div v-show="!!searchQuery.trim() || !collapsed.has(directory.id)">
+            <FeaturesPage :workspace-id="directory.id" :search-query="directorySearch(directory)" :actions-target="`#directory-actions-${directory.id}`" @search-match="searchMatches[directory.id] = $event" @changed="scheduleRecentReload">
+              <template v-if="isGitDirectory(directory.id) || !directory.isDefault" #directory-menu>
+                <DropdownMenuItem v-if="isGitDirectory(directory.id)" :disabled="busy" @select="setEntry(directory)">设置入口</DropdownMenuItem>
+                <DropdownMenuItem v-if="!directory.isDefault" :disabled="busy" @select="rename(directory)">重命名目录</DropdownMenuItem>
+                <DropdownMenuItem v-if="!directory.isDefault" :disabled="busy" @select="unbind(directory)">移除目录关联</DropdownMenuItem>
+              </template>
+            </FeaturesPage>
+          </div>
+        </article>
+      </section>
+    </div>
   </main>
 </template>
 
 <style scoped>
-.workbench-page { min-width: 0; flex: 1; overflow-y: auto; padding: 28px 28px 40px; color: var(--color-text-primary); }
-.workbench-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
-.workbench-heading h1 { margin: 0; font-size: 22px; font-weight: 720; }
-.workbench-heading p { margin: 7px 0 0; font-size: 13px; color: var(--color-text-muted); }
-.workbench-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.workbench-recent { margin-bottom: 22px; }
-.recent-empty { margin: 0; padding: 10px 12px; border: 1px dashed var(--color-border); border-radius: 10px; font-size: 12px; color: var(--color-text-muted); }
-.workbench-recent h2, .directory-list-heading h2 { font-size: 15px; font-weight: 650; margin: 0 0 12px; }
+.workbench-page { min-width: 0; flex: 1; overflow-y: auto; color: var(--color-text-primary); }
+.workbench-content { padding: 8px 24px 24px; }
+.workbench-actions { display: flex; align-items: center; gap: 10px; }
+.workbench-add { width: 34px; height: 34px; padding: 0; flex: none; }
+.workbench-recent { margin-bottom: 14px; }
+.recent-empty { margin: 0; padding: 10px 12px; border: 0; background: var(--color-card-group); border-radius: 12px; font-size: 12px; color: var(--color-text-muted); }
+.workbench-recent h2, .directory-list-heading h2 { font-size: 15px; font-weight: 650; margin: 0 0 8px; }
 .workbench-recent__grid { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.recent-project { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; max-width: 260px; height: 36px; padding: 0 10px; border: 1px solid var(--color-border-subtle); border-radius: 7px; background: var(--color-bg-elevated); text-align: left; }
-.recent-project:hover { border-color: var(--color-leaf); background: var(--color-bg-hover); }
+.recent-project { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; max-width: 260px; height: 30px; padding: 0 10px; border: 0; border-radius: 10px; background: var(--color-card-surface); text-align: left; }
+.recent-project:hover { background: var(--color-card-hover); }
 .recent-project:focus-visible { outline: 2px solid var(--color-leaf); outline-offset: 2px; }
 .recent-project strong { min-width: 0; font-size: 12px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .recent-project > span { max-width: 80px; font-size: 10px; color: var(--color-text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .recent-project__icon { flex: none; color: var(--color-leaf); }
 .directory-list-heading { display: flex; gap: 10px; align-items: baseline; }
 .directory-list-heading > span { font-size: 11px; color: var(--color-text-muted); }
-.workbench-directory { margin-bottom: 16px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg-elevated); overflow: hidden; }
-.directory-heading { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--color-border-subtle); }
+.workbench-directory { margin-bottom: 16px; border: 0; border-radius: 16px; background: var(--color-card-group); overflow: hidden; }
+.directory-heading { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 0; }
 .directory-toggle { display: flex; align-items: center; gap: 7px; min-width: 0; flex-shrink: 0; text-align: left; }
 .directory-toggle strong { font-size: 13px; max-width: 160px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .directory-toggle svg { flex: none; color: var(--color-leaf); transition: transform 160ms; }
@@ -247,9 +252,9 @@ watch(() => ws.list.map(w => `${w.id}:${w.path}`).join(','), () => { void load()
 .directory-actions button:hover { color: var(--color-leaf); }
 .directory-project-actions { display: flex; }
 .directory-path { min-width: 40px; flex: 1; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.workbench-search { display: flex; align-items: center; gap: 8px; width: min(520px, 100%); height: 34px; padding: 0 11px; margin-bottom: 24px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-bg-elevated); color: var(--color-text-muted); }
-.workbench-search:focus-within { border-color: var(--color-leaf); }
+.workbench-search { display: flex; align-items: center; gap: 8px; width: clamp(180px, 28vw, 400px); height: 34px; padding: 0 11px; margin-bottom: 0; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-bg-elevated); color: var(--color-text-muted); transition: border-color 160ms ease, box-shadow 160ms ease; }
+.workbench-search:focus-within { border-color: var(--color-leaf); box-shadow: 0 0 0 3px var(--color-accent-light); }
 .workbench-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--color-text-primary); font-size: 12px; }
 .workbench-error { color: var(--color-error); font-size: 12px; }
-@media (max-width: 760px) { .workbench-page { padding: 20px 14px; } .workbench-heading { flex-direction: column; align-items: flex-start; } .directory-heading { gap: 8px; overflow-x: auto; } .directory-path { display: none; } }
+@media (max-width: 760px) { .workbench-content { padding: 16px 14px 32px; } .directory-heading { gap: 8px; overflow-x: auto; } .directory-path { display: none; } .workbench-actions { width: 100%; } .workbench-search { width: auto; flex: 1; } }
 </style>

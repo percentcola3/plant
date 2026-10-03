@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
   <Primitive
     :as="as"
     :as-child="asChild"
+    :data-icon-button="size?.startsWith('icon') ? '' : undefined"
     :class="cn(buttonVariants({ variant, size }), props.class)"
   >
     <slot />

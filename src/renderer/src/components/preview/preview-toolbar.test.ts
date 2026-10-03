@@ -18,6 +18,10 @@ const productFilesSource = readFileSync(
   join(process.cwd(), 'src/renderer/src/components/preview/ProductFilesTabPane.vue'),
   'utf-8'
 )
+const browserTabsSource = readFileSync(
+  join(process.cwd(), 'src/renderer/src/components/preview/ProjectBrowserTabs.vue'),
+  'utf-8'
+)
 const htmlPreviewSurfacePath = join(
   process.cwd(),
   'src/renderer/src/components/preview/HtmlPreviewSurface.vue'
@@ -206,18 +210,23 @@ describe('project workbench navigation', () => {
   it('uses the app theme background in the files panel instead of hardcoded white or cold gray surfaces', () => {
     expect(productFilesSource).toContain('background: var(--color-bg-base);')
     expect(productFilesSource).toContain('background: var(--color-bg-panel);')
-    expect(productFilesSource).toContain('background: var(--color-bg-subtle);')
+    expect(productFilesSource).toContain('background: var(--color-bg-hover);')
     expect(productFilesSource).not.toContain('background: #f8fafc;')
     expect(productFilesSource).not.toContain('background: #fff;')
     expect(productFilesSource).not.toContain('background: #f1f5f9;')
   })
 
-  it('uses a tree toggle on the responsive preview bar and keeps HTML preview inside the file detail pane', () => {
+  it('uses a single tree toggle on the tab strip and keeps HTML preview inside the file detail pane', () => {
     expect(productFilesSource).toContain('Teleport')
     expect(productFilesSource).toContain('to="#product-workbench-topbar"')
-    expect(productFilesSource).toContain('product-files__workbench-topbar')
+    expect(productFilesSource).toContain('<ProjectBrowserTabs')
     expect(productFilesSource).not.toContain('product-files__tree-toggle-row')
-    expect(sizeBarSource).toContain('ProductFilesTreeToggle')
+    expect(browserTabsSource).toContain('<ProductFilesTreeToggle')
+    expect(browserTabsSource).not.toContain('<House')
+    expect(productFilesSource).toContain(':tree-open="treeOpen" @toggle-tree="toggleTreeOpen"')
+    expect(productFilesSource).toContain('<aside v-show="treeOpen"')
+    expect(productFilesSource).not.toContain('<ProductFilesTreeToggle')
+    expect(sizeBarSource).not.toContain('ProductFilesTreeToggle')
     expect(sizeBarSource).toContain('ProductFilesReloadButton')
     expect(sizeBarSource).toContain("emit('reload')")
     expect(sizeBarSource).toContain('HtmlViewModeToggle')
@@ -235,11 +244,10 @@ describe('project workbench navigation', () => {
     expect(sizeBarSource).not.toContain('分辨率')
     expect(sizeBarSource).not.toContain('<Select')
     expect(sizeBarSource).toContain('PreviewInspectorTools')
-    expect(sizeBarSource).toContain("@toggle=\"emit('toggle-tree')\"")
+    expect(sizeBarSource).not.toContain("emit('toggle-tree')")
     expect(productFilesSource).not.toContain('product-files__tree-rail')
     expect(sizeBarSource).toContain('showPreviewControls')
-    expect(productFilesSource).toContain('product-workbench-bar')
-    expect(productFilesSource).toContain('product-workbench-action-btn')
+    expect(productFilesSource).toContain('<ProjectGitSyncControl')
     expect(productFilesSource).toContain('suppress-size-bar')
     expect(productFilesSource).toContain(':show-preview-controls="htmlMode === \'preview\'"')
     expect(productFilesSource).toContain('v-show="htmlMode === \'source\'"')
@@ -275,13 +283,12 @@ describe('project workbench navigation', () => {
     expect(productFilesSource).toContain("call('editor.deleteEntry'")
   })
 
-  it('restores the last opened file and submits only the current feature directory', () => {
+  it('restores the last opened file and offers one repository sync entry', () => {
     expect(productFilesSource).toContain('activeRelPath?: string')
     expect(productFilesSource).toContain('props.activeRelPath ?? props.primaryRelPath')
-    expect(productFilesSource).toContain('<FeatureGitSubmitButton')
-    expect(productFilesSource).toContain(':rel-dir="props.rootRelPath"')
+    expect(productFilesSource).toContain('<ProjectGitSyncControl')
+    expect(productFilesSource).not.toContain('<FeatureGitSubmitButton')
     expect(productFilesSource).toContain(':prepare="saveIfDirty"')
-    expect(productFilesSource).toContain('@done="refreshGitChangeMarks"')
     expect(panelSource).toContain(':active-rel-path="tab.filesMeta.activeRelPath"')
   })
 })

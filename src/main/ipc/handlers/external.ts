@@ -16,13 +16,20 @@ import {
   updateExternalRefBinding
 } from '../../external-pool/service'
 import { normalizeExternalCheckout, normalizeExternalVisibleDirs } from '@shared/external-ref-controls'
+import { copyDesignTemplate, ensureBuiltinDesignAssets, installDesignTemplate, readDesignTemplate } from '../../design-templates/service'
 
 function toValidationError(e: unknown): UIClientError {
   return new UIClientError('VALIDATION', e instanceof Error ? e.message : String(e))
 }
 
 export function registerExternalHandlers(): void {
-  registerIpcHandler('external.list', async () => listExternalRefs())
+  registerIpcHandler('external.list', async () => {
+    await ensureBuiltinDesignAssets()
+    return listExternalRefs()
+  })
+  registerIpcHandler('external.readTemplate', async (input) => readDesignTemplate(input?.templateId))
+  registerIpcHandler('external.installTemplate', async (input) => installDesignTemplate(input?.templateId))
+  registerIpcHandler('external.copyTemplate', async (input) => copyDesignTemplate(input?.templateId, input?.parentPath))
 
   registerIpcHandler('external.add', async (input) => {
     if (!input || typeof input.alias !== 'string') {

@@ -270,16 +270,16 @@ async function dismissTask(task: AiTaskSummary): Promise<void> {
   display: block;
   margin-bottom: 8px;
   padding: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-bg-base);
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-card-surface);
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
 
 .ai-task-card:hover {
-  border-color: var(--color-accent);
+  background: var(--color-card-hover);
 }
 
 .ai-task-card-row {

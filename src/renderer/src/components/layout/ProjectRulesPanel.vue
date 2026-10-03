@@ -89,7 +89,7 @@ async function openOwn(relPath: string): Promise<void> {
         <div class="rule-main">
           <div class="rule-title">
             <code>system.md</code>
-            <span v-if="systemExists" class="rule-state rule-state--ok">已存在</span>
+            <span v-if="systemExists" class="rule-state rule-state--ok">已生效</span>
             <span v-else class="rule-state rule-state--missing">未创建</span>
           </div>
           <div class="rule-sub">项目唯一 AI 约束事实源 · Claude / Codex / Cursor 都读它</div>
@@ -120,45 +120,33 @@ async function openOwn(relPath: string): Promise<void> {
 .rules-block__head p { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 12px; }
 .rules-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .rule-row {
-  display: flex; align-items: center; gap: 10px;
-  border: 1px solid var(--color-border); background: var(--color-bg-base);
-  border-radius: 6px; padding: 8px 10px;
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--color-border); background: var(--color-bg-elevated);
+  border-radius: 12px; padding: 12px 12px 12px 14px;
 }
 .rules-block__head h3 svg { color: var(--color-leaf); }
-.rule-icon { display: grid; place-items: center; flex: none; width: 30px; height: 34px; border-radius: 7px; background: var(--color-accent-light); color: var(--color-leaf); }
+.rule-icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 9px; background: var(--color-accent-light); color: var(--color-leaf); }
+.rule-icon :deep(svg) { width: 16px; height: 16px; }
 .rule-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-.rule-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
-.rule-title code {
-  padding: 1px 6px; border-radius: 3px; background: var(--color-bg-elevated);
-  font-family: SF Mono, Menlo, Consolas, monospace; font-size: 12px;
-}
+.rule-title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+.rule-title code { font-family: SF Mono, Menlo, Consolas, monospace; font-size: 12px; }
 .rule-state {
-  display: inline-flex; align-items: center;
-  border-radius: 999px; padding: 1px 8px;
-  font-size: 10px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; color: var(--color-text-tertiary);
 }
-.rule-state--ok {
-  border: 1px solid var(--color-accent-border);
-  background: var(--color-accent-subtle);
-  color: var(--color-accent-pressed);
-}
-.rule-state--missing {
-  border: 1px solid rgba(245, 158, 11, 0.45);
-  background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
-}
-.rule-state--own {
-  border: 1px solid rgba(100, 116, 139, 0.4);
-  background: rgba(100, 116, 139, 0.12);
-  color: #475569;
-}
-.rule-sub { color: var(--color-text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rule-state::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+.rule-state--ok { color: var(--color-accent); }
+.rule-state--missing { color: var(--color-warning); }
+.rule-sub { color: var(--color-text-tertiary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rule-btn {
   flex: 0 0 auto;
-  border: 1px solid var(--color-accent-border);
-  border-radius: 6px; background: var(--color-accent-light);
-  padding: 4px 12px; font-size: 12px; color: var(--color-accent-pressed); cursor: pointer;
+  height: 28px; padding: 0 12px;
+  border: 0; background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: 12px; font-weight: 500; color: var(--color-text-primary); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
-.rule-btn:hover:not(:disabled) { background: var(--color-accent-subtle); }
+.rule-btn:hover:not(:disabled) { background: var(--color-bg-hover); }
 .rule-btn:disabled { cursor: wait; opacity: 0.6; }
+.rule-btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
 </style>

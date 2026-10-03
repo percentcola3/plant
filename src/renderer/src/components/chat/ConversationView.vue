@@ -235,18 +235,6 @@ function onWindowKeydown(e: KeyboardEvent): void {
   emit('abortTurn')
 }
 
-const statusView = computed(() => {
-  if (props.claudeStatus === 'ok') return { label: `${assistantIdentity.value.name} 已就绪`, tone: 'ok' }
-  if (props.claudeStatus === 'spawning') return { label: `${assistantIdentity.value.name} 启动中...`, tone: 'loading' }
-  if (props.claudeStatus === 'error') {
-    return { label: props.claudeError || `${assistantIdentity.value.name} 启动失败`, tone: 'error' }
-  }
-  return { label: `${assistantIdentity.value.name} 未启动`, tone: 'idle' }
-})
-const statusIndicatorLabel = computed(() => (
-  turnInFlight.value ? `${assistantIdentity.value.name} 正在工作` : statusView.value.label
-))
-
 // 占位 loading 气泡：正在等首个 assistant token，或 token 到了但中间穿插 tool_use 还没下一段文本时
 // 条件：turn in-flight && 最后一条不是当前还在流式输出的 assistant
 const showPendingBubble = computed(() => {
@@ -531,17 +519,7 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
 
 <template>
   <div class="conversation-view">
-    <div class="cv-status" :class="[`cv-status--${statusView.tone}`, { 'cv-status--running': turnInFlight }]">
-      <span class="cv-status-left">
-        <span
-          class="cv-status-indicator"
-          role="status"
-          :title="statusIndicatorLabel"
-          :aria-label="statusIndicatorLabel"
-        >
-          <span class="cv-status-dot" aria-hidden="true" />
-        </span>
-      </span>
+    <div class="cv-status">
       <span class="cv-status-right">
         <span v-if="turnInFlight" class="cv-elapsed">{{ elapsedText }}</span>
         <button
@@ -726,38 +704,13 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
 .cv-status {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 7px;
   min-height: 30px;
   padding: 6px 12px;
   color: var(--color-text-secondary);
   font-size: 12px;
 }
-.cv-status-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-.cv-status-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-}
-.cv-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-text-muted);
-}
-.cv-status--ok .cv-status-dot { background: var(--color-success); }
-.cv-status--loading .cv-status-dot {
-  background: var(--color-warning);
-  animation: pulse-dot 1.2s ease-in-out infinite;
-}
-.cv-status--error .cv-status-dot { background: var(--color-error); }
 .cv-turn-notice-header {
   display: flex;
   align-items: center;
@@ -775,22 +728,17 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   cursor: pointer;
 }
 .cv-turn-notice-action:disabled { cursor: wait; opacity: 0.6; }
-.cv-status--running .cv-status-dot {
-  background: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
-  animation: pulse-ring 1.6s ease-out infinite;
-}
 .cv-status-right { display: inline-flex; align-items: center; gap: 8px; }
 .cv-elapsed {
   font-size: 11px; font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
-  background: rgba(255,255,255,0.7); border: 1px solid var(--color-border-border/60);
-  border-radius: 6px; padding: 2px 6px; line-height: 1;
+  background: var(--color-bg-hover);
+  border-radius: 6px; padding: 3px 6px; line-height: 1;
 }
 .cv-stop {
   display: inline-flex; align-items: center; gap: 5px;
-  border: 0; border-radius: 999px;
-  background: rgba(220, 38, 38, 0.12); color: var(--color-error);
+  border: 0;
+  background: var(--color-error-subtle); color: var(--color-error);
   font-size: 11px; font-weight: 700; line-height: 1;
   padding: 4px 9px 4px 8px; cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -812,7 +760,6 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 8px;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -828,25 +775,17 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-info-subtle);
 }
-@keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
-  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cv-status-dot { animation: none !important; }
-}
 .cv-messages {
   flex: 1;
   overflow-y: auto;
   padding: 12px 14px 16px;
-  background: color-mix(in srgb, var(--color-bg-subtle) 55%, var(--color-bg-panel));
+  background: transparent;
 }
 .cv-approval-banner {
   margin: 0 12px 8px;
   padding: 10px 12px;
-  border: 1px solid var(--color-warning);
-  border-radius: 6px;
+  border: 0;
+  border-radius: 12px;
   background: var(--color-warning-subtle);
   color: var(--color-warning);
   font-size: 12px;
@@ -869,18 +808,16 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   justify-content: flex-end;
 }
 .cv-approval-btn {
-  border: 1px solid rgba(146, 64, 14, 0.22);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.74);
-  color: var(--color-warning);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
-  padding: 6px 9px;
+  padding: 6px 10px;
 }
 .cv-approval-btn:hover:not(:disabled) {
-  background: #fff7ed;
-  border-color: rgba(146, 64, 14, 0.4);
+  background: var(--color-bg-hover);
 }
 .cv-approval-btn:disabled {
   opacity: 0.42;
@@ -900,8 +837,9 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-radius: 4px;
-  background: rgba(146, 64, 14, 0.08);
+  border-radius: 6px;
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
   padding: 5px 7px;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
 }
@@ -912,23 +850,23 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
 .cv-turn-notice {
   margin: 4px 0 12px 40px;
   max-width: 78%;
-  border: 1px solid var(--color-border-border/60);
-  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
   background: var(--color-bg-panel);
-  color: #334155;
-  padding: 9px 11px;
+  color: var(--color-text-secondary);
+  padding: 9px 12px;
   font-size: 12px;
   line-height: 1.5;
 }
 .cv-turn-notice--running {
-  border-color: var(--color-accent-subtle);
-  background: var(--color-accent-subtle);
-  color: #1e3a8a;
+  border-color: transparent;
+  background: var(--color-accent-light);
+  color: var(--color-accent-pressed);
 }
 .cv-turn-notice--warning {
-  border-color: #facc15;
-  background: #fefce8;
-  color: #713f12;
+  border-color: transparent;
+  background: var(--color-warning-subtle);
+  color: var(--color-text-primary);
 }
 .cv-turn-notice--success {
   display: flex;
@@ -994,10 +932,9 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   gap: 10px;
   margin: 10px 0;
   padding: 12px;
-  border: 1px solid var(--color-border-border/60);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   background: var(--color-bg-panel);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
   position: relative;
 }
 .cv-messages > .msg-group:first-of-type {
@@ -1006,7 +943,7 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
 .msg-group--user {
   flex-direction: row-reverse;
   margin-left: 44px;
-  border-color: var(--color-accent-border);
+  border-color: transparent;
   background: var(--color-accent-light);
 }
 .msg-group--user .msg-body { align-items: flex-end; }
@@ -1022,7 +959,7 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   box-shadow: none;
   color: var(--color-text-muted);
 }
-.msg-system-line { height: 1px; flex: 1; background: var(--color-border-border/60); }
+.msg-system-line { height: 1px; flex: 1; background: var(--color-border-subtle); }
 .msg-system-content { flex: 0 0 auto; font-size: 11px; }
 .msg-avatar { flex-shrink: 0; padding-top: 2px; }
 .avatar {
@@ -1103,9 +1040,7 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   pointer-events: auto;
 }
 .msg-segment + .msg-segment {
-  margin-top: 7px;
-  padding-top: 7px;
-  border-top: 1px dashed var(--color-border-border/60);
+  margin-top: 10px;
 }
 .msg-loading {
   margin-top: 4px;
@@ -1134,10 +1069,6 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-4px); opacity: 1; }
 }
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.45; transform: scale(0.92); }
-  50% { opacity: 1; transform: scale(1.12); }
-}
 .msg-aborted {
   font-size: 11px;
   color: var(--color-error);
@@ -1151,8 +1082,6 @@ function configuredTargetWorkspace(): TargetWorkspace | undefined {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .thinking-dot,
-  .cv-status--running .cv-status-dot,
-  .cv-status--loading .cv-status-dot { animation: none; }
+  .thinking-dot { animation: none; }
 }
 </style>

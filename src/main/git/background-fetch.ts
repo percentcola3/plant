@@ -2,9 +2,10 @@ import { BrowserWindow } from 'electron'
 import { gitFor, gitForBackground } from './client'
 import { getSharedProbe } from './probe'
 import { getActiveWorkspaceId, getWorkspace } from '../workspaces/service'
+import { syncIncomingChanges } from '../saga/auto-save'
 
 // 后台定时对当前活跃工作区跑一次 `git fetch --prune`，只刷新 remote-tracking
-// ref（origin/<branch>），不 merge、不动工作树。目的：让侧边栏「同步角标」
+// ref（origin/<branch>），干净工作树有新提交时再同步。目的：让侧边栏「同步角标」
 // 的 behind 计数像 VSCode 一样保持新鲜，不必靠用户手动打开编辑器触发 fetch。
 //
 // 复用 gitForBackground（cache-only askpass）：凭证命中才真正联网，未命中
@@ -55,6 +56,7 @@ async function runOnce(): Promise<void> {
     // fetch 只动 .git/refs/remotes/origin/*（chokidar 忽略 .git/），不会触发
     // 任何现有 push channel；主动 invalidate + 广播，让 renderer 重拉快照。
     getSharedProbe().invalidate(ws.path)
+    await syncIncomingChanges(id)
     broadcastRemoteUpdated(id)
   } catch (e) {
     // 凭证缺失 / 网络问题 / 仓库异常一律静默，后台任务不应打扰用户。

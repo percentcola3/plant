@@ -1,0 +1,11 @@
+/* 独立 HTML 视觉示例。React 实现请使用真实 HeroUI v3 Button API。 */
+.asset-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 0 16px; border: 1px solid var(--asset-border);
+  border-radius: var(--asset-radius); background: var(--asset-surface); color: var(--asset-text);
+  font: 500 14px var(--asset-font); cursor: pointer; transition: filter .15s, box-shadow .15s;
+}
+.asset-button--primary { background: var(--asset-primary); color: var(--asset-primary-foreground); border-color: transparent; }
+.asset-button:hover:not(:disabled) { filter: brightness(.96); }
+.asset-button:focus-visible { outline: 2px solid var(--asset-primary); outline-offset: 3px; }
+.asset-button:disabled { opacity: .45; cursor: not-allowed; }

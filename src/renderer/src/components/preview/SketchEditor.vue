@@ -13,10 +13,12 @@ const props = withDefaults(defineProps<{
   dirty?: boolean
   saving?: boolean
   showBack?: boolean
+  showSave?: boolean
 }>(), {
   dirty: false,
   saving: false,
-  showBack: false
+  showBack: false,
+  showSave: true
 })
 
 const emit = defineEmits<{
@@ -439,7 +441,7 @@ watch([strokeColor, strokeSize, activeTool], () => draw())
 
       <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="modelValue.length === 0" @click="undo">撤销</Button>
       <Button type="button" variant="outline" size="sm" class="text-xxs" :disabled="modelValue.length === 0" @click="clear">清空</Button>
-      <Button type="button" size="sm" class="text-xxs" :disabled="saving || !dirty" @click="save">
+      <Button v-if="showSave" type="button" size="sm" class="text-xxs" :disabled="saving || !dirty" @click="save">
         {{ saving ? '保存中…' : '保存' }}
       </Button>
     </div>

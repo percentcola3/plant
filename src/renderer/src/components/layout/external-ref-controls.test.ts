@@ -129,7 +129,12 @@ describe('external ref controls wiring', () => {
     expect(resourceIndexSource).not.toContain('编辑索引')
   })
 
-  it('only offers user-added resource packages', () => {
+  it('shows built-in UI assets in the resource list with source viewing and project association', () => {
+    expect(aiConfigSource).toContain('<DesignAssetSourceDialog')
+    expect(aiConfigSource).not.toContain('BuiltinDesignTemplates')
+    expect(aiConfigSource).not.toContain('从内置设计模板开始')
+    expect(aiConfigSource).toContain('ref.builtinTemplateId')
+    expect(aiConfigSource).toContain('关联项目')
     expect(aiConfigSource).not.toContain('BUILTIN_RESOURCE_PACKAGES')
     expect(aiConfigSource).not.toContain('内置知识库')
     expect(aiConfigSource).not.toContain('内置 UX 资产')

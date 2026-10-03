@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { Plus, X } from 'lucide-vue-next'
+import ProductFilesTreeToggle from './ProductFilesTreeToggle.vue'
+import WorkbenchTabIcon from './WorkbenchTabIcon.vue'
 import { reconcileTabOrder, moveWorkbenchTab, tabsToClose } from '@/lib/preview/workbench-tabs'
 import type { BrowserScope } from '@shared/project-browser'
 import { useProjectBrowserStore } from '@/stores/project-browser'
@@ -10,8 +13,9 @@ const props = defineProps<{
   files: { id: string; title: string; dirty: boolean }[]
   activeFile: string | null
   closeFile: (id: string) => boolean
+  treeOpen: boolean
 }>()
-const emit = defineEmits<{ selectFile: [id: string]; selectOverview: [] }>()
+const emit = defineEmits<{ selectFile: [id: string]; selectOverview: []; toggleTree: [] }>()
 const browser = useProjectBrowserStore()
 const ui = useUiStore()
 const opening = ref(false)
@@ -85,15 +89,21 @@ function context(event: MouseEvent, id: string): void {
 
 <template>
   <div class="workbench-tabs">
-    <button class="overview" type="button" title="项目预览" :class="{ active: !activeKey }" @click="browser.activate(scope, null); emit('selectOverview')">⌂</button>
+    <ProductFilesTreeToggle class="tree-toggle" :open="treeOpen" @toggle="emit('toggleTree')" />
     <div ref="strip" class="tab-strip" role="tablist" aria-label="文件与网页标签">
       <div v-for="tab in tabs" :key="tab.key" class="tab" :class="{ active: activeKey === tab.key }" draggable="true" @dragstart="dragging = tab.key" @dragend="dragging = null" @dragover.prevent @drop.prevent="drop(tab.key)" @contextmenu.prevent="context($event, tab.key)">
-        <button type="button" role="tab" :aria-selected="activeKey === tab.key" :title="tab.id" class="tab-label" @click="select(tab.key)">{{ tab.web ? '◎' : '▤' }} {{ tab.title }}</button>
-        <span v-if="tab.dirty" title="未保存" class="dirty">●</span>
-        <button type="button" class="close" :aria-label="`关闭 ${tab.title}`" @click="close(tab.key)">×</button>
+        <button type="button" role="tab" :aria-selected="activeKey === tab.key" :title="tab.id" class="tab-label" @click="select(tab.key)">
+          <span class="tab-mark" aria-hidden="true">
+            <WorkbenchTabIcon :rel-path="tab.id" :web="tab.web" />
+          </span>
+          <span class="tab-title">{{ tab.title }}</span>
+        </button>
+        <span v-if="tab.dirty" title="未保存" class="dirty" aria-label="未保存" />
+        <button type="button" class="close" :aria-label="`关闭 ${tab.title}`" @click="close(tab.key)"><X aria-hidden="true" /></button>
       </div>
     </div>
-    <button class="new-tab" type="button" title="新建网页标签页" aria-label="新建网页标签页" :disabled="opening" @click="add">＋</button>
+    <button class="new-tab" type="button" title="新建网页标签页" aria-label="新建网页标签页" :disabled="opening" @click="add"><Plus aria-hidden="true" /></button>
+    <div class="tab-actions"><slot name="actions" /></div>
     <Teleport to="body">
       <div v-if="menu" class="tab-menu-mask" @pointerdown.self="menu = null" @contextmenu.prevent="menu = null" @keydown.esc="menu = null">
         <div role="menu" class="tab-menu" :style="{ left: `${menu.x}px`, top: `${menu.y}px` }">
@@ -108,24 +118,53 @@ function context(event: MouseEvent, id: string): void {
   </div>
 </template>
 <style scoped>
-.workbench-tabs { display: flex; align-items: center; min-width: 0; width: 100%; height: 38px; gap: 3px; padding: 3px 8px; background: var(--color-bg-panel); }
-.tab-strip { display: flex; min-width: 0; flex: 0 1 auto; overflow-x: auto; gap: 3px; scrollbar-width: thin; }
-.tab { display: flex; flex: 1 1 190px; min-width: 76px; max-width: 220px; height: 30px; align-items: center; border-radius: 8px; color: var(--color-text-muted); padding: 0 6px; gap: 3px; }
-.tab { border: 0; transition: background 120ms, color 120ms; }
-.tab.active, .tab.active:hover, .overview.active {
+.workbench-tabs { display: flex; align-items: center; min-width: 0; width: 100%; height: 40px; gap: 4px; padding: 6px 8px 0; background: var(--color-bg-panel); }
+.tab-strip { display: flex; min-width: 0; flex: 0 1 auto; overflow-x: auto; gap: 4px; scrollbar-width: none; }
+.tab-strip::-webkit-scrollbar { display: none; }
+.tab {
+  display: flex; flex: 1 1 190px; min-width: 76px; max-width: 220px; height: 28px;
+  align-items: center; gap: 2px; padding: 0 4px 0 8px;
+  border: 0; border-radius: 8px;
+  color: var(--color-text-secondary);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.tab:hover, .new-tab:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+.tab.active, .tab.active:hover {
   background: var(--color-tab-selected);
   color: var(--color-text-primary);
-  box-shadow: none;
 }
-.tab.active .tab-label { font-weight: 650; }
-.tab:hover, .new-tab:hover, .overview:hover { background: var(--color-button-outline-hover); }
-.tab-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; text-align: left; }
-.close { flex: none; width: 20px; border-radius: 4px; }
-.close:hover { background: var(--color-button-outline-hover); }
-.new-tab, .overview { flex: 0 0 28px; height: 28px; border-radius: 5px; font-size: 19px; }
-.dirty { font-size: 8px; color: var(--color-accent); }
+.tab-label { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; height: 100%; font-size: 12px; text-align: left; }
+.tab-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab.active .tab-label { font-weight: 600; }
+.tab-mark { position: relative; flex: none; width: 16px; height: 16px; display: inline-grid; place-items: center; }
+.close {
+  display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px;
+  color: var(--color-text-tertiary); opacity: 0;
+  --radius-button: 6px;
+  transition: opacity var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+}
+.tab:hover .close, .tab.active .close, .close:focus-visible { opacity: 1; }
+.close:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+.close svg { width: 12px; height: 12px; stroke-width: 2; }
+.new-tab {
+  display: inline-grid; place-items: center; flex: 0 0 28px; height: 28px;
+  color: var(--color-text-secondary);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.new-tab svg { width: 15px; height: 15px; stroke-width: 1.75; }
+.tree-toggle { flex: none; }
+.dirty { flex: none; width: 6px; height: 6px; margin: 0 4px; border-radius: 999px; background: var(--color-accent); }
 .tab-menu-mask { position: fixed; inset: 0; z-index: 9999; }
-.tab-menu { position: absolute; width: 180px; padding: 4px; border-radius: 7px; border: 1px solid var(--color-border-border); background: var(--color-bg-panel); box-shadow: 0 6px 24px #0002; }
-.tab-menu button { display: block; width: 100%; text-align: left; padding: 7px 10px; font-size: 12px; border-radius: 4px; }
-.tab-menu button:hover { background: var(--color-button-outline-hover); }
+.tab-menu {
+  position: absolute; width: 180px; padding: 4px;
+  border: 1px solid var(--color-popover-border); border-radius: 10px;
+  background: var(--color-bg-elevated); box-shadow: var(--shadow-md);
+  --radius-button: 6px;
+}
+.tab-menu button { display: block; width: 100%; text-align: left; padding: 7px 10px; font-size: 12px; color: var(--color-text-secondary); }
+.tab-menu button:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
+</style>
+
+<style scoped>
+.tab-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
 </style>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
+import { usePreviewStore } from '@/stores/preview'
 import { renderMarkdownPreview } from '@/lib/editor/markdown-preview'
 import type { MarkdownShortcutId } from '@/lib/editor/markdown-shortcuts'
 
@@ -20,9 +21,11 @@ const props = defineProps<{
 const ui = useUiStore()
 const editor = useEditorStore()
 const themeStore = useThemeStore()
+const preview = usePreviewStore()
 const session = editor.tabSession(props.tabId)
 const isDirty = editor.tabIsDirty(props.tabId)
 const isSaving = editor.tabIsSaving(props.tabId)
+watch(isDirty, dirty => preview.setTabDirty(props.tabId, dirty), { immediate: true })
 
 const markdownSurfaceRef = ref<InstanceType<typeof CodeMirrorSurface> | null>(null)
 const previewSrcdoc = ref('')
@@ -99,15 +102,8 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
         </div>
 
         <div class="flex items-center gap-1.5">
-          <Button variant="outline" size="sm" class="text-xxs" @click="ui.openBranchHistory({ workspaceId: props.workspaceId, relPath: props.relPath, initialView: 'pushes' })">变更记录</Button>
-          <Button variant="outline" size="sm" class="text-xxs" :disabled="isSaving" @click="onReload">重载</Button>
-          <Button
-            v-if="!isReadonly"
-            size="sm"
-            class="text-xxs"
-            :disabled="isSaving || !isDirty"
-            @click="onSave"
-          >{{ isSaving ? '保存中…' : '保存' }}</Button>
+          <span class="text-[10px] text-muted-foreground" role="status">{{ isSaving ? '保存中…' : isDirty ? '未保存' : '已自动保存' }}</span>
+          <Button variant="ghost" size="sm" class="text-xxs" :disabled="isSaving" @click="onReload">重载</Button>
         </div>
       </div>
 
@@ -148,7 +144,7 @@ async function insertShortcut(id: MarkdownShortcutId): Promise<void> {
           @update:model-value="onContentUpdate"
         />
       </div>
-      <div v-else class="relative h-full bg-[#f8fafc]">
+      <div v-else class="relative h-full bg-[var(--color-bg-panel)]">
         <div v-if="isRenderingPreview" class="md-tab-pane__rendering">渲染中…</div>
         <iframe class="h-full w-full bg-white" sandbox="allow-same-origin" :srcdoc="previewSrcdoc" />
       </div>

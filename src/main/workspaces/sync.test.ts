@@ -7,6 +7,7 @@ import type { Workspace } from '@shared/types'
 
 const tmpUserData = await mkdtemp(join(tmpdir(), 'workspace-sync-userdata-'))
 vi.mock('electron', () => ({
+  BrowserWindow: { getAllWindows: () => [] },
   app: { getPath: () => tmpUserData }
 }))
 

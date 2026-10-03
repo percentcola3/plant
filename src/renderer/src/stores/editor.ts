@@ -56,6 +56,8 @@ export const useEditorStore = defineStore('editor', () => {
   // 全局 WorkspaceEditorPane 走单 session；PreviewPanel 内嵌 md tab 走 keyed session。
   const tabSessions = ref<Map<string, Session>>(new Map())
   const tabSavingKeys = ref<Set<string>>(new Set())
+  const tabSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const tabSavePromises = new Map<string, Promise<boolean>>()
 
   const isOpen = computed(() => visible.value && sessions.value.length > 0)
   const isDirty = computed(() => !!session.value && session.value.content !== session.value.savedContent)
@@ -364,6 +366,16 @@ export const useEditorStore = defineStore('editor', () => {
     const cur = tabSessions.value.get(key)
     if (!cur || cur.readonly) return
     setTabSession(key, { ...cur, content })
+    scheduleTabSave(key)
+  }
+
+  function scheduleTabSave(key: string): void {
+    const timer = tabSaveTimers.get(key)
+    if (timer) clearTimeout(timer)
+    tabSaveTimers.set(key, setTimeout(() => {
+      tabSaveTimers.delete(key)
+      void saveByKey(key, true)
+    }, 800))
   }
 
   function setModeByKey(key: string, mode: EditorMode): void {
@@ -372,24 +384,45 @@ export const useEditorStore = defineStore('editor', () => {
     setTabSession(key, { ...cur, mode })
   }
 
-  async function saveByKey(key: string): Promise<void> {
-    const cur = tabSessions.value.get(key)
-    if (!cur || cur.content === cur.savedContent || cur.readonly) return
-    const next = new Set(tabSavingKeys.value); next.add(key); tabSavingKeys.value = next
-    const r = await call('editor.writeTextFile', {
-      workspaceId: cur.projectId,
-      relPath: cur.relPath,
-      content: cur.content,
-      expectedMtime: cur.mtime,
-      scope: cur.scope
-    })
-    const after = new Set(tabSavingKeys.value); after.delete(key); tabSavingKeys.value = after
-    if (!r.ok) {
-      ui.showToast('error', `保存失败：${r.message}`)
-      return
+  async function saveByKey(key: string, quiet = false): Promise<boolean> {
+    const timer = tabSaveTimers.get(key)
+    if (timer) { clearTimeout(timer); tabSaveTimers.delete(key) }
+    const pending = tabSavePromises.get(key)
+    if (pending) {
+      if (!await pending) return false
+      return saveByKey(key, quiet)
     }
-    setTabSession(key, { ...cur, mtime: r.data.mtime, savedContent: cur.content })
-    ui.showToast('success', `已保存 ${cur.title}`, 1800)
+    const cur = tabSessions.value.get(key)
+    if (!cur || cur.content === cur.savedContent || cur.readonly) return true
+    const next = new Set(tabSavingKeys.value); next.add(key); tabSavingKeys.value = next
+    const saving = (async (): Promise<boolean> => {
+      try {
+        const r = await call('editor.writeTextFile', {
+          workspaceId: cur.projectId, relPath: cur.relPath, content: cur.content,
+          expectedMtime: cur.mtime, scope: cur.scope
+        })
+        if (!r.ok) {
+          ui.showToast('error', `保存失败：${r.message}`)
+          return false
+        }
+        const latest = tabSessions.value.get(key)
+        // Preserve edits made during the write and do not reopen a closed tab.
+        if (latest && latest.projectId === cur.projectId && latest.relPath === cur.relPath) {
+          setTabSession(key, { ...latest, mtime: r.data.mtime, savedContent: cur.content })
+          if (latest.content !== cur.content) scheduleTabSave(key)
+        }
+        if (!quiet) ui.showToast('success', `已保存 ${cur.title}`, 1800)
+        return true
+      } catch (error) {
+        ui.showToast('error', `保存失败：${error instanceof Error ? error.message : String(error)}`)
+        return false
+      } finally {
+        const after = new Set(tabSavingKeys.value); after.delete(key); tabSavingKeys.value = after
+        tabSavePromises.delete(key)
+      }
+    })()
+    tabSavePromises.set(key, saving)
+    return saving
   }
 
   async function reloadByKey(key: string): Promise<void> {
@@ -426,9 +459,14 @@ export const useEditorStore = defineStore('editor', () => {
     return snippets.join('\n\n')
   }
 
-  function closeKey(key: string): void {
+  async function closeKey(key: string): Promise<void> {
+    // A closing tab still needs the latest draft, including edits made during a write.
+    while (tabSessions.value.get(key)?.content !== tabSessions.value.get(key)?.savedContent) {
+      if (!await saveByKey(key, true)) return
+    }
+    const timer = tabSaveTimers.get(key)
+    if (timer) { clearTimeout(timer); tabSaveTimers.delete(key) }
     setTabSession(key, null)
-    const s = new Set(tabSavingKeys.value); s.delete(key); tabSavingKeys.value = s
   }
 
   watch(
@@ -436,6 +474,8 @@ export const useEditorStore = defineStore('editor', () => {
     (activeId) => {
       if (!activeId) {
         clearSession()
+        for (const timer of tabSaveTimers.values()) clearTimeout(timer)
+        tabSaveTimers.clear()
         tabSessions.value = new Map()
         tabSavingKeys.value = new Set()
       }

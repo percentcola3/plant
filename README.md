@@ -74,9 +74,9 @@ Skill 适合告诉 AI “按什么步骤做”；稳定的界面还需要回答�
 - **[Ant Design](resources/design-templates/antd/design-guide.md)**：官方 Seed Token 源码、Seed → Map → Alias 主题机制说明、设计原则与组件规范入口，以及团队主题 JSON 和 HTML 用 CSS Token 示例。React 项目通过 `ConfigProvider` 应用主题。
 - **[HeroUI v3](resources/design-templates/heroui/design-guide.md)**：官方亮暗主题变量、真实 Button CSS、组件与主题说明，以及团队定制的 CSS 覆盖示例。React 实现使用 Tailwind v4 与 `@heroui/styles`。
 
-你可以把其中一个目录添加为 UX 知识库，关联项目，再在对话中选择它；也可以复制到团队 Git 仓库，逐步补上自己的品牌色、组件与页面范例。模板中的 Skill 可单独安装。
+Ant Design 和 HeroUI 默认填充在「知识库 → UX 资产库」的资产列表中，包含可识别的主题、按钮预览及写法说明。「查看文件」可阅读源码、复制到本地定制；「关联项目」后可打开资产预览，并在对话中选择。用户可补上自己的品牌色、组件与页面范例，也可以提交到团队 Git 仓库。模板中的 Skill 可单独安装。
 
-这些模板随源码提供，需手动接入；已发布的 v0.2.12 安装包尚未包含本次新增文件。它们是设计参考与起步资产，不会自动安装 Ant Design 或 HeroUI，也不意味着 Plant 自身采用了这两个组件库。官方源码的构建要求与 HTML 原型的边界见[模板说明](resources/design-templates/README.md)。
+v0.2.13 已包含这两套默认 UI 资产。它们是设计参考与起步资产，不会自动安装 Ant Design 或 HeroUI，也不意味着 Plant 自身采用了这两个组件库。官方源码的构建要求与 HTML 原型的边界见[模板说明](resources/design-templates/README.md)。
 
 ## 从需求到界面，在可见的面板中完成
 
@@ -126,11 +126,11 @@ AI 的结果可以直接查看和继续修改，最终留下普通 Markdown、HT
 
 ## 下载与安装
 
-[下载首个预览版 v0.2.12](https://github.com/percentcola3/plant/releases/tag/v0.2.12) · [直接下载 macOS Apple Silicon 安装包](https://github.com/percentcola3/plant/releases/download/v0.2.12/Plant-0.2.12-arm64.dmg)
+[下载预览版 v0.2.13](https://github.com/percentcola3/plant/releases/tag/v0.2.13) · [直接下载 macOS Apple Silicon 安装包](https://github.com/percentcola3/plant/releases/download/v0.2.13/Plant-0.2.13-arm64.dmg)
 
 当前提供 macOS arm64（Apple Silicon）DMG。打开安装包后，将 Plant 拖入 Applications。此预览版尚未签名与公证，macOS 可能阻止首次启动；请按系统提示在“隐私与安全性”中确认允许打开。
 
-截图更新于 2026-10-02，展示当前版本的工作台、Markdown 编辑器、知识库和技能管理。首个预览版的验证结果与已知限制见 [发布验证记录](docs/release-validation-v0.2.12.md)。
+截图更新于 2026-10-02，展示当前版本的工作台、Markdown 编辑器、知识库和技能管理。本版验证结果与已知限制见 [发布验证记录](docs/release-validation-v0.2.13.md)。
 
 ## 本地开发
 

@@ -39,7 +39,7 @@ const description = computed(() => {
     return '正在构建 zg 混合索引：代码符号 + 文档语义 + 向量'
   }
   if (status.state === 'error') return status.message || '后台构建失败，下次启动时会自动重试'
-  return `zg检索 ${zgSearchPercent(status)}%`
+  return `已索引 ${formatFileCount(status.fileCount)} 个文件 · zg检索 ${zgSearchPercent(status)}%`
 })
 const detailTitle = computed(() => {
   const status = props.status
@@ -98,11 +98,9 @@ function formatBuiltAt(value: string): string {
       <Clock3 v-else :size="15" />
     </span>
     <div class="resource-index-status__copy">
-      <strong>检索索引</strong>
-      <span :title="detailTitle">{{ description }}</span>
+      <strong>{{ label }}</strong>
     </div>
     <div class="resource-index-status__actions">
-      <span class="resource-index-status__badge">{{ label }}</span>
       <button
         v-if="props.buildable"
         type="button"
@@ -111,6 +109,7 @@ function formatBuiltAt(value: string): string {
         @click.stop="emit('build')"
       >{{ buildLabel }}</button>
     </div>
+    <span class="resource-index-status__description" :title="detailTitle">{{ description }}</span>
   </div>
 </template>
 
@@ -151,25 +150,16 @@ function formatBuiltAt(value: string): string {
   color: var(--color-text-primary);
   font-size: 11px;
   font-weight: 650;
-}
-
-.resource-index-status__copy span {
-  overflow: hidden;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.resource-index-status__badge {
-  border-radius: 999px;
-  background: var(--color-bg-base);
-  padding: 3px 7px;
+.resource-index-status__description {
+  grid-column: 1 / -1;
+  min-width: 0;
   color: var(--color-text-secondary);
   font-size: 10px;
-  font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .resource-index-status__actions { display: inline-flex; align-items: center; gap: 6px; }
@@ -195,8 +185,8 @@ function formatBuiltAt(value: string): string {
 
 .resource-index-status--queued .resource-index-status__icon,
 .resource-index-status--building .resource-index-status__icon,
-.resource-index-status--queued .resource-index-status__badge,
-.resource-index-status--building .resource-index-status__badge {
+.resource-index-status--queued .resource-index-status__copy strong,
+.resource-index-status--building .resource-index-status__copy strong {
   color: var(--color-info);
 }
 
@@ -206,7 +196,7 @@ function formatBuiltAt(value: string): string {
 }
 
 .resource-index-status--ready .resource-index-status__icon,
-.resource-index-status--ready .resource-index-status__badge {
+.resource-index-status--ready .resource-index-status__copy strong {
   color: var(--color-success);
 }
 
@@ -216,7 +206,7 @@ function formatBuiltAt(value: string): string {
 }
 
 .resource-index-status--error .resource-index-status__icon,
-.resource-index-status--error .resource-index-status__badge {
+.resource-index-status--error .resource-index-status__copy strong {
   color: var(--color-error);
 }
 

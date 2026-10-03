@@ -10,12 +10,12 @@ function isTextToken(token: { type: string }): token is TextToken {
  * 整段 `@query` 被删掉后文本节点会脱离，DOM 插入会失败，若再把旧文本拼回去就会变成普通字而不是 chip。
  */
 export function insertTokenAtMentionTrigger<T extends { type: string }>(
-  tokens: T[],
+  tokens: (T | TextToken)[],
   query: string,
   token: T
-): T[] {
+): (T | TextToken)[] {
   const trigger = `@${query}`
-  const result: T[] = []
+  const result: (T | TextToken)[] = []
   let replaced = false
 
   for (const item of tokens) {
@@ -24,9 +24,9 @@ export function insertTokenAtMentionTrigger<T extends { type: string }>(
       if (index !== -1) {
         const before = item.text.slice(0, index)
         const after = item.text.slice(index + trigger.length)
-        if (before) result.push({ type: 'text', text: before } as T)
+        if (before) result.push({ type: 'text', text: before })
         result.push(token)
-        if (after) result.push({ type: 'text', text: after } as T)
+        if (after) result.push({ type: 'text', text: after })
         replaced = true
         continue
       }

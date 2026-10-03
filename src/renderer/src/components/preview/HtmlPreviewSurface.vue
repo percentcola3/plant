@@ -14,8 +14,6 @@ const props = withDefaults(defineProps<{
   editableRootPath: string
   url: string
   loading?: boolean
-  showTreeToggle?: boolean
-  treeOpen?: boolean
   showHtmlViewMode?: boolean
   htmlMode?: 'preview' | 'source'
   showReload?: boolean
@@ -24,8 +22,6 @@ const props = withDefaults(defineProps<{
   suppressSizeBar?: boolean
 }>(), {
   loading: false,
-  showTreeToggle: false,
-  treeOpen: false,
   showHtmlViewMode: false,
   htmlMode: 'preview',
   showReload: false,
@@ -37,7 +33,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   loaded: []
   error: []
-  'toggle-tree': []
   'update:htmlMode': [mode: 'preview' | 'source']
   reload: []
   'element-selecting-change': [enabled: boolean]
@@ -558,8 +553,6 @@ defineExpose({
       :element-selecting="elementSelecting"
       :element-editing="elementEditing"
       :remarks-visible="remarksVisible"
-      :show-tree-toggle="props.showTreeToggle"
-      :tree-open="props.treeOpen"
       :show-html-view-mode="props.showHtmlViewMode"
       :html-mode="props.htmlMode"
       :show-reload="props.showReload"
@@ -569,7 +562,6 @@ defineExpose({
       @pick-element="toggleElementSelecting"
       @toggle-element-edit="toggleElementEditing"
       @toggle-remarks="toggleRemarksVisible"
-      @toggle-tree="emit('toggle-tree')"
       @update:html-mode="emit('update:htmlMode', $event)"
       @reload="emit('reload')"
     />
@@ -591,7 +583,7 @@ defineExpose({
 
           <div
             class="absolute inset-0 overflow-hidden bg-white"
-            :class="!isMetaResponsive(meta) ? 'preview-frame-outline rounded-sm shadow-lg' : ''"
+            :class="!isMetaResponsive(meta) ? 'preview-frame-outline shadow-lg' : ''"
           >
             <div v-if="isLoading" class="html-preview-overlay">加载中…</div>
             <div v-else-if="frameError" class="html-preview-overlay">
@@ -603,7 +595,7 @@ defineExpose({
                 v-show="!isLoading && !frameError"
                 :src="frameUrl"
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                class="h-full w-full border-none bg-white"
+                class="preview-document-frame h-full w-full border-none bg-white"
                 :title="`HTML 预览：${props.relPath}`"
                 @load="onLoad"
                 @error="onError"
@@ -688,8 +680,11 @@ defineExpose({
   color: var(--color-text-muted);
   font-size: 12px;
 }
+.preview-document-frame { border-radius: 12px; overflow: hidden; }
 .preview-frame-outline {
-  outline: 1px dashed rgb(59 130 246 / 0.6);
+  outline: 1px dashed var(--color-border-strong);
+  border-radius: 12px;
+  overflow: hidden;
   outline-offset: 1px;
 }
 </style>

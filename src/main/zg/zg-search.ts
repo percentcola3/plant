@@ -136,6 +136,21 @@ function clipLog(text: string, max = 200): string {
   return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max)}…`
 }
 
+// Node startup failures end with stack frames/version numbers. Preserve the
+// actual module/process error instead of showing only the last two lines.
+export function summarizeZgIndexError(text: string, exitCode: number, killed = false): string {
+  if (killed) return '索引构建超时，进程已停止，可重新构建'
+  const lines = text.replace(/\u001b\[[0-9;]*m/g, '').split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+  const code = zgErrorCode(lines.join('\n'))
+  const error = lines.find(line => /^(?:Error(?:\s*\[[^\]]+\])?:|(?:Type|Syntax|Range|Reference)Error:|(?:EACCES|ENOENT):)/.test(line))
+  const moduleDetail = lines.find(line => /Cannot find (?:package|module)/.test(line))
+  if (!moduleDetail && /ERR_INTERNAL_ASSERTION/.test(text) && /ERR_MODULE_NOT_FOUND/.test(text)) {
+    return 'zg 启动失败：依赖模块缺失（ERR_MODULE_NOT_FOUND），请检查或重新安装应用依赖'
+  }
+  const summary = moduleDetail ?? error ?? (code ? `Code: ${code}` : lines.slice(-2).join(' | '))
+  return clipLog(summary || `zg index exited ${exitCode}`, 600)
+}
+
 // ── 就绪探测 ──
 
 export async function zgCheckReady(root: string): Promise<boolean> {
@@ -367,7 +382,7 @@ export async function zgIndexBuild(
     combined += result.stderr
     const busy = /LOCK\.BUSY|DAEMON_LEASE_ACTIVE/.test(combined)
     if (!busy) {
-      const detail = combined.trim().split('\n').filter(Boolean).slice(-2).join(' | ')
+      const detail = summarizeZgIndexError(combined, result.code, result.killed)
       lastError.set(root, detail || `zg index exited ${result.code}`)
       console.warn('[zg] index fail', { cwd: root, code: result.code, killed: result.killed, detail })
       return false

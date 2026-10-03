@@ -7,7 +7,7 @@ const sampleCard: FeatureCard = {
   relPath: 'features/POS/0725-pdv-coupon',
   group: 'POS',
   prdRelPath: 'features/POS/0725-pdv-coupon/prd.md',
-  uiArtifacts: [{ name: '首页', htmlRelPath: 'features/POS/0725-pdv-coupon/ui/index.html' }],
+  uiArtifacts: [{ name: '首页', htmlRelPath: 'features/POS/0725-pdv-coupon/ui/index.html', rootRelPath: 'features/POS/0725-pdv-coupon/ui' }],
   modifiedAt: null,
 }
 

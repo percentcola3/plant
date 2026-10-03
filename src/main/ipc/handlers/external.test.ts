@@ -54,6 +54,13 @@ const requestExternalRefIndexBuildMock = vi.hoisted(() =>
 vi.mock('../registry', () => ({
   registerIpcHandler: registerIpcHandlerMock
 }))
+const templateMocks = vi.hoisted(() => ({
+  ensureBuiltinDesignAssets: vi.fn(async () => undefined),
+  readDesignTemplate: vi.fn(async () => []),
+  installDesignTemplate: vi.fn(async () => ({ id: 'builtin-antd' })),
+  copyDesignTemplate: vi.fn(async () => ({ path: '/templates/antd-design-template' })),
+}))
+vi.mock('../../design-templates/service', () => templateMocks)
 
 vi.mock('../../external-pool/service', () => ({
   addExternalRef: vi.fn(),
@@ -83,6 +90,22 @@ beforeEach(() => {
 })
 
 describe('registerExternalHandlers', () => {
+  it('populates built-in UI assets before listing the resource pool', async () => {
+    registerExternalHandlers()
+    const handler = registerIpcHandlerMock.mock.calls.find(([name]) => name === 'external.list')?.[1]
+    await handler(undefined)
+    expect(templateMocks.ensureBuiltinDesignAssets).toHaveBeenCalled()
+  })
+  it('exposes built-in template viewing, installation and copying through the IPC bridge', async () => {
+    registerExternalHandlers()
+    const handler = (channel: string) => registerIpcHandlerMock.mock.calls.find(([name]) => name === channel)?.[1]
+    await handler('external.readTemplate')({ templateId: 'antd' })
+    await handler('external.installTemplate')({ templateId: 'antd' })
+    await handler('external.copyTemplate')({ templateId: 'heroui', parentPath: '/templates' })
+    expect(templateMocks.readDesignTemplate).toHaveBeenCalledWith('antd')
+    expect(templateMocks.installDesignTemplate).toHaveBeenCalledWith('antd')
+    expect(templateMocks.copyDesignTemplate).toHaveBeenCalledWith('heroui', '/templates')
+  })
   it('注册手动更新工作区外联入口', async () => {
     registerExternalHandlers()
 

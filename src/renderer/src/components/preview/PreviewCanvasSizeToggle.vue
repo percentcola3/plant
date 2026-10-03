@@ -54,12 +54,34 @@ function presetForKind(kind: WorkbenchCanvasPreset['kind']): WorkbenchCanvasPres
 .preview-canvas-size-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-shrink: 0;
+  padding: 3px 4px;
+  border-radius: 8px;
+  background: var(--color-tab-selected);
 }
 
-.preview-canvas-size-toggle__btn :deep(svg) {
-  width: var(--product-workbench-icon-size, 14px);
-  height: var(--product-workbench-icon-size, 14px);
+.preview-canvas-size-toggle :deep(.product-workbench-icon-btn) {
+  width: 28px;
+  height: 24px;
+  border-radius: 6px !important;
+  background: transparent;
+  color: var(--color-text-tertiary);
+}
+
+.preview-canvas-size-toggle :deep(.product-workbench-icon-btn svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.preview-canvas-size-toggle :deep(.product-workbench-icon-btn:hover:not(:disabled):not(.is-active)) {
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+.preview-canvas-size-toggle :deep(.product-workbench-icon-btn.is-active) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  box-shadow: none;
 }
 </style>

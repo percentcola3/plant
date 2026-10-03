@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const envMock = vi.hoisted(() => vi.fn())
 const cloneMock = vi.hoisted(() => vi.fn(async () => undefined))
@@ -33,6 +33,7 @@ async function loadClient(): Promise<typeof import('./client')> {
 }
 
 describe('git client ssh isolation', () => {
+  afterEach(() => { vi.unstubAllEnvs() })
   beforeEach(() => {
     envMock.mockClear()
     cloneMock.mockClear()
@@ -65,6 +66,18 @@ describe('git client ssh isolation', () => {
       expect(call[0]).toMatchObject({
         GIT_SSH_COMMAND: 'ssh -F /dev/null -i /app/ssh/id_ed25519'
       })
+    }
+  })
+
+  it('removes shell pagers so Git sync cannot be blocked by simple-git environment checks', async () => {
+    vi.stubEnv('PAGER', 'less')
+    vi.stubEnv('GIT_PAGER', 'less')
+    const { gitForWithAskpass, gitForBackground } = await loadClient()
+    await gitForWithAskpass('/tmp/repo')
+    await gitForBackground('/tmp/repo')
+    for (const [env] of envMock.mock.calls) {
+      expect(env).not.toHaveProperty('PAGER')
+      expect(env).not.toHaveProperty('GIT_PAGER')
     }
   })
 })

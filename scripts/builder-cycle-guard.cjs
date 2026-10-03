@@ -20,10 +20,15 @@ function guardCollector(Collector) {
   prototype[marker] = true
 }
 function beforePack() {
-  const { version } = require('app-builder-lib/package.json')
-  if (version !== '26.15.3') throw new Error(`Recheck builder-cycle-guard before using app-builder-lib ${version}`)
-  const { NodeModulesCollector } = require('app-builder-lib/out/node-module-collector/nodeModulesCollector.js')
-  guardCollector(NodeModulesCollector)
+  // pnpm may resolve the CLI's builder to a different copy than this hook.
+  const { createRequire } = require('node:module')
+  const cliRequire = createRequire(require.resolve('electron-builder/cli.js'))
+  for (const load of [require, cliRequire]) {
+    const { version } = load('app-builder-lib/package.json')
+    if (version !== '26.15.3') throw new Error(`Recheck builder-cycle-guard before using app-builder-lib ${version}`)
+    const { NodeModulesCollector } = load('app-builder-lib/out/node-module-collector/nodeModulesCollector.js')
+    guardCollector(NodeModulesCollector)
+  }
 }
 module.exports = beforePack
 module.exports.guardCollector = guardCollector

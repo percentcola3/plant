@@ -13,6 +13,7 @@ export const ALIAS_PATTERN = /^[A-Za-z0-9_\-一-龥]{1,40}$/
 type PoolFile = {
   externalRefs: ExternalRef[]
   schemaVersion: 1
+  builtinTemplatesSeeded?: boolean
 }
 
 const EMPTY: PoolFile = { externalRefs: [], schemaVersion: 1 }
@@ -30,12 +31,12 @@ export class ExternalPoolStore {
       const text = await fs.readFile(indexFile(), 'utf-8')
       const parsed = JSON.parse(text) as PoolFile
       if (!Array.isArray(parsed.externalRefs)) {
-        sharedCache = { ...EMPTY }
+        sharedCache = { ...EMPTY, externalRefs: [] }
       } else {
         sharedCache = { ...parsed, schemaVersion: 1 }
       }
     } catch {
-      sharedCache = { ...EMPTY }
+      sharedCache = { ...EMPTY, externalRefs: [] }
     }
     return sharedCache
   }
@@ -50,6 +51,16 @@ export class ExternalPoolStore {
   async list(): Promise<ExternalRef[]> {
     const f = await this.load()
     return [...f.externalRefs]
+  }
+
+  async hasSeededBuiltinTemplates(): Promise<boolean> {
+    return (await this.load()).builtinTemplatesSeeded === true
+  }
+
+  async markBuiltinTemplatesSeeded(): Promise<void> {
+    const f = await this.load()
+    f.builtinTemplatesSeeded = true
+    await this.save()
   }
 
   async findById(id: string): Promise<ExternalRef | null> {

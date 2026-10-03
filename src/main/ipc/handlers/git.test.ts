@@ -67,6 +67,22 @@ beforeEach(async () => {
 })
 
 describe('readWorkspaceHistory', () => {
+  it('limits history to the literal project directory and paginates older commits', async () => {
+    await readWorkspaceHistory(workspaceId, 30, 'features/订单[1]', 30)
+    expect(gitApi.raw).toHaveBeenCalledWith(expect.arrayContaining([
+      'log', '-30', '--skip=30', '--date-order', '--', ':(literal)features/订单[1]'
+    ]))
+  })
+
+  it('rejects project paths outside the workspace before calling Git', async () => {
+    await expect(readWorkspaceHistory(workspaceId, 30, '../other')).rejects.toThrow('路径越界')
+    expect(gitApi.raw).not.toHaveBeenCalled()
+  })
+
+  it('returns an empty timeline for an unborn Git repository', async () => {
+    gitApi.raw.mockRejectedValueOnce(new Error("fatal: your current branch 'main' does not have any commits yet"))
+    await expect(readWorkspaceHistory(workspaceId, 30, 'features/new')).resolves.toEqual([])
+  })
   it('解析当前分支提交历史', async () => {
     gitApi.raw.mockImplementation(async (args: string[]) => {
       if (args[0] === 'log') {

@@ -1,0 +1,9 @@
+/* 默认亮色主题。与 palette.css 一起引入。 */
+:root, [data-theme="light"] {
+  --asset-surface: #ffffff;
+  --asset-background: #f7f8fa;
+  --asset-text: #1f2937;
+  --asset-muted: #667085;
+  --asset-border: #d9dfe7;
+  --asset-primary-foreground: #ffffff;
+}

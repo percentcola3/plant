@@ -1,0 +1,10 @@
+/* 暗色主题：在容器上设置 data-theme="dark"。 */
+[data-theme="dark"] {
+  --asset-primary: #66c49f;
+  --asset-surface: #18181b;
+  --asset-background: #111113;
+  --asset-text: #f4f4f5;
+  --asset-muted: #a1a1aa;
+  --asset-border: #3f3f46;
+  --asset-primary-foreground: #102a21;
+}
